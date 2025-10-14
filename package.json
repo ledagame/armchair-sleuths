@@ -27,6 +27,7 @@
     "@devvit/web": "0.12.1",
     "clsx": "2.1.1",
     "devvit": "0.12.1",
+    "dotenv": "^17.2.3",
     "express": "5.1.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",

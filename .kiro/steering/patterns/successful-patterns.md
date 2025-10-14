@@ -532,3 +532,274 @@ logger.error('Payment failed', {
 2. 명확한 장점이 있음
 3. 재사용 가능함
 4. 이 문서에 추가하고 팀과 공유
+
+
+## 🌐 외부 API 통합 패턴 (2025-01-15 추가)
+
+### Pattern 13: 프록시 패턴 (Proxy Pattern)
+**사용 시기:** Devvit 또는 제약이 있는 플랫폼에서 외부 API 통합
+
+**구현:**
+```typescript
+// 3-Tier 아키텍처
+// Client → Devvit Server (Proxy) → External API
+
+// Devvit Server (Proxy Layer)
+app.post('/api/chat', async (req, res) => {
+  const { message, sessionId } = req.body;
+  
+  // 1. 입력 검증
+  const validation = validateInput(message);
+  if (!validation.valid) {
+    return res.status(400).json({
+      success: false,
+      error: validation.error
+    });
+  }
+  
+  // 2. 외부 API 호출
+  const response = await fetch(EXTERNAL_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.API_KEY}`
+    },
+    body: JSON.stringify({ message, sessionId })
+  });
+  
+  const data = await response.json();
+  
+  // 3. 응답 반환
+  res.json({
+    success: true,
+    response: data.response,
+    sessionId: data.sessionId
+  });
+});
+```
+
+**장점:**
+- ✅ 플랫폼 제약사항 우회
+- ✅ API 키 서버에서만 관리 (보안)
+- ✅ Rate limiting 중앙 관리
+- ✅ 캐싱 및 최적화 가능
+- ✅ 외부 API 독립적 관리
+
+**주의사항:**
+- ⚠️ 타임아웃 관리 필수
+- ⚠️ 에러 처리 철저히
+- ⚠️ 입력 검증 서버에서 수행
+
+**적용 시나리오:**
+- Devvit에서 외부 AI API 통합
+- 외부 결제 시스템 연동
+- 서드파티 서비스 통합
+- 플랫폼 제약이 있는 환경
+
+---
+
+### Pattern 14: 타임아웃 관리 패턴
+**사용 시기:** 플랫폼 타임아웃 제한이 있는 경우
+
+**구현:**
+```typescript
+const API_TIMEOUT = 25000; // 플랫폼 제한(30초)보다 짧게
+
+async function fetchWithTimeout(url: string, options: RequestInit) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    return response;
+    
+  } catch (error) {
+    clearTimeout(timeoutId);
+    
+    if (error.name === 'AbortError') {
+      throw new Error('응답 시간이 초과되었습니다. 더 짧은 질문을 시도해주세요.');
+    }
+    
+    throw error;
+  }
+}
+```
+
+**장점:**
+- ✅ 서버 크래시 방지
+- ✅ 사용자 친화적 에러 메시지
+- ✅ 리소스 누수 방지
+- ✅ 예측 가능한 동작
+
+**주의사항:**
+- ⚠️ 타임아웃은 플랫폼 제한보다 짧게 (여유 5초)
+- ⚠️ clearTimeout 반드시 호출
+- ⚠️ AbortError 별도 처리
+
+---
+
+### Pattern 15: Redis 캐싱 패턴
+**사용 시기:** 반복되는 요청이 많은 경우
+
+**구현:**
+```typescript
+import crypto from 'crypto';
+
+class ChatCache {
+  constructor(private redis: Redis) {}
+  
+  private hashMessage(message: string): string {
+    return crypto
+      .createHash('md5')
+      .update(message.toLowerCase().trim())
+      .digest('hex');
+  }
+  
+  async get(message: string): Promise<string | null> {
+    const key = `chat:cache:${this.hashMessage(message)}`;
+    return await this.redis.get(key);
+  }
+  
+  async set(
+    message: string, 
+    response: string, 
+    ttl: number = 3600
+  ): Promise<void> {
+    const key = `chat:cache:${this.hashMessage(message)}`;
+    await this.redis.set(key, response, {
+      expiration: new Date(Date.now() + ttl * 1000)
+    });
+  }
+}
+
+// Usage
+const cache = new ChatCache(redis);
+
+// 캐시 확인
+const cached = await cache.get(message);
+if (cached) {
+  return res.json({ success: true, response: cached, cached: true });
+}
+
+// API 호출
+const response = await callExternalAPI(message);
+
+// 캐시 저장
+await cache.set(message, response);
+```
+
+**장점:**
+- ✅ 응답 속도 향상 (캐시 히트 시 즉시 응답)
+- ✅ 외부 API 호출 감소 (비용 절감)
+- ✅ 서버 부하 감소
+- ✅ 사용자 경험 개선
+
+**주의사항:**
+- ⚠️ TTL 적절히 설정 (1시간 권장)
+- ⚠️ 메시지 정규화 (대소문자, 공백)
+- ⚠️ 캐시 키 충돌 방지 (해시 사용)
+
+---
+
+### Pattern 16: 입력 검증 및 새니타이제이션
+**사용 시기:** 사용자 입력을 받는 모든 API
+
+**구현:**
+```typescript
+function sanitizeInput(input: string): string {
+  // 1. HTML 태그 제거
+  let sanitized = input.replace(/<[^>]*>/g, '');
+  
+  // 2. 특수 문자 이스케이프
+  sanitized = sanitized
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+  
+  // 3. 연속 공백 제거
+  sanitized = sanitized.replace(/\s+/g, ' ').trim();
+  
+  return sanitized;
+}
+
+function validateMessage(message: string): {
+  valid: boolean;
+  error?: string;
+  sanitized?: string;
+} {
+  if (!message || typeof message !== 'string') {
+    return { valid: false, error: '메시지를 입력해주세요.' };
+  }
+  
+  const sanitized = sanitizeInput(message);
+  
+  if (sanitized.length === 0) {
+    return { valid: false, error: '유효한 메시지를 입력해주세요.' };
+  }
+  
+  if (sanitized.length > 1000) {
+    return { valid: false, error: '메시지가 너무 깁니다. (최대 1000자)' };
+  }
+  
+  // SQL Injection 패턴 체크
+  const sqlPatterns = [
+    /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER)\b)/i,
+    /(--|;|\/\*|\*\/)/
+  ];
+  
+  for (const pattern of sqlPatterns) {
+    if (pattern.test(sanitized)) {
+      return { 
+        valid: false, 
+        error: '허용되지 않는 문자가 포함되어 있습니다.' 
+      };
+    }
+  }
+  
+  return { valid: true, sanitized };
+}
+```
+
+**장점:**
+- ✅ XSS 공격 방지
+- ✅ SQL Injection 방지
+- ✅ 악의적 입력 차단
+- ✅ 데이터 일관성 유지
+
+**주의사항:**
+- ⚠️ 클라이언트 검증은 UX용, 서버 검증이 실제 보안
+- ⚠️ 화이트리스트 방식 권장
+- ⚠️ 정규표현식 성능 고려
+
+---
+
+## 🎯 외부 API 통합 패턴 선택 가이드
+
+### 언제 사용하는가?
+1. **Devvit 프로젝트** → 프록시 패턴 (Pattern 13) 필수
+2. **타임아웃 제한 있음** → 타임아웃 관리 (Pattern 14) 필수
+3. **반복 요청 많음** → Redis 캐싱 (Pattern 15) 권장
+4. **사용자 입력 받음** → 입력 검증 (Pattern 16) 필수
+
+### 통합 체크리스트
+- [ ] 프록시 패턴으로 아키텍처 설계
+- [ ] 타임아웃 관리 구현 (플랫폼 제한 - 5초)
+- [ ] 입력 검증 및 새니타이제이션
+- [ ] Rate limiting 적용
+- [ ] 에러 처리 (사용자 친화적 메시지)
+- [ ] 캐싱 전략 수립 (선택적)
+- [ ] API 키 환경변수로 관리
+- [ ] 로깅 및 모니터링
+
+---
+
+**패턴 추가 이력:**
+- 2025-01-15: Pattern 13-16 추가 (AI 채팅 통합 프로젝트)
+
