@@ -1,0 +1,23 @@
+{
+  "enabled": true,
+  "name": "Assess on Save",
+  "description": "Automatically validates security, performance, and code quality when files are saved",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "src/**/*.ts",
+      "src/**/*.tsx",
+      "src/**/*.js",
+      "src/**/*.jsx",
+      "src/**/*.py",
+      "*.json",
+      "*.yaml",
+      ".env*"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A file has been saved. Perform an automatic code review using the Compounding Engineering assessment system:\n\n## Review Process\n\n### 1. Security Review\nReference `.kiro/steering/reviewers/security-reviewer.md` and check:\n\n**Critical Checks:**\n- Are passwords stored in plain text?\n- Are API keys hardcoded?\n- Are there SQL injection vulnerabilities?\n- Are there XSS vulnerabilities?\n\n**High Priority Checks:**\n- Is CSRF protection implemented?\n- Is rate limiting present?\n- Is input validation implemented?\n\n### 2. Performance Review\nReference `.kiro/steering/reviewers/performance-reviewer.md` and check:\n\n**Critical Checks:**\n- Are there N+1 query issues?\n- Are indexes properly configured?\n- Are there potential memory leaks?\n\n**High Priority Checks:**\n- Are there unnecessary re-renders?\n- Is large data loaded all at once?\n\n### 3. Code Quality Review\nReference `.kiro/steering/reviewers/code-quality-reviewer.md` and check:\n\n- Are TypeScript types defined?\n- Are functions too long? (>50 lines)\n- Is nesting too deep? (>3 levels)\n- Are names clear and descriptive?\n\n## Output Format\n\nIf no issues found:\n```\n✅ Assess on Save: All checks passed\n   - Security: ✅ No issues\n   - Performance: ✅ No issues\n   - Code Quality: ✅ No issues\n```\n\nIf issues found:\n```\n🚨 Assess on Save: Issues found\n\nSecurity Issues:\n⚠️ Line X: [Issue description]\n   Fix: [Suggested fix]\n   \n   // ❌ Bad\n   [bad code example]\n   \n   // ✅ Good\n   [good code example]\n\nPerformance Issues:\n⚠️ Line Y: [Issue description]\n   Fix: [Suggested fix]\n\nCode Quality Issues:\n⚠️ Line Z: [Issue description]\n   Fix: [Suggested fix]\n\nWould you like me to fix these issues? [Yes/No]\n```\n\n## Auto-Fix\nIf user responds \"Yes\", automatically fix issues that can be fixed programmatically and add TODO comments for manual fixes.\n\n## Compounding Effect\nLog all findings to help improve the review checklist for future projects. Issues found today become preventions for tomorrow."
+  }
+}
