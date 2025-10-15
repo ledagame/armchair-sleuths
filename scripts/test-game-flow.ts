@@ -38,8 +38,8 @@ async function testGameFlow() {
     const caseGenerator = createCaseGeneratorService(geminiClient);
 
     console.log('⏳ 케이스 생성 중... (30-60초 소요)');
-    const testDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-    const caseData = await caseGenerator.generateCase(testDate);
+    const testDate = new Date();
+    const caseData = await caseGenerator.generateCase({ date: testDate });
 
     console.log('✅ 케이스 생성 완료!');
     console.log(`   - ID: ${caseData.id}`);
@@ -67,6 +67,10 @@ async function testGameFlow() {
     // 3️⃣ AI 대화 테스트
     console.log('3️⃣ AI 대화 테스트');
     console.log('━'.repeat(60));
+
+    if (suspects.length === 0) {
+      throw new Error('No suspects found for the case. Case creation may have failed.');
+    }
 
     const suspectAI = createSuspectAIService(geminiClient);
     const testSuspect = suspects[0];
@@ -164,8 +168,13 @@ async function testGameFlow() {
     console.log('✅ 통계 조회 완료:');
     console.log(`   - 총 제출 수: ${stats.totalSubmissions}`);
     console.log(`   - 정답자 수: ${stats.correctSubmissions}`);
-    console.log(`   - 정답률: ${stats.successRate.toFixed(1)}%`);
-    console.log(`   - 평균 점수: ${stats.averageScore.toFixed(1)}점`);
+
+    // Calculate success rate from available data
+    const successRate = stats.totalSubmissions > 0
+      ? (stats.correctSubmissions / stats.totalSubmissions * 100)
+      : 0;
+    console.log(`   - 정답률: ${successRate.toFixed(1)}%`);
+    console.log(`   - 평균 점수: ${stats.averageScore?.toFixed(1) ?? 0}점`);
     console.log(`   - 최고 점수: ${stats.highestScore}점`);
     console.log('');
 

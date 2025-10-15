@@ -17,6 +17,8 @@ export interface GenerateCaseOptions {
 
 export interface GeneratedCase {
   caseId: string;
+  id: string;              // Alias for backward compatibility
+  date: string;            // Date string in YYYY-MM-DD format
   victim: {
     name: string;
     background: string;
@@ -135,6 +137,8 @@ export class CaseGeneratorService {
     // 5. GeneratedCase 형식으로 반환
     return {
       caseId: savedCase.id,
+      id: savedCase.id,        // Alias for backward compatibility
+      date: savedCase.date,    // Date string
       victim: savedCase.victim,
       weapon: elements.weapon,
       location: elements.location,
@@ -316,6 +320,8 @@ High quality, detailed, atmospheric.`;
 
       return {
         caseId: existingCase.id,
+        id: existingCase.id,        // Alias for backward compatibility
+        date: existingCase.date,    // Date string
         victim: existingCase.victim,
         weapon: existingCase.weapon as Weapon,
         location: existingCase.location as Location,
@@ -358,6 +364,8 @@ High quality, detailed, atmospheric.`;
 
       return {
         caseId: existingCase.id,
+        id: existingCase.id,        // Alias for backward compatibility
+        date: existingCase.date,    // Date string
         victim: existingCase.victim,
         weapon: existingCase.weapon as Weapon,
         location: existingCase.location as Location,

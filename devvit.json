@@ -16,6 +16,15 @@
   "media": {
     "dir": "assets"
   },
+  "settings": {
+    "global": {
+      "geminiApiKey": {
+        "type": "string",
+        "label": "Gemini API Key",
+        "isSecret": true
+      }
+    }
+  },
   "menu": {
     "items": [
       {

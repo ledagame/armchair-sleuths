@@ -1,0 +1,511 @@
+/**
+ * Armchair Sleuths - Design Tokens & Custom Styles
+ * Tailwind CSS 4.x Configuration
+ */
+
+@import 'tailwindcss';
+
+/**
+ * Custom Colors
+ * Extend Tailwind's default palette with detective-themed colors
+ */
+@theme {
+  --color-detective-crimson: #dc2626;
+  --color-detective-gold: #f59e0b;
+  --color-detective-navy: #1e3a8a;
+  --color-detective-ink: #1f2937;
+  --color-detective-fog: #f3f4f6;
+  --color-detective-smoke: #e5e7eb;
+}
+
+/**
+ * Custom Animations
+ */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+/**
+ * Animation Utilities
+ */
+@utility animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@utility animate-slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+@utility animate-slide-down {
+  animation: slideDown 0.3s ease-out;
+}
+
+@utility animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
+@utility animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@utility animate-bounce-subtle {
+  animation: bounce-subtle 1s ease-in-out infinite;
+}
+
+/**
+ * Custom Utility Classes
+ */
+
+/* Line Clamp */
+@utility line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@utility line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@utility line-clamp-4 {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Scrollbar Styling */
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(156 163 175) rgb(243 244 246);
+}
+
+@utility scrollbar-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+@utility scrollbar-thin::-webkit-scrollbar-track {
+  background: rgb(243 244 246);
+  border-radius: 4px;
+}
+
+@utility scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgb(156 163 175);
+  border-radius: 4px;
+}
+
+@utility scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgb(107 114 128);
+}
+
+/* Glass Morphism */
+@utility glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+@utility glass-dark {
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Text Gradient */
+@utility text-gradient-detective {
+  background: linear-gradient(135deg, #dc2626 0%, #f59e0b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+@utility text-gradient-blue {
+  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Card Effects */
+@utility card-lift {
+  transition: all 0.2s ease-in-out;
+}
+
+@utility card-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+@utility card-press {
+  transition: all 0.1s ease-in-out;
+}
+
+@utility card-press:active {
+  transform: scale(0.98);
+}
+
+/* Focus Styles */
+@utility focus-detective {
+  outline: 2px solid #dc2626;
+  outline-offset: 2px;
+}
+
+@utility focus-ring-detective {
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.3);
+}
+
+/**
+ * Component Patterns
+ */
+
+/* Button Shimmer Effect */
+@utility btn-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+@utility btn-shimmer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transition: left 0.5s;
+}
+
+@utility btn-shimmer:hover::before {
+  left: 100%;
+}
+
+/* Skeleton Loading */
+@utility skeleton {
+  animation: shimmer 2s infinite;
+  background: linear-gradient(
+    90deg,
+    #f3f4f6 0%,
+    #e5e7eb 20%,
+    #f3f4f6 40%,
+    #f3f4f6 100%
+  );
+  background-size: 200% 100%;
+}
+
+/* Chat Bubble Tail */
+@utility chat-tail-right {
+  position: relative;
+}
+
+@utility chat-tail-right::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: -8px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid currentColor;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+}
+
+@utility chat-tail-left {
+  position: relative;
+}
+
+@utility chat-tail-left::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: -8px;
+  width: 0;
+  height: 0;
+  border-right: 8px solid currentColor;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+}
+
+/**
+ * Accessibility Utilities
+ */
+
+/* Screen Reader Only */
+@utility sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Focus Visible (keyboard navigation) */
+@utility focus-visible-ring {
+  outline: none;
+}
+
+@utility focus-visible-ring:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/**
+ * Responsive Typography
+ */
+@utility text-responsive-sm {
+  font-size: clamp(0.875rem, 0.8rem + 0.375vw, 1rem);
+}
+
+@utility text-responsive-base {
+  font-size: clamp(1rem, 0.9rem + 0.5vw, 1.125rem);
+}
+
+@utility text-responsive-lg {
+  font-size: clamp(1.125rem, 1rem + 0.625vw, 1.25rem);
+}
+
+@utility text-responsive-xl {
+  font-size: clamp(1.25rem, 1.125rem + 0.625vw, 1.5rem);
+}
+
+@utility text-responsive-2xl {
+  font-size: clamp(1.5rem, 1.25rem + 1.25vw, 2rem);
+}
+
+@utility text-responsive-3xl {
+  font-size: clamp(1.875rem, 1.5rem + 1.875vw, 2.5rem);
+}
+
+/**
+ * Dark Mode Support (Future Enhancement)
+ */
+@media (prefers-color-scheme: dark) {
+  @utility dark\:bg-detective-ink {
+    background-color: var(--color-detective-ink);
+  }
+
+  @utility dark\:text-detective-fog {
+    color: var(--color-detective-fog);
+  }
+
+  @utility dark\:border-detective-smoke {
+    border-color: var(--color-detective-smoke);
+  }
+}
+
+/**
+ * Print Styles
+ */
+@media print {
+  @utility print\:hidden {
+    display: none !important;
+  }
+
+  @utility print\:visible {
+    display: block !important;
+  }
+}
+
+/**
+ * Custom Gradient Backgrounds
+ */
+@utility bg-gradient-detective {
+  background: linear-gradient(135deg, #dc2626 0%, #f59e0b 100%);
+}
+
+@utility bg-gradient-blue-detective {
+  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+}
+
+@utility bg-gradient-noir {
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+}
+
+@utility bg-gradient-fog {
+  background: linear-gradient(180deg, #f9fafb 0%, #f3f4f6 100%);
+}
+
+/**
+ * Motion Preferences
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/**
+ * Base Styles
+ */
+@layer base {
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Remove default focus outline (we use custom focus styles) */
+  *:focus {
+    outline: none;
+  }
+
+  /* Custom focus for keyboard navigation */
+  *:focus-visible {
+    @apply focus-visible-ring;
+  }
+
+  /* Improve text rendering */
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Prevent iOS zoom on input focus */
+  @media screen and (max-width: 640px) {
+    input,
+    textarea,
+    select {
+      font-size: 16px;
+    }
+  }
+}
+
+/**
+ * Component Layer
+ */
+@layer components {
+  /* Detective Badge */
+  .badge-detective {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    @apply bg-red-100 text-red-800 border border-red-200;
+  }
+
+  /* Evidence Tag */
+  .tag-evidence {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold;
+    @apply bg-amber-100 text-amber-800 border border-amber-200;
+  }
+
+  /* Status Indicator */
+  .status-dot {
+    @apply inline-block w-2 h-2 rounded-full;
+  }
+
+  .status-active {
+    @apply status-dot bg-green-500;
+  }
+
+  .status-pending {
+    @apply status-dot bg-amber-500;
+  }
+
+  .status-inactive {
+    @apply status-dot bg-gray-400;
+  }
+}
+
+/**
+ * Utilities Layer
+ */
+@layer utilities {
+  /* Container Queries (if needed) */
+  .container-narrow {
+    max-width: 42rem;
+  }
+
+  .container-reading {
+    max-width: 65ch;
+  }
+
+  /* Safe Area Insets (for mobile notches) */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-left {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .safe-right {
+    padding-right: env(safe-area-inset-right);
+  }
+}

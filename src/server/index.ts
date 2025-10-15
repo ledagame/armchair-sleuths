@@ -1,6 +1,6 @@
 import express from 'express';
 import { InitResponse, IncrementResponse, DecrementResponse } from '../shared/types/api';
-import { redis, reddit, createServer, context, getServerPort } from '@devvit/web/server';
+import { redis, reddit, createServer, context, getServerPort, settings } from '@devvit/web/server';
 import { createPost } from './core/post';
 import { createGeminiClient } from './services/gemini/GeminiClient';
 import { createCaseGeneratorService } from './services/case/CaseGeneratorService';
@@ -141,6 +141,49 @@ router.post('/internal/menu/post-create', async (_req, res): Promise<void> => {
 // =============================================================================
 
 /**
+ * POST /api/case/generate
+ * 오늘의 케이스 생성 (관리자용)
+ */
+router.post('/api/case/generate', async (_req, res): Promise<void> => {
+  try {
+    const apiKey = await settings.get<string>('geminiApiKey');
+
+    if (!apiKey) {
+      console.error('Gemini API key not configured');
+      res.status(500).json({
+        error: 'Configuration error',
+        message: 'Gemini API key not configured. Please set it in app settings.'
+      });
+      return;
+    }
+
+    const geminiClient = createGeminiClient(apiKey);
+    const caseGenerator = createCaseGeneratorService(geminiClient);
+
+    console.log('🔄 Generating today\'s case...');
+    const caseData = await caseGenerator.generateCase({
+      date: new Date(),
+      includeImage: false
+    });
+
+    console.log(`✅ Case generated: ${caseData.id}`);
+
+    res.json({
+      success: true,
+      message: 'Case generated successfully',
+      caseId: caseData.id,
+      date: caseData.date
+    });
+  } catch (error) {
+    console.error('Error generating case:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Failed to generate case'
+    });
+  }
+});
+
+/**
  * GET /api/case/today
  * 오늘의 케이스 조회
  */
@@ -156,6 +199,29 @@ router.get('/api/case/today', async (_req, res): Promise<void> => {
       return;
     }
 
+    // Fetch full suspect data with emotionalState, background, and personality
+    const fullSuspects = await CaseRepository.getCaseSuspects(todaysCase.id);
+
+    // Add logging
+    console.log(`📋 Fetched ${fullSuspects.length} suspects for case ${todaysCase.id}`);
+
+    if (fullSuspects.length === 0) {
+      console.warn(`⚠️  WARNING: No suspects found for case ${todaysCase.id}`);
+      console.warn(`   Case suspects array from storage:`, todaysCase.suspects);
+    }
+
+    // Map to client format (exclude isGuilty for security)
+    const suspectsData = fullSuspects.map(s => ({
+      id: s.id,
+      caseId: s.caseId,
+      name: s.name,
+      archetype: s.archetype,
+      background: s.background,
+      personality: s.personality,
+      emotionalState: s.emotionalState
+      // isGuilty는 제외!
+    }));
+
     // 클라이언트에게 전달 (solution 제외)
     res.json({
       id: todaysCase.id,
@@ -163,7 +229,7 @@ router.get('/api/case/today', async (_req, res): Promise<void> => {
       victim: todaysCase.victim,
       weapon: todaysCase.weapon,
       location: todaysCase.location,
-      suspects: todaysCase.suspects,
+      suspects: suspectsData,
       imageUrl: todaysCase.imageUrl,
       generatedAt: todaysCase.generatedAt
     });
@@ -225,8 +291,19 @@ router.post('/api/chat/:suspectId', async (req, res): Promise<void> => {
       return;
     }
 
+    const apiKey = await settings.get<string>('geminiApiKey');
+
+    if (!apiKey) {
+      console.error('Gemini API key not configured');
+      res.status(500).json({
+        error: 'Configuration error',
+        message: 'Gemini API key not configured. Please set it in app settings.'
+      });
+      return;
+    }
+
     // AI 서비스 생성
-    const geminiClient = createGeminiClient();
+    const geminiClient = createGeminiClient(apiKey);
     const suspectAI = createSuspectAIService(geminiClient);
 
     // 응답 생성
@@ -250,7 +327,18 @@ router.get('/api/conversation/:suspectId/:userId', async (req, res): Promise<voi
   try {
     const { suspectId, userId } = req.params;
 
-    const geminiClient = createGeminiClient();
+    const apiKey = await settings.get<string>('geminiApiKey');
+
+    if (!apiKey) {
+      console.error('Gemini API key not configured');
+      res.status(500).json({
+        error: 'Configuration error',
+        message: 'Gemini API key not configured. Please set it in app settings.'
+      });
+      return;
+    }
+
+    const geminiClient = createGeminiClient(apiKey);
     const suspectAI = createSuspectAIService(geminiClient);
 
     const history = await suspectAI.getConversationHistory(suspectId, userId);
@@ -292,8 +380,19 @@ router.post('/api/submit', async (req, res): Promise<void> => {
       return;
     }
 
+    const apiKey = await settings.get<string>('geminiApiKey');
+
+    if (!apiKey) {
+      console.error('Gemini API key not configured');
+      res.status(500).json({
+        error: 'Configuration error',
+        message: 'Gemini API key not configured. Please set it in app settings.'
+      });
+      return;
+    }
+
     // 채점
-    const geminiClient = createGeminiClient();
+    const geminiClient = createGeminiClient(apiKey);
     const validator = createW4HValidator(geminiClient);
     const scoringEngine = createScoringEngine(validator);
 
@@ -323,7 +422,18 @@ router.get('/api/leaderboard/:caseId', async (req, res): Promise<void> => {
     const { caseId } = req.params;
     const limit = parseInt(req.query.limit as string) || 10;
 
-    const geminiClient = createGeminiClient();
+    const apiKey = await settings.get<string>('geminiApiKey');
+
+    if (!apiKey) {
+      console.error('Gemini API key not configured');
+      res.status(500).json({
+        error: 'Configuration error',
+        message: 'Gemini API key not configured. Please set it in app settings.'
+      });
+      return;
+    }
+
+    const geminiClient = createGeminiClient(apiKey);
     const validator = createW4HValidator(geminiClient);
     const scoringEngine = createScoringEngine(validator);
 
@@ -347,7 +457,18 @@ router.get('/api/stats/:caseId', async (req, res): Promise<void> => {
   try {
     const { caseId } = req.params;
 
-    const geminiClient = createGeminiClient();
+    const apiKey = await settings.get<string>('geminiApiKey');
+
+    if (!apiKey) {
+      console.error('Gemini API key not configured');
+      res.status(500).json({
+        error: 'Configuration error',
+        message: 'Gemini API key not configured. Please set it in app settings.'
+      });
+      return;
+    }
+
+    const geminiClient = createGeminiClient(apiKey);
     const validator = createW4HValidator(geminiClient);
     const scoringEngine = createScoringEngine(validator);
 

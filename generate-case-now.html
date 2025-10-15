@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>케이스 자동 생성기</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        .big-button {
+            width: 100%;
+            padding: 30px;
+            font-size: 1.8em;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+            margin-bottom: 20px;
+        }
+
+        .big-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.6);
+        }
+
+        .big-button:active {
+            transform: translateY(-2px);
+        }
+
+        .big-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #output {
+            background: #1a1a1a;
+            color: #0f0;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            line-height: 1.6;
+            max-height: 500px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            display: none;
+        }
+
+        #output.show {
+            display: block;
+        }
+
+        .success { color: #0f0; }
+        .error { color: #f00; }
+        .info { color: #0ff; }
+        .warning { color: #ff0; }
+
+        .step {
+            margin: 10px 0;
+            padding: 10px;
+            border-left: 3px solid #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .final-instruction {
+            background: #fff3cd;
+            border: 3px solid #ffc107;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .final-instruction.show {
+            display: block;
+        }
+
+        .final-instruction h2 {
+            color: #856404;
+            margin-bottom: 15px;
+        }
+
+        .final-instruction p {
+            color: #856404;
+            font-size: 1.2em;
+            margin: 10px 0;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🕵️ 케이스 자동 생성기</h1>
+
+        <button id="generateBtn" class="big-button" onclick="generateCase()">
+            🎲 새 케이스 생성하기
+        </button>
+
+        <div id="output"></div>
+
+        <div id="finalInstruction" class="final-instruction">
+            <h2>✅ 생성 완료!</h2>
+            <p><strong>이제 다음 URL로 이동하세요:</strong></p>
+            <p><a href="https://www.reddit.com/r/armchair_sleuths_dev/?playtest=armchair-sleuths"
+                  target="_blank"
+                  style="color: #667eea; text-decoration: none; font-weight: bold;">
+                🔗 https://www.reddit.com/r/armchair_sleuths_dev/?playtest=armchair-sleuths
+            </a></p>
+            <p>페이지를 <strong>새로고침(F5)</strong>하면 새 케이스를 볼 수 있습니다!</p>
+        </div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            output.classList.add('show');
+
+            const className = type === 'error' ? 'error' :
+                            type === 'success' ? 'success' :
+                            type === 'warning' ? 'warning' : 'info';
+
+            output.innerHTML += `<span class="${className}">${new Date().toLocaleTimeString()} - ${message}</span>\n`;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        async function generateCase() {
+            const btn = document.getElementById('generateBtn');
+            const output = document.getElementById('output');
+            const finalInstruction = document.getElementById('finalInstruction');
+
+            // 초기화
+            output.innerHTML = '';
+            output.classList.add('show');
+            finalInstruction.classList.remove('show');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> 생성 중... (30-60초)';
+
+            try {
+                log('🎬 자동 케이스 생성 시작...\n', 'info');
+
+                // 1단계: 현재 케이스 확인
+                log('═══════════════════════════════════════', 'info');
+                log('📋 1단계: 현재 케이스 확인 중...', 'info');
+
+                try {
+                    const currentResponse = await fetch('/api/case/today');
+                    const currentCase = await currentResponse.json();
+
+                    if (currentResponse.ok) {
+                        log(`✅ 현재 케이스: ${currentCase.id}`, 'success');
+                        log(`   - 용의자: ${currentCase.suspects?.length || 0}명`, 'info');
+                        log(`   - 생성: ${new Date(currentCase.generatedAt).toLocaleString()}\n`, 'info');
+                    } else {
+                        log(`⚠️  현재 케이스 없음\n`, 'warning');
+                    }
+                } catch (e) {
+                    log(`⚠️  현재 케이스 조회 실패 (계속 진행)\n`, 'warning');
+                }
+
+                // 2단계: 새 케이스 생성
+                log('═══════════════════════════════════════', 'info');
+                log('🔄 2단계: 새 케이스 생성 중...', 'info');
+                log('   ⏰ AI가 사건, 용의자, 증거를 생성하고 있습니다...', 'info');
+                log('   ⏰ 30-60초가 소요될 수 있습니다\n', 'info');
+
+                const generateResponse = await fetch('/api/case/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const generateResult = await generateResponse.json();
+
+                if (generateResponse.ok) {
+                    log(`✅✅✅ 새 케이스 생성 성공!`, 'success');
+                    log(`   - 케이스 ID: ${generateResult.caseId}`, 'success');
+                    log(`   - 날짜: ${generateResult.date}`, 'success');
+                    log(`   - ${generateResult.message}\n`, 'success');
+                } else {
+                    throw new Error(generateResult.message || generateResult.error || '케이스 생성 실패');
+                }
+
+                // 3단계: 대기
+                log('═══════════════════════════════════════', 'info');
+                log('⏰ 3단계: 데이터 저장 완료 대기 중... (3초)', 'info');
+                await new Promise(resolve => setTimeout(resolve, 3000));
+                log('✅ 대기 완료\n', 'success');
+
+                // 4단계: 확인
+                log('═══════════════════════════════════════', 'info');
+                log('📋 4단계: 생성된 케이스 확인 중...', 'info');
+
+                const updatedResponse = await fetch('/api/case/today');
+                const updatedCase = await updatedResponse.json();
+
+                if (updatedResponse.ok) {
+                    log(`✅ 케이스 ID: ${updatedCase.id}`, 'success');
+                    log(`   - 날짜: ${updatedCase.date}`, 'info');
+                    log(`   - 피해자: ${updatedCase.victim?.name || 'N/A'}`, 'info');
+                    log(`   - 무기: ${updatedCase.weapon?.name || 'N/A'}`, 'info');
+                    log(`   - 장소: ${updatedCase.location?.name || 'N/A'}`, 'info');
+                    log(`   - 용의자: ${updatedCase.suspects?.length || 0}명\n`, updatedCase.suspects?.length > 0 ? 'success' : 'error');
+
+                    if (updatedCase.suspects && updatedCase.suspects.length > 0) {
+                        log('👥 용의자 목록:', 'success');
+                        updatedCase.suspects.forEach((s, i) => {
+                            log(`   ${i + 1}. ${s.name} (${s.archetype})`, 'success');
+                        });
+                        log('', 'info');
+
+                        log('═══════════════════════════════════════', 'success');
+                        log('🎉🎉🎉 성공! 🎉🎉🎉', 'success');
+                        log('═══════════════════════════════════════', 'success');
+                        log('', 'info');
+                        log('✅ 케이스가 정상적으로 생성되었습니다!', 'success');
+                        log('✅ 용의자 데이터가 올바르게 저장되었습니다!', 'success');
+                        log('✅ 수정사항이 정상 작동합니다!', 'success');
+                        log('', 'info');
+
+                        // 최종 안내 표시
+                        finalInstruction.classList.add('show');
+
+                    } else {
+                        log('', 'error');
+                        log('❌❌❌ 경고: 용의자가 여전히 0명입니다!', 'error');
+                        log('', 'error');
+                        log('문제가 지속됩니다. 서버 로그를 확인해야 합니다.', 'error');
+                    }
+                } else {
+                    throw new Error('케이스 조회 실패');
+                }
+
+            } catch (error) {
+                log('', 'error');
+                log('❌ 오류 발생:', 'error');
+                log(`   ${error.message}`, 'error');
+                log('', 'error');
+                log('네트워크 연결을 확인하거나 다시 시도하세요.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '🎲 새 케이스 다시 생성하기';
+            }
+        }
+
+        // 페이지 로드 시 안내
+        window.addEventListener('load', () => {
+            log('준비 완료! "새 케이스 생성하기" 버튼을 클릭하세요.', 'info');
+        });
+    </script>
+</body>
+</html>

@@ -46,24 +46,82 @@ export class DevvitStorageAdapter implements IStorageAdapter {
   }
 
   /**
-   * Adds a member to a Redis set stored at key.
+   * Adds a member to a set stored as a JSON array.
    * If the set doesn't exist, it is created automatically.
+   *
+   * Note: Devvit Redis doesn't support native SET operations (sAdd, sMembers),
+   * so we emulate sets using JSON arrays stored as strings.
    *
    * @param key - The key of the set
    * @param member - The member to add to the set
    */
   async sAdd(key: string, member: string): Promise<void> {
-    await redis.sAdd(key, [member]);
+    try {
+      const existing = await redis.get(key);
+      let members: string[] = [];
+
+      if (existing) {
+        try {
+          members = JSON.parse(existing);
+          // Validate that it's actually an array
+          if (!Array.isArray(members)) {
+            console.warn(`⚠️ DevvitAdapter.sAdd: Key "${key}" contains non-array data, resetting to empty array`);
+            members = [];
+          }
+        } catch (parseError) {
+          console.error(`❌ DevvitAdapter.sAdd: JSON.parse failed for key "${key}", resetting to empty array`, parseError);
+          members = [];
+        }
+      }
+
+      // Add member if it doesn't already exist (set behavior)
+      if (!members.includes(member)) {
+        members.push(member);
+        await redis.set(key, JSON.stringify(members));
+        console.log(`✅ DevvitAdapter.sAdd: Added "${member}" to set "${key}" (now ${members.length} members)`);
+      } else {
+        console.log(`ℹ️ DevvitAdapter.sAdd: Member "${member}" already exists in set "${key}"`);
+      }
+    } catch (error) {
+      console.error(`❌ DevvitAdapter.sAdd: Critical error for key "${key}"`, error);
+      throw error;
+    }
   }
 
   /**
-   * Retrieves all members of a Redis set stored at key.
+   * Retrieves all members of a set stored as a JSON array.
    *
    * @param key - The key of the set
    * @returns Array of all members in the set, or empty array if set doesn't exist
    */
   async sMembers(key: string): Promise<string[]> {
-    return await redis.sMembers(key);
+    try {
+      const data = await redis.get(key);
+
+      if (!data) {
+        console.log(`ℹ️ DevvitAdapter.sMembers: Key "${key}" not found, returning empty array`);
+        return [];
+      }
+
+      try {
+        const members = JSON.parse(data);
+
+        if (!Array.isArray(members)) {
+          console.error(`❌ DevvitAdapter.sMembers: Key "${key}" contains non-array data:`, data);
+          return [];
+        }
+
+        console.log(`✅ DevvitAdapter.sMembers: Retrieved ${members.length} members from set "${key}"`);
+        return members;
+      } catch (parseError) {
+        console.error(`❌ DevvitAdapter.sMembers: JSON.parse failed for key "${key}"`, parseError);
+        console.error(`   Raw data: ${data}`);
+        return [];
+      }
+    } catch (error) {
+      console.error(`❌ DevvitAdapter.sMembers: Critical error for key "${key}"`, error);
+      return [];
+    }
   }
 
   /**

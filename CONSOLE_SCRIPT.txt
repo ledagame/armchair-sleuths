@@ -1,0 +1,134 @@
+═══════════════════════════════════════════════════════════════
+📋 케이스 자동 생성 스크립트 (브라우저 콘솔용)
+═══════════════════════════════════════════════════════════════
+
+🔗 먼저 이 URL을 브라우저에서 열으세요:
+https://www.reddit.com/r/armchair_sleuths_dev/?playtest=armchair-sleuths
+
+그런 다음 F12 → Console 탭을 열고 아래 코드를 복사해서 붙여넣으세요:
+
+═══════════════════════════════════════════════════════════════
+// 아래 전체를 복사 (여기서부터)
+═══════════════════════════════════════════════════════════════
+
+(async function autoGenerateCase() {
+  console.log('%c🎬 자동 케이스 생성 시작...', 'font-size: 20px; font-weight: bold; color: #667eea;');
+  console.log('');
+
+  try {
+    // 1단계: 현재 케이스 확인
+    console.log('%c═══════════════════════════════════════', 'color: #667eea;');
+    console.log('%c📋 1단계: 현재 케이스 확인 중...', 'font-weight: bold;');
+
+    try {
+      const currentResponse = await fetch('/api/case/today');
+      const currentCase = await currentResponse.json();
+
+      if (currentResponse.ok) {
+        console.log('✅ 현재 케이스:', currentCase.id);
+        console.log('   - 용의자:', currentCase.suspects?.length || 0, '명');
+        console.log('   - 생성:', new Date(currentCase.generatedAt).toLocaleString());
+      } else {
+        console.log('⚠️  현재 케이스 없음');
+      }
+    } catch (e) {
+      console.log('⚠️  현재 케이스 조회 실패 (계속 진행)');
+    }
+    console.log('');
+
+    // 2단계: 새 케이스 생성
+    console.log('%c═══════════════════════════════════════', 'color: #667eea;');
+    console.log('%c🔄 2단계: 새 케이스 생성 중...', 'font-weight: bold;');
+    console.log('⏰ AI가 사건, 용의자, 증거를 생성하고 있습니다...');
+    console.log('⏰ 30-60초가 소요될 수 있습니다');
+    console.log('');
+
+    const generateResponse = await fetch('/api/case/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    const generateResult = await generateResponse.json();
+
+    if (generateResponse.ok) {
+      console.log('%c✅✅✅ 새 케이스 생성 성공!', 'color: #0f0; font-weight: bold; font-size: 16px;');
+      console.log('   - 케이스 ID:', generateResult.caseId);
+      console.log('   - 날짜:', generateResult.date);
+      console.log('   -', generateResult.message);
+    } else {
+      throw new Error(generateResult.message || generateResult.error || '케이스 생성 실패');
+    }
+    console.log('');
+
+    // 3단계: 대기
+    console.log('%c═══════════════════════════════════════', 'color: #667eea;');
+    console.log('%c⏰ 3단계: 데이터 저장 완료 대기 중... (3초)', 'font-weight: bold;');
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    console.log('✅ 대기 완료');
+    console.log('');
+
+    // 4단계: 확인
+    console.log('%c═══════════════════════════════════════', 'color: #667eea;');
+    console.log('%c📋 4단계: 생성된 케이스 확인 중...', 'font-weight: bold;');
+
+    const updatedResponse = await fetch('/api/case/today');
+    const updatedCase = await updatedResponse.json();
+
+    if (updatedResponse.ok) {
+      console.log('✅ 케이스 ID:', updatedCase.id);
+      console.log('   - 날짜:', updatedCase.date);
+      console.log('   - 피해자:', updatedCase.victim?.name || 'N/A');
+      console.log('   - 무기:', updatedCase.weapon?.name || 'N/A');
+      console.log('   - 장소:', updatedCase.location?.name || 'N/A');
+
+      const suspectCount = updatedCase.suspects?.length || 0;
+      if (suspectCount > 0) {
+        console.log('%c   - 용의자: ' + suspectCount + '명', 'color: #0f0; font-weight: bold;');
+      } else {
+        console.log('%c   - 용의자: 0명', 'color: #f00; font-weight: bold;');
+      }
+      console.log('');
+
+      if (updatedCase.suspects && updatedCase.suspects.length > 0) {
+        console.log('%c👥 용의자 목록:', 'font-weight: bold;');
+        updatedCase.suspects.forEach((s, i) => {
+          console.log(`   ${i + 1}. ${s.name} (${s.archetype})`);
+        });
+        console.log('');
+
+        console.log('%c═══════════════════════════════════════', 'color: #0f0;');
+        console.log('%c🎉🎉🎉 성공! 🎉🎉🎉', 'color: #0f0; font-weight: bold; font-size: 24px;');
+        console.log('%c═══════════════════════════════════════', 'color: #0f0;');
+        console.log('');
+        console.log('✅ 케이스가 정상적으로 생성되었습니다!');
+        console.log('✅ 용의자 데이터가 올바르게 저장되었습니다!');
+        console.log('✅ 수정사항이 정상 작동합니다!');
+        console.log('');
+        console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'color: #667eea;');
+        console.log('%c이제 페이지를 새로고침(F5)하세요!', 'color: #667eea; font-weight: bold; font-size: 18px;');
+        console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'color: #667eea;');
+
+      } else {
+        console.log('');
+        console.error('%c❌❌❌ 경고: 용의자가 여전히 0명입니다!', 'color: #f00; font-weight: bold; font-size: 16px;');
+        console.log('');
+        console.error('문제가 지속됩니다. 서버 로그를 확인해야 합니다.');
+      }
+    } else {
+      throw new Error('케이스 조회 실패');
+    }
+
+  } catch (error) {
+    console.log('');
+    console.error('%c❌ 오류 발생:', 'color: #f00; font-weight: bold;');
+    console.error('   ' + error.message);
+    console.log('');
+    console.error('네트워크 연결을 확인하거나 다시 시도하세요.');
+  }
+})();
+
+═══════════════════════════════════════════════════════════════
+// 여기까지 복사
+═══════════════════════════════════════════════════════════════
+
+복사 후 콘솔에 붙여넣고 Enter를 누르면 자동으로 실행됩니다!

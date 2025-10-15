@@ -1,22 +1,12 @@
 /**
  * SuspectPanel.tsx
  *
- * 용의자 패널 컴포넌트 (MVP)
+ * Suspect panel component - Enhanced production version
+ * Displays all suspects with emotional states and selection
  */
 
-import React from 'react';
-
-export interface Suspect {
-  id: string;
-  name: string;
-  archetype: string;
-  background: string;
-  personality: string;
-  emotionalState: {
-    suspicionLevel: number;
-    tone: 'cooperative' | 'nervous' | 'defensive' | 'aggressive';
-  };
-}
+import { } from 'react';
+import type { Suspect, EmotionalTone } from '../../types';
 
 export interface SuspectPanelProps {
   suspects: Suspect[];
@@ -24,67 +14,141 @@ export interface SuspectPanelProps {
   onSelectSuspect: (suspectId: string) => void;
 }
 
+/**
+ * Enhanced suspect panel with better visual feedback
+ */
 export function SuspectPanel({ suspects, selectedSuspectId, onSelectSuspect }: SuspectPanelProps) {
-  const getToneEmoji = (tone: string) => {
-    switch (tone) {
-      case 'cooperative': return '😊';
-      case 'nervous': return '😰';
-      case 'defensive': return '😠';
-      case 'aggressive': return '😡';
-      default: return '😐';
-    }
+  // Get emoji for emotional tone
+  const getToneEmoji = (tone: EmotionalTone): string => {
+    const toneMap: Record<EmotionalTone, string> = {
+      cooperative: '😊',
+      nervous: '😰',
+      defensive: '😠',
+      aggressive: '😡',
+    };
+    return toneMap[tone] || '😐';
   };
 
-  const getToneColor = (tone: string) => {
-    switch (tone) {
-      case 'cooperative': return 'text-green-400';
-      case 'nervous': return 'text-yellow-400';
-      case 'defensive': return 'text-orange-400';
-      case 'aggressive': return 'text-red-400';
-      default: return 'text-gray-400';
-    }
+  // Get color for emotional tone
+  const getToneColor = (tone: EmotionalTone): string => {
+    const colorMap: Record<EmotionalTone, string> = {
+      cooperative: 'text-green-400',
+      nervous: 'text-yellow-400',
+      defensive: 'text-orange-400',
+      aggressive: 'text-red-400',
+    };
+    return colorMap[tone] || 'text-gray-400';
+  };
+
+  // Get tone label in Korean
+  const getToneLabel = (tone: EmotionalTone): string => {
+    const labelMap: Record<EmotionalTone, string> = {
+      cooperative: '협조적',
+      nervous: '불안함',
+      defensive: '방어적',
+      aggressive: '공격적',
+    };
+    return labelMap[tone] || '알 수 없음';
+  };
+
+  // Get suspicion level color
+  const getSuspicionColor = (level: number): string => {
+    if (level >= 70) return 'bg-red-500';
+    if (level >= 40) return 'bg-yellow-500';
+    return 'bg-green-500';
   };
 
   return (
     <div className="suspect-panel p-6">
-      <h2 className="text-2xl font-bold mb-4">🕵️ 용의자</h2>
+      <div className="mb-6">
+        <h2 className="text-3xl font-bold mb-2">🕵️ 용의자 심문</h2>
+        <p className="text-gray-400">용의자를 선택하여 심문을 시작하세요</p>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {suspects.map((suspect) => (
-          <button
-            key={suspect.id}
-            onClick={() => onSelectSuspect(suspect.id)}
-            className={`
-              p-4 rounded-lg text-left transition-all
-              ${selectedSuspectId === suspect.id
-                ? 'bg-blue-600 border-2 border-blue-400'
-                : 'bg-gray-800 hover:bg-gray-700'}
-            `}
-          >
-            <div className="flex justify-between items-start mb-2">
-              <h3 className="text-xl font-bold">{suspect.name}</h3>
-              <span className={`text-2xl ${getToneColor(suspect.emotionalState.tone)}`}>
-                {getToneEmoji(suspect.emotionalState.tone)}
-              </span>
-            </div>
+        {suspects.map((suspect) => {
+          const isSelected = selectedSuspectId === suspect.id;
 
-            <p className="text-sm text-gray-400 mb-2">{suspect.archetype}</p>
-
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-gray-500">의심 레벨:</span>
-              <div className="flex-1 bg-gray-700 rounded-full h-2">
-                <div
-                  className="bg-red-500 h-2 rounded-full transition-all"
-                  style={{ width: `${suspect.emotionalState.suspicionLevel}%` }}
-                />
+          return (
+            <button
+              key={suspect.id}
+              onClick={() => onSelectSuspect(suspect.id)}
+              className={`
+                p-6 rounded-lg text-left transition-all
+                transform hover:scale-105 active:scale-95
+                ${
+                  isSelected
+                    ? 'bg-blue-600 border-4 border-blue-400 shadow-lg shadow-blue-500/50'
+                    : 'bg-gray-800 hover:bg-gray-700 border-2 border-transparent'
+                }
+              `}
+            >
+              {/* Header with name and emotion */}
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <h3 className="text-2xl font-bold mb-1">{suspect.name}</h3>
+                  <p className="text-sm text-gray-400">{suspect.archetype}</p>
+                </div>
+                <span className={`text-4xl ${getToneColor(suspect.emotionalState.tone)}`}>
+                  {getToneEmoji(suspect.emotionalState.tone)}
+                </span>
               </div>
-              <span className={getToneColor(suspect.emotionalState.tone)}>
-                {suspect.emotionalState.suspicionLevel}%
-              </span>
-            </div>
-          </button>
-        ))}
+
+              {/* Background */}
+              <div className="mb-4 pb-4 border-b border-gray-700">
+                <p className="text-xs text-gray-500 mb-1">배경</p>
+                <p className="text-sm text-gray-300 line-clamp-2">{suspect.background}</p>
+              </div>
+
+              {/* Emotional state */}
+              <div className="mb-3">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-gray-500">감정 상태</span>
+                  <span className={`text-xs font-bold ${getToneColor(suspect.emotionalState.tone)}`}>
+                    {getToneLabel(suspect.emotionalState.tone)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Suspicion level */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-gray-500">의심 레벨</span>
+                  <span className={`text-sm font-bold ${getToneColor(suspect.emotionalState.tone)}`}>
+                    {suspect.emotionalState.suspicionLevel}%
+                  </span>
+                </div>
+                <div className="w-full bg-gray-700 rounded-full h-3 overflow-hidden">
+                  <div
+                    className={`
+                      h-3 rounded-full transition-all duration-500 ease-out
+                      ${getSuspicionColor(suspect.emotionalState.suspicionLevel)}
+                    `}
+                    style={{ width: `${suspect.emotionalState.suspicionLevel}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Selected indicator */}
+              {isSelected && (
+                <div className="mt-4 pt-4 border-t border-blue-400">
+                  <p className="text-sm text-center font-bold text-blue-200">
+                    ✓ 선택됨
+                  </p>
+                </div>
+              )}
+            </button>
+          );
+        })}
       </div>
+
+      {!selectedSuspectId && (
+        <div className="mt-6 p-4 bg-yellow-900/20 border border-yellow-700 rounded-lg">
+          <p className="text-sm text-yellow-400 text-center">
+            💡 용의자를 선택하면 대화를 시작할 수 있습니다
+          </p>
+        </div>
+      )}
     </div>
   );
 }

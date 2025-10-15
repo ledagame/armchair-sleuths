@@ -275,21 +275,26 @@ export class GeminiClient {
 }
 
 /**
- * 싱글톤 인스턴스 생성 헬퍼
+ * Gemini client factory function
+ *
+ * @param apiKey - API key (required in Devvit, optional for local dev with .env)
+ * @returns GeminiClient instance
  */
-export function createGeminiClient(): GeminiClient {
-  const apiKey = process.env.GEMINI_API_KEY ||
-                 process.env.GOOGLE_GEMINI_API_KEY ||
-                 process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+export function createGeminiClient(apiKey?: string): GeminiClient {
+  // Use provided API key or fall back to environment variables (for local development)
+  const key = apiKey ||
+              process.env.GEMINI_API_KEY ||
+              process.env.GOOGLE_GEMINI_API_KEY ||
+              process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 
-  if (!apiKey) {
+  if (!key) {
     throw new Error(
-      'Gemini API key not found. Please set GEMINI_API_KEY, ' +
-      'GOOGLE_GEMINI_API_KEY, or GOOGLE_GENERATIVE_AI_API_KEY in .env'
+      'Gemini API key not found. Please configure it in Devvit settings or ' +
+      'set GEMINI_API_KEY in .env for local development'
     );
   }
 
   const vercelFunctionUrl = process.env.VERCEL_IMAGE_FUNCTION_URL;
 
-  return new GeminiClient(apiKey, vercelFunctionUrl);
+  return new GeminiClient(key, vercelFunctionUrl);
 }

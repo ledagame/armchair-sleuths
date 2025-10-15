@@ -36,12 +36,15 @@ async function generateCase() {
     const geminiClient = createGeminiClient();
     const caseGenerator = createCaseGeneratorService(geminiClient);
 
-    const today = new Date().toISOString().split('T')[0];
-    console.log(`   날짜: ${today}\n`);
+    const today = new Date();
+    console.log(`   날짜: ${today.toISOString().split('T')[0]}\n`);
 
     const startTime = Date.now();
 
-    const caseData = await caseGenerator.generateCase(today, withImage);
+    const caseData = await caseGenerator.generateCase({
+      date: today,
+      includeImage: withImage
+    });
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
 

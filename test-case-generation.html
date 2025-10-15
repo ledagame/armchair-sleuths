@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Case Generation Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #0f0;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 10px 0;
+            cursor: pointer;
+        }
+        #output {
+            white-space: pre-wrap;
+            border: 1px solid #0f0;
+            padding: 10px;
+            margin-top: 20px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .success { color: #0f0; }
+        .error { color: #f00; }
+        .info { color: #00f; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Armchair Sleuths - Case Generation Test</h1>
+
+    <button onclick="checkCurrentCase()">1. Check Current Case</button>
+    <button onclick="generateNewCase()">2. Generate New Case</button>
+    <button onclick="fetchUpdatedCase()">3. Fetch Updated Case</button>
+    <button onclick="runFullTest()">🚀 Run Full Test</button>
+
+    <div id="output"></div>
+
+    <script>
+        const BASE_URL = 'https://www.reddit.com/r/armchair_sleuths_dev/?playtest=armchair-sleuths';
+
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            output.innerHTML += `<span class="${className}">${new Date().toLocaleTimeString()} - ${message}</span>\n`;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        async function checkCurrentCase() {
+            log('=== Checking Current Case ===');
+            try {
+                const response = await fetch('/api/case/today');
+                const data = await response.json();
+
+                if (response.ok) {
+                    log(`✅ Case ID: ${data.id}`, 'success');
+                    log(`📅 Date: ${data.date}`, 'success');
+                    log(`👥 Suspects: ${data.suspects?.length || 0}`, data.suspects?.length > 0 ? 'success' : 'error');
+                    log(`⏰ Generated: ${new Date(data.generatedAt).toLocaleString()}`, 'info');
+
+                    if (data.suspects && data.suspects.length > 0) {
+                        data.suspects.forEach((s, i) => {
+                            log(`  ${i+1}. ${s.name} (${s.archetype})`, 'success');
+                        });
+                    } else {
+                        log('⚠️  No suspects found - need to generate new case', 'error');
+                    }
+                } else {
+                    log(`❌ Error: ${data.message || data.error}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Network error: ${error.message}`, 'error');
+            }
+        }
+
+        async function generateNewCase() {
+            log('=== Generating New Case ===');
+            log('⏳ This may take 30-60 seconds...', 'info');
+
+            try {
+                const response = await fetch('/api/case/generate', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    log(`✅ Success: ${data.message}`, 'success');
+                    log(`📋 Case ID: ${data.caseId}`, 'success');
+                    log(`📅 Date: ${data.date}`, 'success');
+                    log('⏰ Waiting 2 seconds for save to complete...', 'info');
+
+                    setTimeout(() => {
+                        log('✅ Ready to fetch updated case!', 'success');
+                    }, 2000);
+                } else {
+                    log(`❌ Error: ${data.message || data.error}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Network error: ${error.message}`, 'error');
+            }
+        }
+
+        async function fetchUpdatedCase() {
+            log('=== Fetching Updated Case ===');
+            try {
+                const response = await fetch('/api/case/today');
+                const data = await response.json();
+
+                if (response.ok) {
+                    log(`✅ Case ID: ${data.id}`, 'success');
+                    log(`👥 Suspects: ${data.suspects?.length || 0}`, data.suspects?.length > 0 ? 'success' : 'error');
+
+                    if (data.suspects && data.suspects.length > 0) {
+                        log('✅✅✅ SUCCESS! Suspects are now appearing:', 'success');
+                        data.suspects.forEach((s, i) => {
+                            log(`  ${i+1}. ${s.name} (${s.archetype})`, 'success');
+                            log(`     Background: ${s.background?.substring(0, 50)}...`, 'info');
+                        });
+                        log('', 'info');
+                        log('🎉🎉🎉 THE FIX WORKS! 🎉🎉🎉', 'success');
+                        log('Now refresh the Devvit app to see the suspects!', 'success');
+                    } else {
+                        log('❌ Still no suspects - investigate further', 'error');
+                    }
+                } else {
+                    log(`❌ Error: ${data.message || data.error}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Network error: ${error.message}`, 'error');
+            }
+        }
+
+        async function runFullTest() {
+            log('=== Running Full Test Sequence ===');
+            log('');
+
+            // Step 1
+            await checkCurrentCase();
+            log('');
+
+            // Step 2
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            await generateNewCase();
+            log('');
+
+            // Step 3
+            await new Promise(resolve => setTimeout(resolve, 5000));
+            await fetchUpdatedCase();
+        }
+
+        // Auto-run on load
+        window.addEventListener('load', () => {
+            log('=== Case Generation Tester Ready ===');
+            log('Click "Run Full Test" to test the fixes!');
+            log('');
+        });
+    </script>
+</body>
+</html>
