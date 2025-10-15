@@ -151,6 +151,9 @@ export function validateEvidenceStructure(
     const koItem = ko.items[i];
     const enItem = en.items[i];
 
+    // Items must exist
+    if (!koItem || !enItem) return false;
+
     // Same ID
     if (koItem.id !== enItem.id) return false;
 

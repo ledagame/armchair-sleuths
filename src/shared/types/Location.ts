@@ -106,7 +106,10 @@ export function validateLocationStructure(
 
   // Check each area has same number of clues
   for (let i = 0; i < ko.areas.length; i++) {
-    if (ko.areas[i].clues.length !== en.areas[i].clues.length) return false;
+    const koArea = ko.areas[i];
+    const enArea = en.areas[i];
+    if (!koArea || !enArea) return false;
+    if (koArea.clues.length !== enArea.clues.length) return false;
   }
 
   // Count total clues
