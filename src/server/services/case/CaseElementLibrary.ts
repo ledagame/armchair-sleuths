@@ -4,14 +4,31 @@
  * Spirit of Kiro 패턴: word-lists
  * 일관된 케이스 품질을 위한 요소 라이브러리
  * Date seed 기반으로 매일 다른 요소 조합 생성
+ *
+ * MULTILINGUAL SUPPORT:
+ * All elements now support Korean (ko) and English (en) translations
+ * Ensures same game with different language presentations
  */
 
+import {
+  MultilingualWeapon,
+  MultilingualLocation,
+  MultilingualMotive,
+  SupportedLanguage
+} from '../../../shared/types/i18n';
+
+/**
+ * @deprecated Use MultilingualWeapon instead
+ */
 export interface Weapon {
   name: string;
   description: string;
   keywords: string[];
 }
 
+/**
+ * @deprecated Use MultilingualMotive instead
+ */
 export interface Motive {
   category: string;
   description: string;
@@ -19,6 +36,9 @@ export interface Motive {
   severity: 'low' | 'medium' | 'high';
 }
 
+/**
+ * @deprecated Use MultilingualLocation instead
+ */
 export interface Location {
   name: string;
   description: string;
@@ -43,7 +63,237 @@ export interface Evidence {
  */
 export class CaseElementLibrary {
   /**
-   * 무기 라이브러리
+   * 무기 라이브러리 (다국어)
+   * Multilingual weapon library
+   */
+  static readonly multilingualWeapons: MultilingualWeapon[] = [
+    {
+      id: 'poison',
+      translations: {
+        ko: {
+          name: '독극물',
+          description: '검출하기 어려운 독극물'
+        },
+        en: {
+          name: 'Poison',
+          description: 'Hard-to-detect toxic substance'
+        }
+      }
+    },
+    {
+      id: 'blunt_object',
+      translations: {
+        ko: {
+          name: '둔기',
+          description: '무딘 물체로 가격'
+        },
+        en: {
+          name: 'Blunt Object',
+          description: 'Strike with blunt instrument'
+        }
+      }
+    },
+    {
+      id: 'sharp_weapon',
+      translations: {
+        ko: {
+          name: '날카로운 흉기',
+          description: '칼이나 날카로운 물체'
+        },
+        en: {
+          name: 'Sharp Weapon',
+          description: 'Knife or sharp object'
+        }
+      }
+    },
+    {
+      id: 'firearm',
+      translations: {
+        ko: {
+          name: '총기',
+          description: '소형 화기'
+        },
+        en: {
+          name: 'Firearm',
+          description: 'Small firearm'
+        }
+      }
+    },
+    {
+      id: 'suffocation',
+      translations: {
+        ko: {
+          name: '질식',
+          description: '목 조르기 또는 질식'
+        },
+        en: {
+          name: 'Suffocation',
+          description: 'Strangulation or asphyxiation'
+        }
+      }
+    },
+    {
+      id: 'falling',
+      translations: {
+        ko: {
+          name: '추락',
+          description: '높은 곳에서 떨어짐'
+        },
+        en: {
+          name: 'Falling',
+          description: 'Fall from height'
+        }
+      }
+    }
+  ];
+
+  /**
+   * 동기 라이브러리 (다국어)
+   * Multilingual motive library
+   */
+  static readonly multilingualMotives: MultilingualMotive[] = [
+    {
+      id: 'money',
+      translations: {
+        ko: {
+          name: '금전',
+          description: '재산 관련 동기'
+        },
+        en: {
+          name: 'Money',
+          description: 'Financial motive'
+        }
+      }
+    },
+    {
+      id: 'revenge',
+      translations: {
+        ko: {
+          name: '복수',
+          description: '과거 원한에 대한 복수'
+        },
+        en: {
+          name: 'Revenge',
+          description: 'Revenge for past grudges'
+        }
+      }
+    },
+    {
+      id: 'jealousy',
+      translations: {
+        ko: {
+          name: '질투',
+          description: '연인이나 성공에 대한 질투'
+        },
+        en: {
+          name: 'Jealousy',
+          description: 'Jealousy over lover or success'
+        }
+      }
+    },
+    {
+      id: 'secret',
+      translations: {
+        ko: {
+          name: '비밀 은폐',
+          description: '숨기고 싶은 비밀'
+        },
+        en: {
+          name: 'Cover-up',
+          description: 'Hiding a secret'
+        }
+      }
+    },
+    {
+      id: 'accidental',
+      translations: {
+        ko: {
+          name: '우발적',
+          description: '계획되지 않은 돌발 상황'
+        },
+        en: {
+          name: 'Accidental',
+          description: 'Unplanned incident'
+        }
+      }
+    }
+  ];
+
+  /**
+   * 장소 라이브러리 (다국어)
+   * Multilingual location library
+   */
+  static readonly multilingualLocations: MultilingualLocation[] = [
+    {
+      id: 'study',
+      translations: {
+        ko: {
+          name: '밀실 서재',
+          description: '고급스러운 개인 서재'
+        },
+        en: {
+          name: 'Locked Study',
+          description: 'Luxurious private study'
+        }
+      }
+    },
+    {
+      id: 'garden',
+      translations: {
+        ko: {
+          name: '저택 정원',
+          description: '넓은 정원이 딸린 저택'
+        },
+        en: {
+          name: 'Mansion Garden',
+          description: 'Mansion with spacious garden'
+        }
+      }
+    },
+    {
+      id: 'gallery',
+      translations: {
+        ko: {
+          name: '미술관 전시실',
+          description: '현대 미술관 전시 공간'
+        },
+        en: {
+          name: 'Art Gallery',
+          description: 'Modern art gallery exhibition space'
+        }
+      }
+    },
+    {
+      id: 'yacht',
+      translations: {
+        ko: {
+          name: '호화 요트',
+          description: '대형 개인 요트'
+        },
+        en: {
+          name: 'Luxury Yacht',
+          description: 'Large private yacht'
+        }
+      }
+    },
+    {
+      id: 'theater',
+      translations: {
+        ko: {
+          name: '극장 무대 뒤',
+          description: '오래된 극장 백스테이지'
+        },
+        en: {
+          name: 'Theater Backstage',
+          description: 'Old theater backstage area'
+        }
+      }
+    }
+  ];
+
+  /**
+   * @deprecated Use multilingualWeapons instead
+   * 하위 호환성을 위해 유지
    */
   static readonly weapons: Weapon[] = [
     {
@@ -79,6 +329,7 @@ export class CaseElementLibrary {
   ];
 
   /**
+   * @deprecated Use multilingualMotives instead
    * 동기 라이브러리
    */
   static readonly motives: Motive[] = [
@@ -115,6 +366,7 @@ export class CaseElementLibrary {
   ];
 
   /**
+   * @deprecated Use multilingualLocations instead
    * 장소 라이브러리
    */
   static readonly locations: Location[] = [
@@ -242,7 +494,22 @@ export class CaseElementLibrary {
   }
 
   /**
-   * 오늘의 케이스 요소 조합 생성
+   * 오늘의 케이스 요소 조합 생성 (다국어)
+   * Gets today's case elements with multilingual support
+   */
+  static getMultilingualCaseElements(date: Date = new Date()) {
+    return {
+      weapon: this.selectByDateSeed(this.multilingualWeapons, date),
+      motive: this.selectByDateSeed(this.multilingualMotives, date),
+      location: this.selectByDateSeed(this.multilingualLocations, date),
+      suspects: this.selectMultipleByDateSeed(this.suspectArchetypes, date, 3),
+      evidenceTypes: this.selectMultipleByDateSeed(this.evidenceTypes, date, 4)
+    };
+  }
+
+  /**
+   * @deprecated Use getMultilingualCaseElements instead
+   * 오늘의 케이스 요소 조합 생성 (하위 호환성)
    */
   static getTodaysCaseElements(date: Date = new Date()) {
     return {
