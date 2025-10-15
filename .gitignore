@@ -8,6 +8,10 @@ yarn-error.log*
 .DS_Store
 webroot
 dist
+
+# Local development data (FileStorageAdapter)
+/local-data/
+
 .env
 .env.local
 .env*.local

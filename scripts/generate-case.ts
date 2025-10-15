@@ -19,6 +19,8 @@ config({ path: resolve(process.cwd(), '.env.local') });
 import { createGeminiClient } from '../src/server/services/gemini/GeminiClient';
 import { createCaseGeneratorService } from '../src/server/services/case/CaseGeneratorService';
 import { CaseRepository } from '../src/server/services/repositories/kv/CaseRepository';
+import { KVStoreManager } from '../src/server/services/repositories/kv/KVStoreManager';
+import { FileStorageAdapter } from '../src/server/services/repositories/adapters/FileStorageAdapter';
 
 async function generateCase() {
   const withImage = process.argv.includes('--with-image');
@@ -27,6 +29,10 @@ async function generateCase() {
   console.log(`   이미지 생성: ${withImage ? 'Yes' : 'No (빠른 테스트)'}`);
 
   try {
+    // Initialize file storage adapter for local execution
+    const storageAdapter = new FileStorageAdapter('./local-data');
+    KVStoreManager.setAdapter(storageAdapter);
+
     const geminiClient = createGeminiClient();
     const caseGenerator = createCaseGeneratorService(geminiClient);
 
@@ -83,7 +89,8 @@ async function generateCase() {
     }
 
     console.log('\n━'.repeat(60));
-    console.log('💾 Redis KV 저장 완료');
+    console.log('💾 Saved to local file storage');
+    console.log('   Location: ./local-data/');
     console.log('━'.repeat(60));
 
     // API 엔드포인트 안내

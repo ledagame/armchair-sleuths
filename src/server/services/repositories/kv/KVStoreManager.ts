@@ -5,7 +5,7 @@
  * 타입 안전성과 편의 메서드 제공
  */
 
-import { redis } from '@devvit/web/server';
+import { IStorageAdapter } from '../adapters/IStorageAdapter';
 
 export interface CaseData {
   id: string;
@@ -88,24 +88,44 @@ export interface SubmissionData {
  * Devvit Redis KV 추상화 매니저
  */
 export class KVStoreManager {
+  private static adapter: IStorageAdapter;
+
+  /**
+   * Sets the storage adapter for the KV store.
+   * Must be called before using any other methods.
+   *
+   * @param adapter - The storage adapter implementation to use
+   */
+  static setAdapter(adapter: IStorageAdapter): void {
+    this.adapter = adapter;
+  }
+
   /**
    * 케이스 저장
    */
   static async saveCase(caseData: CaseData): Promise<void> {
+    if (!this.adapter) {
+      throw new Error('Storage adapter not initialized. Call KVStoreManager.setAdapter() first.');
+    }
+
     const key = `case:${caseData.id}`;
-    await redis.set(key, JSON.stringify(caseData));
+    await this.adapter.set(key, JSON.stringify(caseData));
 
     // 날짜 인덱스 저장 (검색 최적화)
     const dateKey = `case:date:${caseData.date}`;
-    await redis.set(dateKey, caseData.id);
+    await this.adapter.set(dateKey, caseData.id);
   }
 
   /**
    * 케이스 조회
    */
   static async getCase(caseId: string): Promise<CaseData | null> {
+    if (!this.adapter) {
+      throw new Error('Storage adapter not initialized. Call KVStoreManager.setAdapter() first.');
+    }
+
     const key = `case:${caseId}`;
-    const data = await redis.get(key);
+    const data = await this.adapter.get(key);
 
     if (!data) {
       return null;
@@ -118,8 +138,12 @@ export class KVStoreManager {
    * 특정 날짜의 케이스 조회
    */
   static async getCaseByDate(date: string): Promise<CaseData | null> {
+    if (!this.adapter) {
+      throw new Error('Storage adapter not initialized. Call KVStoreManager.setAdapter() first.');
+    }
+
     const dateKey = `case:date:${date}`;
-    const caseId = await redis.get(dateKey);
+    const caseId = await this.adapter.get(dateKey);
 
     if (!caseId) {
       return null;
@@ -140,20 +164,28 @@ export class KVStoreManager {
    * 용의자 저장
    */
   static async saveSuspect(suspectData: SuspectData): Promise<void> {
+    if (!this.adapter) {
+      throw new Error('Storage adapter not initialized. Call KVStoreManager.setAdapter() first.');
+    }
+
     const key = `suspect:${suspectData.id}`;
-    await redis.set(key, JSON.stringify(suspectData));
+    await this.adapter.set(key, JSON.stringify(suspectData));
 
     // 케이스별 용의자 인덱스
     const caseKey = `case:${suspectData.caseId}:suspects`;
-    await redis.sAdd(caseKey, suspectData.id);
+    await this.adapter.sAdd(caseKey, suspectData.id);
   }
 
   /**
    * 용의자 조회
    */
   static async getSuspect(suspectId: string): Promise<SuspectData | null> {
+    if (!this.adapter) {
+      throw new Error('Storage adapter not initialized. Call KVStoreManager.setAdapter() first.');
+    }
+
     const key = `suspect:${suspectId}`;
-    const data = await redis.get(key);
+    const data = await this.adapter.get(key);
 
     if (!data) {
       return null;
@@ -166,8 +198,12 @@ export class KVStoreManager {
    * 케이스의 모든 용의자 조회
    */
   static async getCaseSuspects(caseId: string): Promise<SuspectData[]> {
+    if (!this.adapter) {
+      throw new Error('Storage adapter not initialized. Call KVStoreManager.setAdapter() first.');
+    }
+
     const caseKey = `case:${caseId}:suspects`;
-    const suspectIds = await redis.sMembers(caseKey);
+    const suspectIds = await this.adapter.sMembers(caseKey);
 
     const suspects: SuspectData[] = [];
     for (const suspectId of suspectIds) {
@@ -204,8 +240,12 @@ export class KVStoreManager {
    * 대화 저장
    */
   static async saveConversation(conversation: ConversationData): Promise<void> {
+    if (!this.adapter) {
+      throw new Error('Storage adapter not initialized. Call KVStoreManager.setAdapter() first.');
+    }
+
     const key = `conversation:${conversation.caseId}:${conversation.suspectId}:${conversation.userId}`;
-    await redis.set(key, JSON.stringify(conversation));
+    await this.adapter.set(key, JSON.stringify(conversation));
   }
 
   /**
@@ -216,8 +256,12 @@ export class KVStoreManager {
     suspectId: string,
     userId: string
   ): Promise<ConversationData | null> {
+    if (!this.adapter) {
+      throw new Error('Storage adapter not initialized. Call KVStoreManager.setAdapter() first.');
+    }
+
     const key = `conversation:${caseId}:${suspectId}:${userId}`;
-    const data = await redis.get(key);
+    const data = await this.adapter.get(key);
 
     if (!data) {
       return null;
@@ -263,12 +307,16 @@ export class KVStoreManager {
    * 답안 제출 저장
    */
   static async saveSubmission(submission: SubmissionData): Promise<void> {
+    if (!this.adapter) {
+      throw new Error('Storage adapter not initialized. Call KVStoreManager.setAdapter() first.');
+    }
+
     const key = `submission:${submission.caseId}:${submission.userId}`;
-    await redis.set(key, JSON.stringify(submission));
+    await this.adapter.set(key, JSON.stringify(submission));
 
     // 케이스별 제출 인덱스
     const caseKey = `case:${submission.caseId}:submissions`;
-    await redis.sAdd(caseKey, submission.userId);
+    await this.adapter.sAdd(caseKey, submission.userId);
   }
 
   /**
@@ -278,8 +326,12 @@ export class KVStoreManager {
     caseId: string,
     userId: string
   ): Promise<SubmissionData | null> {
+    if (!this.adapter) {
+      throw new Error('Storage adapter not initialized. Call KVStoreManager.setAdapter() first.');
+    }
+
     const key = `submission:${caseId}:${userId}`;
-    const data = await redis.get(key);
+    const data = await this.adapter.get(key);
 
     if (!data) {
       return null;
@@ -292,8 +344,12 @@ export class KVStoreManager {
    * 케이스의 모든 제출 조회 (리더보드용)
    */
   static async getCaseSubmissions(caseId: string): Promise<SubmissionData[]> {
+    if (!this.adapter) {
+      throw new Error('Storage adapter not initialized. Call KVStoreManager.setAdapter() first.');
+    }
+
     const caseKey = `case:${caseId}:submissions`;
-    const userIds = await redis.sMembers(caseKey);
+    const userIds = await this.adapter.sMembers(caseKey);
 
     const submissions: SubmissionData[] = [];
     for (const userId of userIds) {
@@ -329,28 +385,32 @@ export class KVStoreManager {
    * 특정 케이스 데이터 삭제 (관리자용)
    */
   static async deleteCase(caseId: string): Promise<void> {
+    if (!this.adapter) {
+      throw new Error('Storage adapter not initialized. Call KVStoreManager.setAdapter() first.');
+    }
+
     const key = `case:${caseId}`;
     const caseData = await this.getCase(caseId);
 
     if (caseData) {
       // 날짜 인덱스 삭제
       const dateKey = `case:date:${caseData.date}`;
-      await redis.del(dateKey);
+      await this.adapter.del(dateKey);
     }
 
     // 케이스 삭제
-    await redis.del(key);
+    await this.adapter.del(key);
 
     // 관련 용의자들 삭제
     const caseKey = `case:${caseId}:suspects`;
-    const suspectIds = await redis.sMembers(caseKey);
+    const suspectIds = await this.adapter.sMembers(caseKey);
     for (const suspectId of suspectIds) {
-      await redis.del(`suspect:${suspectId}`);
+      await this.adapter.del(`suspect:${suspectId}`);
     }
-    await redis.del(caseKey);
+    await this.adapter.del(caseKey);
 
     // 제출 인덱스 삭제 (제출 데이터는 보존)
     const submissionsKey = `case:${caseId}:submissions`;
-    await redis.del(submissionsKey);
+    await this.adapter.del(submissionsKey);
   }
 }

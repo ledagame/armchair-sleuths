@@ -8,8 +8,14 @@ import { CaseRepository } from './services/repositories/kv/CaseRepository';
 import { createSuspectAIService } from './services/suspect/SuspectAIService';
 import { createW4HValidator } from './services/scoring/W4HValidator';
 import { createScoringEngine } from './services/scoring/ScoringEngine';
+import { KVStoreManager } from './services/repositories/kv/KVStoreManager';
+import { DevvitStorageAdapter } from './services/repositories/adapters/DevvitStorageAdapter';
 
 const app = express();
+
+// Initialize Devvit storage adapter for production
+const devvitAdapter = new DevvitStorageAdapter();
+KVStoreManager.setAdapter(devvitAdapter);
 
 // Middleware for JSON body parsing
 app.use(express.json());
