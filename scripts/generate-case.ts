@@ -65,7 +65,14 @@ async function generateCase() {
     console.log(`   설명: ${caseData.location.description}`);
 
     console.log('\n🕵️ 용의자:');
-    caseData.suspects.forEach((suspect, index) => {
+    // Fetch full suspect data to display background, personality, and emotional state
+    const fullSuspects = await Promise.all(
+      caseData.suspects.map(s => KVStoreManager.getSuspect(s.id))
+    );
+
+    fullSuspects.forEach((suspect, index) => {
+      if (!suspect) return;
+
       const isGuilty = suspect.isGuilty ? '⚠️ [진범]' : '';
       console.log(`\n   ${index + 1}. ${suspect.name} ${isGuilty}`);
       console.log(`      원형: ${suspect.archetype}`);
