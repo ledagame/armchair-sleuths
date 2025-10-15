@@ -184,11 +184,29 @@ router.post('/api/case/generate', async (_req, res): Promise<void> => {
 });
 
 /**
- * GET /api/case/today
- * 오늘의 케이스 조회
+ * GET /api/case/today?language=ko|en
+ * 오늘의 케이스 조회 (다국어 지원)
+ *
+ * Query Parameters:
+ *   - language: 'ko' | 'en' (default: 'ko')
+ *
+ * TODO: Update to use MultilingualCase from CaseRepository
+ * Currently returns legacy single-language format
  */
-router.get('/api/case/today', async (_req, res): Promise<void> => {
+router.get('/api/case/today', async (req, res): Promise<void> => {
   try {
+    // Get language from query parameter (default: 'ko')
+    const language = (req.query.language as string) || 'ko';
+
+    // Validate language parameter
+    if (language !== 'ko' && language !== 'en') {
+      res.status(400).json({
+        error: 'Bad request',
+        message: 'Invalid language parameter. Use "ko" or "en"'
+      });
+      return;
+    }
+
     const todaysCase = await CaseRepository.getTodaysCase();
 
     if (!todaysCase) {
@@ -203,7 +221,7 @@ router.get('/api/case/today', async (_req, res): Promise<void> => {
     const fullSuspects = await CaseRepository.getCaseSuspects(todaysCase.id);
 
     // Add logging
-    console.log(`📋 Fetched ${fullSuspects.length} suspects for case ${todaysCase.id}`);
+    console.log(`📋 Fetched ${fullSuspects.length} suspects for case ${todaysCase.id} (language: ${language})`);
 
     if (fullSuspects.length === 0) {
       console.warn(`⚠️  WARNING: No suspects found for case ${todaysCase.id}`);
@@ -223,9 +241,11 @@ router.get('/api/case/today', async (_req, res): Promise<void> => {
     }));
 
     // 클라이언트에게 전달 (solution 제외)
+    // TODO: When MultilingualCase is stored, return language-specific content
     res.json({
       id: todaysCase.id,
       date: todaysCase.date,
+      language: language, // Include selected language in response
       victim: todaysCase.victim,
       weapon: todaysCase.weapon,
       location: todaysCase.location,
