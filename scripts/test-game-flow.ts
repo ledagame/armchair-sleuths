@@ -19,9 +19,15 @@ import { CaseRepository } from '../src/server/services/repositories/kv/CaseRepos
 import { createSuspectAIService } from '../src/server/services/suspect/SuspectAIService';
 import { createW4HValidator } from '../src/server/services/scoring/W4HValidator';
 import { createScoringEngine } from '../src/server/services/scoring/ScoringEngine';
+import { KVStoreManager } from '../src/server/services/repositories/kv/KVStoreManager';
+import { FileStorageAdapter } from '../src/server/services/repositories/adapters/FileStorageAdapter';
 
 async function testGameFlow() {
   console.log('🎮 게임 흐름 테스트 시작\n');
+
+  // Initialize file storage adapter for local testing
+  const storageAdapter = new FileStorageAdapter('./local-data');
+  KVStoreManager.setAdapter(storageAdapter);
 
   // 1️⃣ 케이스 생성 테스트
   console.log('1️⃣ 케이스 생성 테스트');
