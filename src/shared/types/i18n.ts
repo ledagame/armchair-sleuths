@@ -5,6 +5,9 @@
  * Ensures same game with different language presentations
  */
 
+import type { LocationExploration } from './Location';
+import type { MultilingualEvidence } from './Evidence';
+
 /**
  * Supported languages for the game
  * Start with Korean (ko) and English (en) for competition
@@ -161,6 +164,12 @@ export interface MultilingualCase {
   weapon: MultilingualWeapon;
   location: MultilingualLocation;
   motive: MultilingualMotive;
+
+  // Location exploration content (Phase 1)
+  locationExploration?: LocationExploration;
+
+  // Evidence collection (Phase 1)
+  evidence?: MultilingualEvidence;
 
   // Generation metadata
   generatedAt: number;  // Unix timestamp

@@ -19,6 +19,11 @@ import type {
   MultilingualLocation,
   MultilingualMotive
 } from '../../../shared/types/i18n';
+import { LocationGeneratorService, createLocationGeneratorService } from '../location/LocationGeneratorService';
+import { EvidenceGeneratorService, createEvidenceGeneratorService } from '../evidence/EvidenceGeneratorService';
+import { ValidationService, createValidationService } from '../validation/ValidationService';
+import type { LocationExploration, GenerateLocationExplorationOptions } from '../../../shared/types/Location';
+import type { MultilingualEvidence, GenerateEvidenceOptions } from '../../../shared/types/Evidence';
 
 export interface GenerateCaseOptions {
   date?: Date;
@@ -72,9 +77,20 @@ export interface GeneratedCase {
  */
 export class CaseGeneratorService {
   private geminiClient: GeminiClient;
+  private locationGenerator: LocationGeneratorService;
+  private evidenceGenerator: EvidenceGeneratorService;
+  private validationService: ValidationService;
 
-  constructor(geminiClient: GeminiClient) {
+  constructor(
+    geminiClient: GeminiClient,
+    locationGenerator?: LocationGeneratorService,
+    evidenceGenerator?: EvidenceGeneratorService,
+    validationService?: ValidationService
+  ) {
     this.geminiClient = geminiClient;
+    this.locationGenerator = locationGenerator || createLocationGeneratorService(geminiClient);
+    this.evidenceGenerator = evidenceGenerator || createEvidenceGeneratorService(geminiClient);
+    this.validationService = validationService || createValidationService();
   }
 
   /**
@@ -369,7 +385,56 @@ High quality, detailed, atmospheric.`;
     console.log(`✅ Multilingual case story generated`);
     console.log(`   Guilty suspect index: ${multilingualStory.guiltyIndex}`);
 
-    // 3. 케이스 이미지 생성 (선택)
+    // 3. Location exploration 생성
+    console.log(`🗺️  Generating location exploration...`);
+    const locationExploration = await this.locationGenerator.generateLocationExploration(
+      elements.location,
+      elements.weapon,
+      elements.motive,
+      multilingualStory.guiltyIndex,
+      `case-${dateStr}`,
+      {
+        includeRedHerrings: true,
+        clueDistribution: 'distributed',
+        difficulty: 'medium'
+      }
+    );
+    console.log(`✅ Location exploration generated`);
+
+    // 4. Evidence 생성
+    console.log(`🔍 Generating evidence collection...`);
+    const evidence = await this.evidenceGenerator.generateEvidence(
+      elements.location,
+      elements.weapon,
+      elements.motive,
+      multilingualStory.translations.ko.suspects,
+      multilingualStory.guiltyIndex,
+      `case-${dateStr}`,
+      {
+        minCriticalEvidence: 3,
+        includeRedHerrings: true,
+        difficulty: 'medium',
+        fairPlayCompliant: true
+      }
+    );
+    console.log(`✅ Evidence collection generated`);
+
+    // 5. 케이스 품질 검증
+    console.log(`✔️  Validating case quality...`);
+    const validationResult = this.validationService.validateCompleteCase(
+      locationExploration,
+      evidence
+    );
+
+    if (!validationResult.valid) {
+      console.warn(`⚠️  Case validation found issues:`);
+      console.warn(this.validationService.formatValidationReport(validationResult));
+      // 경고만 하고 계속 진행 (Phase 1에서는 best-effort)
+    } else {
+      console.log(`✅ Case validation passed`);
+    }
+
+    // 6. 케이스 이미지 생성 (선택)
     let imageUrl: string | undefined;
     if (includeImage) {
       try {
@@ -385,7 +450,7 @@ High quality, detailed, atmospheric.`;
       }
     }
 
-    // 4. MultilingualCase 객체 생성
+    // 7. MultilingualCase 객체 생성
     const multilingualCase: MultilingualCase = {
       id: `case-${dateStr}`,
       date: dateStr,
@@ -400,11 +465,18 @@ High quality, detailed, atmospheric.`;
       weapon: elements.weapon,
       location: elements.location,
       motive: elements.motive,
+      locationExploration,
+      evidence,
       generatedAt: Date.now(),
       version: 1
     };
 
     console.log(`✅ Multilingual case created: ${multilingualCase.id}`);
+    console.log(`   - Location areas: ${locationExploration.metadata.totalAreas}`);
+    console.log(`   - Location clues: ${locationExploration.metadata.totalClues}`);
+    console.log(`   - Evidence items: ${evidence.metadata.totalItems}`);
+    console.log(`   - Critical evidence: ${evidence.metadata.criticalCount}`);
+    console.log(`   - 3-Clue Rule: ${evidence.metadata.threeClueRuleCompliant ? '✅' : '❌'}`);
 
     // TODO: 다국어 케이스 저장 (CaseRepository 업데이트 필요)
     // await CaseRepository.createMultilingualCase(multilingualCase);
