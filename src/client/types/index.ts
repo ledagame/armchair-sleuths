@@ -35,6 +35,7 @@ export interface Suspect {
   background: string;
   personality: string;
   emotionalState: EmotionalState;
+  profileImageUrl?: string; // Profile image (Base64 data URL)
 }
 
 export interface EmotionalState {

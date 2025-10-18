@@ -21,3 +21,4 @@ dist
 
 # Windows invalid filename
 NUL
+.vercel

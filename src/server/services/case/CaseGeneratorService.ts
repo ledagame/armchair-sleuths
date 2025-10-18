@@ -8,36 +8,11 @@
 import { GeminiClient, type GeminiTextOptions } from '../gemini/GeminiClient';
 import { CaseElementLibrary, type Weapon, type Motive, type Location, type Suspect } from './CaseElementLibrary';
 import { CaseRepository, type CreateCaseInput } from '../repositories/kv/CaseRepository';
-import type {
-  MultilingualCase,
-  SupportedLanguage,
-  CaseContent,
-  VictimContent,
-  SuspectContent,
-  SolutionContent,
-  MultilingualWeapon,
-  MultilingualLocation,
-  MultilingualMotive
-} from '../../../shared/types/i18n';
-import { LocationGeneratorService, createLocationGeneratorService } from '../location/LocationGeneratorService';
-import { EvidenceGeneratorService, createEvidenceGeneratorService } from '../evidence/EvidenceGeneratorService';
-import { ValidationService, createValidationService } from '../validation/ValidationService';
-import type { LocationExploration, GenerateLocationExplorationOptions } from '../../../shared/types/Location';
-import type { MultilingualEvidence, GenerateEvidenceOptions } from '../../../shared/types/Evidence';
 
 export interface GenerateCaseOptions {
   date?: Date;
   includeImage?: boolean;
-  temperature?: number;
-}
-
-/**
- * 다국어 케이스 생성 옵션
- */
-export interface GenerateMultilingualCaseOptions {
-  date?: Date;
-  languages?: SupportedLanguage[];
-  includeImage?: boolean;
+  includeSuspectImages?: boolean; // Generate profile images for suspects
   temperature?: number;
 }
 
@@ -59,6 +34,7 @@ export interface GeneratedCase {
     background: string;
     personality: string;
     isGuilty: boolean;
+    profileImageUrl?: string; // Profile image URL
   }>;
   solution: {
     who: string;
@@ -77,20 +53,9 @@ export interface GeneratedCase {
  */
 export class CaseGeneratorService {
   private geminiClient: GeminiClient;
-  private locationGenerator: LocationGeneratorService;
-  private evidenceGenerator: EvidenceGeneratorService;
-  private validationService: ValidationService;
 
-  constructor(
-    geminiClient: GeminiClient,
-    locationGenerator?: LocationGeneratorService,
-    evidenceGenerator?: EvidenceGeneratorService,
-    validationService?: ValidationService
-  ) {
+  constructor(geminiClient: GeminiClient) {
     this.geminiClient = geminiClient;
-    this.locationGenerator = locationGenerator || createLocationGeneratorService(geminiClient);
-    this.evidenceGenerator = evidenceGenerator || createEvidenceGeneratorService(geminiClient);
-    this.validationService = validationService || createValidationService();
   }
 
   /**
@@ -103,6 +68,7 @@ export class CaseGeneratorService {
     const {
       date = new Date(),
       includeImage = false,
+      includeSuspectImages = false,
       temperature = 0.8
     } = options;
 
@@ -145,6 +111,13 @@ export class CaseGeneratorService {
       }
     }
 
+    // 3.5. 용의자 프로필 이미지 생성 (선택)
+    const suspectsWithImages = await this.generateSuspectProfileImages(
+      caseStory.suspects,
+      elements.suspects,
+      includeSuspectImages
+    );
+
     // 4. CaseRepository에 저장
     const createInput: CreateCaseInput = {
       victim: caseStory.victim,
@@ -156,12 +129,13 @@ export class CaseGeneratorService {
         name: elements.location.name,
         description: elements.location.description
       },
-      suspects: caseStory.suspects.map((suspect, index) => ({
+      suspects: suspectsWithImages.map((suspect, index) => ({
         name: suspect.name,
         archetype: elements.suspects[index].archetype,
         background: suspect.background,
         personality: suspect.personality,
-        isGuilty: suspect.isGuilty
+        isGuilty: suspect.isGuilty,
+        profileImageUrl: suspect.profileImageUrl
       })),
       solution: caseStory.solution,
       imageUrl
@@ -183,9 +157,10 @@ export class CaseGeneratorService {
         id: s.id,
         name: s.name,
         archetype: s.archetype,
-        background: caseStory.suspects[index].background,
-        personality: caseStory.suspects[index].personality,
-        isGuilty: s.isGuilty
+        background: suspectsWithImages[index].background,
+        personality: suspectsWithImages[index].personality,
+        isGuilty: s.isGuilty,
+        profileImageUrl: suspectsWithImages[index].profileImageUrl
       })),
       solution: savedCase.solution,
       imageUrl: savedCase.imageUrl,
@@ -343,373 +318,87 @@ High quality, detailed, atmospheric.`;
   }
 
   /**
-   * 다국어 케이스 생성
-   *
-   * CRITICAL: 한국어와 영어를 동시에 생성하여 동일한 게임 보장
-   * - 같은 범인 (guiltyIndex)
-   * - 같은 스토리
-   * - 다른 언어 표현만
+   * 용의자 프로필 이미지 생성 (병렬 처리)
    */
-  async generateMultilingualCase(
-    options: GenerateMultilingualCaseOptions = {}
-  ): Promise<MultilingualCase> {
-    const {
-      date = new Date(),
-      languages = ['ko', 'en'],
-      includeImage = false,
-      temperature = 0.8
-    } = options;
-
-    const dateStr = date.toISOString().split('T')[0];
-    console.log(`🌏 Generating multilingual case for ${dateStr}...`);
-
-    // 1. CaseElementLibrary에서 오늘의 요소 선택 (다국어)
-    const elements = CaseElementLibrary.getMultilingualCaseElements(date);
-
-    console.log(`📚 Selected multilingual elements:
-      - Weapon: ${elements.weapon.translations.ko.name} / ${elements.weapon.translations.en.name}
-      - Motive: ${elements.motive.translations.ko.name} / ${elements.motive.translations.en.name}
-      - Location: ${elements.location.translations.ko.name} / ${elements.location.translations.en.name}
-      - Suspects: ${elements.suspects.map(s => s.archetype).join(', ')}`
-    );
-
-    // 2. 케이스 스토리 동시 생성 (한국어 + 영어)
-    const multilingualStory = await this.generateMultilingualCaseStory(
-      elements.weapon,
-      elements.motive,
-      elements.location,
-      elements.suspects,
-      temperature
-    );
-
-    console.log(`✅ Multilingual case story generated`);
-    console.log(`   Guilty suspect index: ${multilingualStory.guiltyIndex}`);
-
-    // 3. Location exploration 생성
-    console.log(`🗺️  Generating location exploration...`);
-    const locationExploration = await this.locationGenerator.generateLocationExploration(
-      elements.location,
-      elements.weapon,
-      elements.motive,
-      multilingualStory.guiltyIndex,
-      `case-${dateStr}`,
-      {
-        includeRedHerrings: true,
-        clueDistribution: 'distributed',
-        difficulty: 'medium'
-      }
-    );
-    console.log(`✅ Location exploration generated`);
-
-    // 4. Evidence 생성
-    console.log(`🔍 Generating evidence collection...`);
-    const evidence = await this.evidenceGenerator.generateEvidence(
-      elements.location,
-      elements.weapon,
-      elements.motive,
-      multilingualStory.translations.ko.suspects,
-      multilingualStory.guiltyIndex,
-      `case-${dateStr}`,
-      {
-        minCriticalEvidence: 3,
-        includeRedHerrings: true,
-        difficulty: 'medium',
-        fairPlayCompliant: true
-      }
-    );
-    console.log(`✅ Evidence collection generated`);
-
-    // 5. 케이스 품질 검증
-    console.log(`✔️  Validating case quality...`);
-    const validationResult = this.validationService.validateCompleteCase(
-      locationExploration,
-      evidence
-    );
-
-    if (!validationResult.valid) {
-      console.warn(`⚠️  Case validation found issues:`);
-      console.warn(this.validationService.formatValidationReport(validationResult));
-      // 경고만 하고 계속 진행 (Phase 1에서는 best-effort)
-    } else {
-      console.log(`✅ Case validation passed`);
+  private async generateSuspectProfileImages(
+    suspects: Array<{
+      name: string;
+      background: string;
+      personality: string;
+      isGuilty: boolean;
+    }>,
+    archetypes: Suspect[],
+    shouldGenerate: boolean
+  ): Promise<Array<{
+    name: string;
+    background: string;
+    personality: string;
+    isGuilty: boolean;
+    profileImageUrl?: string;
+  }>> {
+    if (!shouldGenerate) {
+      console.log('⏭️  Skipping suspect profile image generation');
+      return suspects;
     }
 
-    // 6. 케이스 이미지 생성 (선택)
-    let imageUrl: string | undefined;
-    if (includeImage) {
+    console.log('🎨 Generating profile images for suspects...');
+
+    // 병렬 처리로 시간 단축
+    const imagePromises = suspects.map(async (suspect, index) => {
       try {
-        imageUrl = await this.generateCaseImage(
-          elements.location,
-          elements.weapon,
-          multilingualStory.translations.ko.victim.name
+        const prompt = this.buildSuspectProfilePrompt(
+          suspect,
+          archetypes[index]
         );
-        console.log(`✅ Case image generated`);
+
+        const response = await this.geminiClient.generateImage(prompt);
+
+        console.log(`✅ Profile image generated for ${suspect.name}`);
+
+        return {
+          ...suspect,
+          profileImageUrl: response.imageUrl
+        };
       } catch (error) {
-        console.error('❌ Image generation failed:', error);
-        // 이미지 실패해도 케이스는 생성
+        console.error(`❌ Profile image generation failed for ${suspect.name}:`, error);
+        // 이미지 실패해도 용의자 데이터는 유지
+        return suspect;
       }
-    }
-
-    // 7. MultilingualCase 객체 생성
-    const multilingualCase: MultilingualCase = {
-      id: `case-${dateStr}`,
-      date: dateStr,
-      baseLanguage: 'ko',
-      translations: multilingualStory.translations,
-      metadata: {
-        weaponId: elements.weapon.id,
-        motiveId: elements.motive.id,
-        locationId: elements.location.id,
-        guiltyIndex: multilingualStory.guiltyIndex
-      },
-      weapon: elements.weapon,
-      location: elements.location,
-      motive: elements.motive,
-      locationExploration,
-      evidence,
-      generatedAt: Date.now(),
-      version: 1
-    };
-
-    console.log(`✅ Multilingual case created: ${multilingualCase.id}`);
-    console.log(`   - Location areas: ${locationExploration.metadata.totalAreas}`);
-    console.log(`   - Location clues: ${locationExploration.metadata.totalClues}`);
-    console.log(`   - Evidence items: ${evidence.metadata.totalItems}`);
-    console.log(`   - Critical evidence: ${evidence.metadata.criticalCount}`);
-    console.log(`   - 3-Clue Rule: ${evidence.metadata.threeClueRuleCompliant ? '✅' : '❌'}`);
-
-    // TODO: 다국어 케이스 저장 (CaseRepository 업데이트 필요)
-    // await CaseRepository.createMultilingualCase(multilingualCase);
-
-    return multilingualCase;
-  }
-
-  /**
-   * 다국어 케이스 스토리 생성 (Gemini)
-   *
-   * 한국어와 영어를 동시에 생성하여 동일한 게임 보장
-   */
-  private async generateMultilingualCaseStory(
-    weapon: MultilingualWeapon,
-    motive: MultilingualMotive,
-    location: MultilingualLocation,
-    suspectArchetypes: Suspect[],
-    temperature: number
-  ): Promise<{
-    translations: {
-      ko: CaseContent;
-      en: CaseContent;
-    };
-    guiltyIndex: number;
-  }> {
-    const prompt = this.buildMultilingualCaseStoryPrompt(
-      weapon,
-      motive,
-      location,
-      suspectArchetypes
-    );
-
-    const response = await this.geminiClient.generateText(prompt, {
-      temperature,
-      maxTokens: 8192  // 더 많은 토큰 (두 언어 동시 생성)
     });
 
-    // JSON 파싱
-    const parsed = this.geminiClient.parseJsonResponse(response.text);
+    const results = await Promise.all(imagePromises);
 
-    return parsed;
+    console.log(`✅ Suspect profile images generated: ${results.filter(r => r.profileImageUrl).length}/${suspects.length}`);
+
+    return results;
   }
 
   /**
-   * 다국어 케이스 스토리 생성 프롬프트
-   *
-   * CRITICAL: 한국어와 영어를 동시에 생성하여 같은 범인 보장
+   * 용의자 프로필 이미지 프롬프트 생성
    */
-  private buildMultilingualCaseStoryPrompt(
-    weapon: MultilingualWeapon,
-    motive: MultilingualMotive,
-    location: MultilingualLocation,
-    suspectArchetypes: Suspect[]
-  ): string {
-    return `You are a bilingual detective novel writer. Create a playable murder mystery case in BOTH Korean AND English simultaneously.
-
-**CRITICAL REQUIREMENT: SAME GAME IN BOTH LANGUAGES**
-- The SAME suspect must be guilty in both languages (same index: 0, 1, or 2)
-- The SAME story, just translated
-- The SAME solution, just in different languages
-
-**Given Elements:**
-- Weapon: ${weapon.translations.ko.name} / ${weapon.translations.en.name}
-- Motive: ${motive.translations.ko.name} / ${motive.translations.en.name}
-- Location: ${location.translations.ko.name} / ${location.translations.en.name}
-- Suspect Archetypes: ${suspectArchetypes.map((s, i) => `${i + 1}. ${s.archetype}`).join(', ')}
-
-**Generation Rules:**
-1. **Victim**: Korean name (for Korean), English name (for English), compelling backstory, relationships
-2. **3 Suspects**:
-   - Korean names (for Korean), English names (for English)
-   - Detailed backgrounds based on provided archetypes
-   - Unique personality traits
-   - **EXACTLY ONE guilty** (isGuilty: true) **AT THE SAME INDEX IN BOTH LANGUAGES**
-3. **Solution (5W1H)**:
-   - WHO: Name of the culprit
-   - WHAT: Exact murder method
-   - WHERE: Specific location
-   - WHEN: Time period
-   - WHY: Clear motive
-   - HOW: Detailed execution method
-
-**IMPORTANT**:
-- Exactly 1 guilty suspect out of 3
-- The guilty suspect MUST be at the same array index (0, 1, or 2) in BOTH languages
-- Other 2 have alibis or are suspicious but innocent
-- Solution must be logical and provable
-
-**Response Format (JSON):**
-\`\`\`json
-{
-  "translations": {
-    "ko": {
-      "title": "사건 제목",
-      "description": "사건 설명",
-      "setting": "배경 설명",
-      "victim": {
-        "name": "김명수",
-        "age": 52,
-        "occupation": "사업가",
-        "background": "50대 중반의 성공한 사업가로...",
-        "personality": "냉철하고 계산적인 성격..."
-      },
-      "suspects": [
-        {
-          "id": "suspect-1",
-          "name": "이서연",
-          "age": 38,
-          "occupation": "비즈니스 파트너",
-          "relation": "피해자의 사업 동업자",
-          "background": "10년간 함께 사업을 운영한...",
-          "personality": "냉철하고 계산적이며...",
-          "alibi": "사건 당일 오후 8시부터 12시까지...",
-          "motive": "사업 지분 관련 갈등이 있었으나...",
-          "isGuilty": false
-        },
-        {
-          "id": "suspect-2",
-          "name": "박준호",
-          "age": 45,
-          "occupation": "오랜 친구",
-          "relation": "20년지기 절친",
-          "background": "대학 시절부터 알고 지낸...",
-          "personality": "충동적이고 감정적이며...",
-          "alibi": "사건 당일 집에 혼자 있었다고 주장하나...",
-          "motive": "피해자에게 빌린 거액의 빚...",
-          "isGuilty": true
-        },
-        {
-          "id": "suspect-3",
-          "name": "최민지",
-          "age": 41,
-          "occupation": "전 부인",
-          "relation": "5년 전 이혼",
-          "background": "결혼 생활 10년 후 이혼...",
-          "personality": "차분하지만 복수심이...",
-          "alibi": "사건 당일 친구들과 저녁 식사 중...",
-          "motive": "이혼 시 재산 분할 문제로...",
-          "isGuilty": false
-        }
-      ],
-      "solution": {
-        "who": "박준호",
-        "how": "${weapon.translations.ko.name}을(를) 사용한 살인",
-        "when": "2024년 1월 15일 오후 11시 30분경",
-        "where": "${location.translations.ko.name}",
-        "why": "${motive.translations.ko.name} - 빌린 거액의 빚을 갚을 수 없게 되자...",
-        "evidence": [
-          "범행 도구에서 발견된 지문",
-          "CCTV에 포착된 용의자의 출입 기록",
-          "피해자와의 마지막 통화 기록"
-        ]
-      }
+  private buildSuspectProfilePrompt(
+    suspect: {
+      name: string;
+      background: string;
+      personality: string;
     },
-    "en": {
-      "title": "Case Title",
-      "description": "Case description",
-      "setting": "Setting description",
-      "victim": {
-        "name": "James Kim",
-        "age": 52,
-        "occupation": "Business Executive",
-        "background": "A successful businessman in his early 50s...",
-        "personality": "Cold and calculating personality..."
-      },
-      "suspects": [
-        {
-          "id": "suspect-1",
-          "name": "Sarah Lee",
-          "age": 38,
-          "occupation": "Business Partner",
-          "relation": "Victim's business partner",
-          "background": "Ran business together for 10 years...",
-          "personality": "Cold and calculating...",
-          "alibi": "Was at a meeting from 8 PM to midnight...",
-          "motive": "Had conflicts over business shares but...",
-          "isGuilty": false
-        },
-        {
-          "id": "suspect-2",
-          "name": "John Park",
-          "age": 45,
-          "occupation": "Old Friend",
-          "relation": "Best friend for 20 years",
-          "background": "Known since college days...",
-          "personality": "Impulsive and emotional...",
-          "alibi": "Claims to have been home alone but...",
-          "motive": "Owed victim a large sum of money...",
-          "isGuilty": true
-        },
-        {
-          "id": "suspect-3",
-          "name": "Michelle Choi",
-          "age": 41,
-          "occupation": "Ex-Wife",
-          "relation": "Divorced 5 years ago",
-          "background": "Married for 10 years before divorce...",
-          "personality": "Calm but vengeful...",
-          "alibi": "Having dinner with friends...",
-          "motive": "Property settlement issues during divorce...",
-          "isGuilty": false
-        }
-      ],
-      "solution": {
-        "who": "John Park",
-        "how": "Murder using ${weapon.translations.en.name}",
-        "when": "Around 11:30 PM on January 15, 2024",
-        "where": "${location.translations.en.name}",
-        "why": "${motive.translations.en.name} - Unable to repay large debt...",
-        "evidence": [
-          "Fingerprints found on murder weapon",
-          "CCTV footage of suspect's entry",
-          "Record of last phone call with victim"
-        ]
-      }
-    }
-  },
-  "guiltyIndex": 1
-}
-\`\`\`
-
-**VERIFY BEFORE RESPONDING:**
-- Check that guiltyIndex matches the isGuilty: true suspect in BOTH languages
-- Ensure the guilty suspect is at the SAME array position (0, 1, or 2) in both ko and en
-- The names can be different, but the guilty person must be at the same index
-
-Respond ONLY with JSON. No other explanation needed.`;
+    archetype: Suspect
+  ): string {
+    return `Professional portrait photograph of a ${archetype.archetype}.
+Character: ${suspect.name}
+Background: ${suspect.background}
+Personality: ${suspect.personality}
+Style: Professional headshot, cinematic lighting, shallow depth of field, neutral background.
+Focus: Face and upper shoulders, direct eye contact with camera.
+Quality: Photorealistic, high detail, professional photography.
+Format: 512x512 portrait photograph.
+Mood: Mystery, intrigue, subtle emotional expression.`;
   }
 
   /**
    * 오늘의 케이스 조회 또는 생성
    */
-  async getTodaysCase(options: { includeImage?: boolean } = {}): Promise<GeneratedCase> {
+  async getTodaysCase(options: { includeImage?: boolean; includeSuspectImages?: boolean } = {}): Promise<GeneratedCase> {
     // 이미 생성된 케이스가 있는지 확인
     const existingCase = await CaseRepository.getTodaysCase();
 
@@ -732,7 +421,8 @@ Respond ONLY with JSON. No other explanation needed.`;
           archetype: s.archetype,
           background: s.background,
           personality: s.personality,
-          isGuilty: s.isGuilty
+          isGuilty: s.isGuilty,
+          profileImageUrl: s.profileImageUrl
         })),
         solution: existingCase.solution,
         imageUrl: existingCase.imageUrl,
@@ -744,7 +434,8 @@ Respond ONLY with JSON. No other explanation needed.`;
     console.log(`🔄 Generating today's case...`);
     return await this.generateCase({
       date: new Date(),
-      includeImage: options.includeImage
+      includeImage: options.includeImage,
+      includeSuspectImages: options.includeSuspectImages
     });
   }
 
@@ -753,7 +444,7 @@ Respond ONLY with JSON. No other explanation needed.`;
    */
   async getCaseForDate(
     date: Date,
-    options: { includeImage?: boolean } = {}
+    options: { includeImage?: boolean; includeSuspectImages?: boolean } = {}
   ): Promise<GeneratedCase> {
     const dateStr = date.toISOString().split('T')[0];
     const existingCase = await CaseRepository.getCaseByDate(dateStr);
@@ -776,7 +467,8 @@ Respond ONLY with JSON. No other explanation needed.`;
           archetype: s.archetype,
           background: s.background,
           personality: s.personality,
-          isGuilty: s.isGuilty
+          isGuilty: s.isGuilty,
+          profileImageUrl: s.profileImageUrl
         })),
         solution: existingCase.solution,
         imageUrl: existingCase.imageUrl,
@@ -788,7 +480,8 @@ Respond ONLY with JSON. No other explanation needed.`;
     console.log(`🔄 Generating case for ${dateStr}...`);
     return await this.generateCase({
       date,
-      includeImage: options.includeImage
+      includeImage: options.includeImage,
+      includeSuspectImages: options.includeSuspectImages
     });
   }
 }

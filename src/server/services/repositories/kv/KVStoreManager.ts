@@ -54,6 +54,7 @@ export interface SuspectData {
     tone: 'cooperative' | 'nervous' | 'defensive' | 'aggressive';
     lastUpdated: number; // timestamp
   };
+  profileImageUrl?: string; // Profile image (Base64 data URL)
 }
 
 export interface ConversationData {

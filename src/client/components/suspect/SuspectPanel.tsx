@@ -83,6 +83,29 @@ export function SuspectPanel({ suspects, selectedSuspectId, onSelectSuspect }: S
                 }
               `}
             >
+              {/* Profile Image */}
+              {suspect.profileImageUrl && (
+                <div className="mb-4 flex justify-center">
+                  <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-gray-700 shadow-lg">
+                    <img
+                      src={suspect.profileImageUrl}
+                      alt={`${suspect.name} profile`}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Profile image placeholder */}
+              {!suspect.profileImageUrl && (
+                <div className="mb-4 flex justify-center">
+                  <div className="w-32 h-32 rounded-full bg-gray-700 flex items-center justify-center border-4 border-gray-600">
+                    <span className="text-6xl">👤</span>
+                  </div>
+                </div>
+              )}
+
               {/* Header with name and emotion */}
               <div className="flex justify-between items-start mb-3">
                 <div>

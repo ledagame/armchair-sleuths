@@ -26,6 +26,7 @@ export interface CreateCaseInput {
     background: string;
     personality: string;
     isGuilty: boolean;
+    profileImageUrl?: string; // Profile image URL
   }>;
   solution: {
     who: string;
@@ -93,7 +94,8 @@ export class CaseRepository {
           suspicionLevel: 0, // 초기 의심 레벨
           tone: 'cooperative', // 초기 태도
           lastUpdated: Date.now()
-        }
+        },
+        profileImageUrl: suspectInput.profileImageUrl // Profile image URL
       };
 
       await KVStoreManager.saveSuspect(suspectData);
