@@ -163,10 +163,12 @@ router.post('/api/case/generate', async (_req, res): Promise<void> => {
     console.log('🔄 Generating today\'s case...');
     const caseData = await caseGenerator.generateCase({
       date: new Date(),
-      includeImage: false
+      includeImage: false, // Skip case image for faster generation
+      includeSuspectImages: true // ✅ Include suspect profile images
     });
 
     console.log(`✅ Case generated: ${caseData.id}`);
+    console.log(`   - Suspect Images: ${caseData.suspects.filter(s => s.profileImageUrl).length}/${caseData.suspects.length}`);
 
     res.json({
       success: true,
@@ -236,7 +238,8 @@ router.get('/api/case/today', async (req, res): Promise<void> => {
       archetype: s.archetype,
       background: s.background,
       personality: s.personality,
-      emotionalState: s.emotionalState
+      emotionalState: s.emotionalState,
+      profileImageUrl: s.profileImageUrl // ✅ Profile image for UI display
       // isGuilty는 제외!
     }));
 
@@ -280,7 +283,8 @@ router.get('/api/suspects/:caseId', async (req, res): Promise<void> => {
       archetype: s.archetype,
       background: s.background,
       personality: s.personality,
-      emotionalState: s.emotionalState
+      emotionalState: s.emotionalState,
+      profileImageUrl: s.profileImageUrl // ✅ Profile image for UI display
       // isGuilty는 제외!
     }));
 

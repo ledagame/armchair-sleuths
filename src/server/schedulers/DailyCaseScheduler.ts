@@ -41,7 +41,8 @@ Devvit.addSchedulerJob({
 
       const newCase = await caseGenerator.generateCase({
         date: new Date(),
-        includeImage: true // Phase 1에서는 false로 시작 가능
+        includeImage: true, // Generate case scene image
+        includeSuspectImages: true // ✅ Generate suspect profile images
       });
 
       console.log(`✅ New case generated: ${newCase.caseId}`);
@@ -49,7 +50,8 @@ Devvit.addSchedulerJob({
       console.log(`   - Weapon: ${newCase.weapon.name}`);
       console.log(`   - Location: ${newCase.location.name}`);
       console.log(`   - Suspects: ${newCase.suspects.length}`);
-      console.log(`   - Image: ${newCase.imageUrl ? 'Yes' : 'No'}`);
+      console.log(`   - Case Image: ${newCase.imageUrl ? 'Yes' : 'No'}`);
+      console.log(`   - Suspect Images: ${newCase.suspects.filter(s => s.profileImageUrl).length}/${newCase.suspects.length}`);
       console.log(`⏱️ Completed in ${Date.now() - startTime}ms`);
 
     } catch (error) {
@@ -91,10 +93,12 @@ Devvit.addSchedulerJob({
 
       const newCase = await caseGenerator.generateCase({
         date: new Date(),
-        includeImage: false // 테스트는 이미지 없이 빠르게
+        includeImage: false, // Skip case scene image for faster testing
+        includeSuspectImages: true // ✅ But include suspect profile images
       });
 
       console.log(`✅ Manual case generated: ${newCase.caseId}`);
+      console.log(`   - Suspect Images: ${newCase.suspects.filter(s => s.profileImageUrl).length}/${newCase.suspects.length}`);
       console.log(`⏱️ Completed in ${Date.now() - startTime}ms`);
 
     } catch (error) {
@@ -133,10 +137,14 @@ Devvit.addSchedulerJob({
 
       const newCase = await caseGenerator.generateCase({
         date: targetDate,
-        includeImage: event.data?.includeImage || false
+        includeImage: event.data?.includeImage || false,
+        includeSuspectImages: event.data?.includeSuspectImages !== undefined
+          ? event.data.includeSuspectImages
+          : true // ✅ Default to true for suspect images
       });
 
       console.log(`✅ Backfill case generated for ${targetDate.toISOString().split('T')[0]}: ${newCase.caseId}`);
+      console.log(`   - Suspect Images: ${newCase.suspects.filter(s => s.profileImageUrl).length}/${newCase.suspects.length}`);
       console.log(`⏱️ Completed in ${Date.now() - startTime}ms`);
 
     } catch (error) {
