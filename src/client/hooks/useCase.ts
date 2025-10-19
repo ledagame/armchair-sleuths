@@ -109,6 +109,7 @@ export function useCase(): UseCaseReturn {
               location: retryData.location,
               suspects: retryData.suspects || [],
               imageUrl: retryData.imageUrl,
+              introNarration: retryData.introNarration,
               generatedAt: retryData.generatedAt,
             };
             setCaseData(transformedCase);
@@ -138,6 +139,7 @@ export function useCase(): UseCaseReturn {
         location: data.location,
         suspects: data.suspects || [],
         imageUrl: data.imageUrl,
+        introNarration: data.introNarration,
         generatedAt: data.generatedAt,
       };
 

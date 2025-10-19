@@ -54,7 +54,20 @@ export interface CaseData {
   location: Location;
   suspects: Suspect[];
   imageUrl?: string;
+  introNarration?: IntroNarration;
   generatedAt: number;
+}
+
+// ============================================================================
+// Intro Narration Types
+// ============================================================================
+
+export type NarrationPhase = 'atmosphere' | 'incident' | 'stakes';
+
+export interface IntroNarration {
+  atmosphere: string;
+  incident: string;
+  stakes: string;
 }
 
 // ============================================================================
@@ -155,6 +168,7 @@ export interface CaseApiResponse {
   location: Location;
   suspects: Suspect[];
   imageUrl?: string;
+  introNarration?: IntroNarration;
   generatedAt: number;
 }
 
@@ -181,6 +195,7 @@ export interface SuspectImageApiResponse {
 
 export type GameScreen =
   | 'loading'
+  | 'intro'
   | 'case-overview'
   | 'investigation'
   | 'submission'

@@ -46,6 +46,11 @@ export interface GeneratedCase {
     how: string;
   };
   imageUrl?: string;
+  introNarration?: {
+    atmosphere: string;
+    incident: string;
+    stakes: string;
+  };
   generatedAt: number;
 }
 
@@ -97,6 +102,27 @@ export class CaseGeneratorService {
 
     console.log(`✅ Case story generated`);
 
+    // 2.5. 인트로 나레이션 생성 (NEW!)
+    let introNarration: { atmosphere: string; incident: string; stakes: string };
+    try {
+      introNarration = await this.generateIntroNarration(
+        caseStory,
+        elements.weapon,
+        elements.location,
+        temperature
+      );
+      console.log(`✅ Intro narration generated`);
+    } catch (error) {
+      console.error('❌ Narration generation failed:', error);
+      // Fallback to basic narration
+      introNarration = this.generateFallbackNarration(
+        caseStory,
+        elements.weapon,
+        elements.location
+      );
+      console.log(`✅ Fallback narration generated`);
+    }
+
     // 3. 케이스 이미지 생성 (선택)
     let imageUrl: string | undefined;
     if (includeImage) {
@@ -140,7 +166,8 @@ export class CaseGeneratorService {
         profileImageUrl: suspect.profileImageUrl
       })),
       solution: caseStory.solution,
-      imageUrl
+      imageUrl,
+      introNarration  // 새로 추가
     };
 
     const savedCase = await CaseRepository.createCase(createInput, date, customCaseId);
@@ -166,7 +193,217 @@ export class CaseGeneratorService {
       })),
       solution: savedCase.solution,
       imageUrl: savedCase.imageUrl,
+      introNarration: savedCase.introNarration,
       generatedAt: savedCase.generatedAt
+    };
+  }
+
+  /**
+   * 인트로 나레이션 생성 (Gemini API)
+   */
+  private async generateIntroNarration(
+    caseStory: {
+      victim: { name: string; background: string };
+      suspects: Array<{ name: string }>;
+    },
+    weapon: Weapon,
+    location: Location,
+    temperature: number
+  ): Promise<{ atmosphere: string; incident: string; stakes: string }> {
+    const prompt = this.buildIntroNarrationPrompt(
+      caseStory,
+      weapon,
+      location
+    );
+
+    const response = await this.geminiClient.generateText(prompt, {
+      temperature,
+      maxTokens: 1024
+    });
+
+    return this.geminiClient.parseJsonResponse(response.text);
+  }
+
+  /**
+   * Enhanced 인트로 나레이션 프롬프트 생성
+   *
+   * Anthropic best practices + literary devices 적용
+   * 4 few-shot examples, 구체적 literary techniques 지시
+   *
+   * @see https://github.com/anthropics/courses - Prompt Engineering Best Practices
+   */
+  private buildIntroNarrationPrompt(
+    caseStory: {
+      victim: { name: string; background: string };
+      suspects: Array<{ name: string }>;
+    },
+    weapon: Weapon,
+    location: Location
+  ): string {
+    return `# ROLE & EXPERTISE
+
+You are a master detective fiction writer specializing in atmospheric murder mystery narratives. Your work is known for:
+- Sensory-rich descriptions that transport readers into the scene
+- Psychological tension that builds with each sentence
+- Literary devices (metaphor, personification, foreshadowing) seamlessly woven into prose
+- Genre-specific vocabulary that evokes classic noir, gothic, or psychological thriller moods
+
+Your influences include Raymond Chandler's hard-boiled prose, Agatha Christie's locked-room mysteries, and Gillian Flynn's psychological depth.
+
+# TONE & STYLE
+
+**Writing Style Requirements:**
+- **Immersive**: Every sentence should engage multiple senses
+- **Cinematic**: Write as if directing a camera—what does the reader SEE, HEAR, SMELL?
+- **Economical**: Maximum impact with minimum words (no purple prose)
+- **Active Voice**: Prefer "The wind clawed at the windows" over "The windows were clawed by the wind"
+
+**Forbidden Clichés:**
+❌ "It was a dark and stormy night"
+❌ "Little did they know"
+❌ "The calm before the storm"
+❌ Generic descriptions: "beautiful mansion", "scary atmosphere"
+
+# CASE DETAILS
+
+<case_info>
+Victim: ${caseStory.victim.name}
+Background: ${caseStory.victim.background}
+Location: ${location.name} - ${location.description}
+Weapon: ${weapon.name}
+Suspects: ${caseStory.suspects.length} individuals
+</case_info>
+
+# TASK: Generate 3-Phase Narration in Korean
+
+## Phase 1: ATMOSPHERE (50-80 words in Korean)
+**Required Elements:**
+1. One striking visual hook that defines the scene
+2. At least 3 different senses (sight, sound, smell, touch, temperature)
+3. Specific time marker (when is this happening?)
+4. At least one metaphor, simile, or personification
+
+**Don't**: Explain the mood. **Do**: Show it through concrete details.
+
+## Phase 2: INCIDENT (50-80 words in Korean)
+**Required Elements:**
+1. Victim's name + position description with visual precision
+2. Specific weapon/method with one vivid detail
+3. One impossible element (locked from inside, no footprints, evidence contradiction)
+4. Forensic poetry (describe violence without being gratuitous)
+
+**Pattern**:
+- Discovery (who, where)
+- Death details (how)
+- The impossibility (locked-room mystery element)
+- Evidence contradiction
+
+## Phase 3: STAKES (50-90 words in Korean)
+**Required Elements:**
+1. Detective identity ("당신은...")
+2. Specific suspect count with one detail about them
+3. Time pressure (why must this be solved NOW?)
+4. Challenge framing (what makes this difficult?)
+5. Call to action (end with urgency)
+
+**Don't**: Say "범인을 찾아라". **Do**: "거짓말의 그물을 풀어내라, 그 전에..."
+
+# FEW-SHOT EXAMPLES (for quality reference)
+
+<example id="gothic">
+<atmosphere>
+The Blackwood Estate loomed against the storm-torn sky, its gargoyles weeping rainwater like stone tears. Lightning carved the darkness, revealing ivy-choked windows that hadn't seen light in decades. Inside, candles guttered in their holders, throwing monstrous shadows across oil paintings of the long-dead Blackwood lineage—their eyes seeming to follow every movement through the gloom.
+</atmosphere>
+<incident>
+Lord Edmund Blackwood lay sprawled across the library's Persian rug, his silk cravat soaked crimson. The letter opener—family heirloom, silver and jade—protruded from between his ribs at an impossible angle. Yet the study door remained locked from the inside, its key still clutched in the victim's cooling hand. No footprints marred the dust. No windows stood open to the howling night.
+</incident>
+<stakes>
+You are Detective Inspector Sarah Chen, summoned from London at midnight. Seven family members sheltered within these walls when the scream rang out. The storm has washed out the only road—no one can leave, no reinforcements can arrive. One of them is a murderer. One of them is lying. And somewhere in this labyrinth of secrets, the truth waits to be unearthed before the killer strikes again.
+</stakes>
+</example>
+
+<example id="noir">
+<atmosphere>
+Rain hammered the city like bullets on tin, turning the alley into a river of neon reflections. Cigarette smoke curled from the jazz club's back door, mixing with the stench of wet garbage and something darker. The kind of darkness that clings to your coat and follows you home. A solo saxophone wailed somewhere above, playing a funeral dirge for a city that had forgotten how to mourn.
+</atmosphere>
+<incident>
+Vincent "Ace" Romano would never deal another hand. The casino owner lay face-down in a puddle that wasn't just rainwater, a .38 slug in his back—clean shot, professional work. His diamond pinky ring gleamed under the streetlight, untouched. No robbery, then. This was personal. The murder weapon lay three feet away, wiped clean, almost mocking. Someone wanted to send a message.
+</incident>
+<stakes>
+You're a private eye who owes Ace a favor—the kind that doesn't die with a man. Three suspects were seen leaving the club minutes before the body dropped: his trophy wife, his business partner, and the enforcer he'd just fired. Each has an alibi. Each has a motive. The cops will be here in twenty minutes. That's all the time you've got to read between the lies before this case gets buried under red tape and corruption.
+</stakes>
+</example>
+
+<example id="psychological">
+<atmosphere>
+The psychiatric hospital's east wing breathed with unnatural quiet. Fluorescent lights hummed their anxiety-inducing frequency, casting everything in sickly green. Dr. Morrison's office door stood ajar—unusual for a man who locked even his desk drawers. The air tasted of antiseptic and something underneath it, something wrong. A patient's scream echoed from Ward C, then cut off abruptly. Too abruptly.
+</atmosphere>
+<incident>
+Dr. Marcus Morrison, the institution's head psychiatrist, sat rigid in his leather chair, eyes frozen in expression of profound terror. No visible wounds. No signs of struggle. Just a man who'd seen something that stopped his heart. On his desk: patient files scattered, one session recording still playing on loop—a patient's voice whispering, 'He knows. He knows what we did.' The timestamp: three hours before his estimated time of death.
+</incident>
+<stakes>
+You're the detective called in when hospital security found something that doesn't make medical sense. Five patients had appointments with Morrison today. Three have violent histories. Two claimed Morrison was 'getting too close to the truth.' One insists they can't remember their session at all. The hospital director is pressuring for quick resolution—bad for business, you understand. But in a place where everyone is lying to survive, how do you find the one lie that killed?
+</stakes>
+</example>
+
+<example id="modern">
+<atmosphere>
+The penthouse apartment was all glass and chrome—a monument to success that now felt like a display case for death. City lights glittered forty stories below, indifferent witnesses to what happened here. Everything in its place, everything pristine. Except for the body.
+</atmosphere>
+<incident>
+Tech mogul Jennifer Park lay on her designer sofa, champagne flute still gripped in her hand. Poison—subtle, sophisticated, untraceable without a lab. The security system showed no breaches. The smart locks reported no unauthorized entries. Even the AI assistant had nothing to report. Yet someone had gotten close enough to slip death into her evening drink.
+</incident>
+<stakes>
+You're the detective in a world where technology records everything—except the truth. Three people had access to this fortress: her business rival, her ex-lover who couldn't let go, and her assistant who knew all her secrets. Each has a digital alibi. Each has a flesh-and-blood motive. In sixty minutes, the lawyers arrive and the evidence gets locked behind NDAs and corporate interests. The clock is ticking, and in this game, the smartest player wins.
+</stakes>
+</example>
+
+# LITERARY TECHNIQUES TO EMPLOY
+
+**Metaphor Examples:**
+- Building as character: "저택이 재판관의 망치처럼 우뚝 섰다"
+- Weather as emotion: "비가 말하지 못한 진실을 위해 울었다"
+- Time as threat: "시계의 각 똑딱 소리가 또 하나의 관을 못질했다"
+
+**Sensory Details (choose 3+ per phase):**
+- Sight: 조명, 그림자, 색 상징, 움직임
+- Sound: 환경음, 돌발음, 침묵, 메아리
+- Smell: 부패, 향수, 음식, 연기
+- Touch: 온도, 질감, 습기
+- Taste: 두려움의 금속 맛, 쓴 공기 (rarely)
+
+# OUTPUT FORMAT
+
+Respond ONLY with valid JSON in **KOREAN**:
+
+\`\`\`json
+{
+  "atmosphere": "[한국어로 50-80 단어, Phase 1 요구사항 충족]",
+  "incident": "[한국어로 50-80 단어, Phase 2 요구사항 충족]",
+  "stakes": "[한국어로 50-90 단어, Phase 3 요구사항 충족]"
+}
+\`\`\`
+
+**IMPORTANT**: Generate the narration in KOREAN (한국어), using the same quality, literary techniques, and emotional impact as the English examples above.
+
+Generate the narration now.`;
+  }
+
+  /**
+   * 기본 나레이션 생성 (Fallback)
+   */
+  private generateFallbackNarration(
+    caseStory: {
+      victim: { name: string; background: string };
+      suspects: Array<{ name: string }>;
+    },
+    weapon: Weapon,
+    location: Location
+  ): { atmosphere: string; incident: string; stakes: string } {
+    return {
+      atmosphere: `${location.name}. 어둠이 내려앉은 밤, 긴장감이 감돈다. 무언가 끔찍한 일이 일어났다.`,
+      incident: `${caseStory.victim.name}이(가) ${location.name}에서 사망한 채 발견되었다. ${weapon.name}이(가) 현장에 있다. 침입 흔적은 없다.`,
+      stakes: `당신은 형사다. ${caseStory.suspects.length}명의 용의자가 있다. 진실을 밝혀내야 한다.`
     };
   }
 
@@ -442,6 +679,7 @@ Mood: Mystery, intrigue, subtle emotional expression.`;
         })),
         solution: existingCase.solution,
         imageUrl: existingCase.imageUrl,
+        introNarration: existingCase.introNarration,
         generatedAt: existingCase.generatedAt
       };
     }
@@ -488,6 +726,7 @@ Mood: Mystery, intrigue, subtle emotional expression.`;
         })),
         solution: existingCase.solution,
         imageUrl: existingCase.imageUrl,
+        introNarration: existingCase.introNarration,
         generatedAt: existingCase.generatedAt
       };
     }

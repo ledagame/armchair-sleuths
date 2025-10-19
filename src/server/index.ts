@@ -585,6 +585,7 @@ router.get('/api/case/today', async (req, res): Promise<void> => {
             location: regeneratedCase.location,
             suspects: suspectsData,
             imageUrl: regeneratedCase.imageUrl,
+            introNarration: regeneratedCase.introNarration, // ✅ Include intro narration
             generatedAt: regeneratedCase.generatedAt,
             _autoRegenerated: true // Flag to indicate auto-regeneration occurred
           });
@@ -623,6 +624,7 @@ router.get('/api/case/today', async (req, res): Promise<void> => {
       location: todaysCase.location,
       suspects: suspectsData,
       imageUrl: todaysCase.imageUrl,
+      introNarration: todaysCase.introNarration, // ✅ Include intro narration
       generatedAt: todaysCase.generatedAt
     });
   } catch (error) {
@@ -693,6 +695,7 @@ router.get('/api/case/:caseId', async (req, res): Promise<void> => {
       location: caseData.location,
       suspects: suspectsData,
       imageUrl: caseData.imageUrl,
+      introNarration: caseData.introNarration, // ✅ Include intro narration
       generatedAt: caseData.generatedAt
     });
   } catch (error) {

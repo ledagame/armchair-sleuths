@@ -5,6 +5,7 @@
  */
 
 import { KVStoreManager, type CaseData, type SuspectData } from './KVStoreManager';
+import type { IntroNarration } from '../../../shared/types/index';
 
 export interface CreateCaseInput {
   victim: {
@@ -37,6 +38,7 @@ export interface CreateCaseInput {
     how: string;
   };
   imageUrl?: string;
+  introNarration?: IntroNarration; // 인트로 나레이션 (Gemini API로 생성)
 }
 
 /**
@@ -74,7 +76,8 @@ export class CaseRepository {
       suspects: suspectsWithIds,
       solution: input.solution,
       generatedAt: Date.now(),
-      imageUrl: input.imageUrl
+      imageUrl: input.imageUrl,
+      introNarration: input.introNarration
     };
 
     // 케이스 저장

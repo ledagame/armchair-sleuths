@@ -11,6 +11,7 @@ import { SuspectPanel } from './components/suspect/SuspectPanel';
 import { ChatInterface } from './components/chat/ChatInterface';
 import { SubmissionForm } from './components/submission/SubmissionForm';
 import { ResultView } from './components/results/ResultView';
+import { IntroNarration } from './components/intro/IntroNarration';
 import { useCase } from './hooks/useCase';
 import { useSuspect } from './hooks/useSuspect';
 import { useChat } from './hooks/useChat';
@@ -50,7 +51,12 @@ export const App = () => {
     } else if (caseError) {
       setCurrentScreen('loading'); // Show error in loading screen
     } else if (caseData && currentScreen === 'loading') {
-      setCurrentScreen('case-overview');
+      // 나레이션이 있으면 intro로, 없으면 case-overview로
+      if (caseData.introNarration) {
+        setCurrentScreen('intro');
+      } else {
+        setCurrentScreen('case-overview');
+      }
     }
   }, [caseLoading, caseError, caseData, currentScreen]);
 
@@ -77,6 +83,10 @@ export const App = () => {
   });
 
   // Navigation handlers
+  const handleIntroComplete = useCallback(() => {
+    setCurrentScreen('case-overview');
+  }, []);
+
   const handleStartInvestigation = useCallback(() => {
     setCurrentScreen('investigation');
   }, []);
@@ -157,6 +167,16 @@ export const App = () => {
             </>
           )}
         </div>
+      );
+    }
+
+    // Intro narration screen
+    if (currentScreen === 'intro' && caseData && caseData.introNarration) {
+      return (
+        <IntroNarration
+          narration={caseData.introNarration}
+          onComplete={handleIntroComplete}
+        />
       );
     }
 

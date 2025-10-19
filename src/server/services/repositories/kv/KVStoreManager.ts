@@ -6,6 +6,7 @@
  */
 
 import { IStorageAdapter } from '../adapters/IStorageAdapter';
+import type { IntroNarration } from '../../../shared/types/index';
 
 export interface CaseData {
   id: string;
@@ -39,6 +40,7 @@ export interface CaseData {
   };
   generatedAt: number; // timestamp
   imageUrl?: string;
+  introNarration?: IntroNarration; // 인트로 나레이션 (Gemini API로 생성)
 }
 
 export interface SuspectData {

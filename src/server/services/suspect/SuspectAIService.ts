@@ -8,6 +8,13 @@
 import { GeminiClient, type GeminiTextOptions } from '../gemini/GeminiClient';
 import { EmotionalStateManager, type EmotionalTone } from './EmotionalStateManager';
 import { KVStoreManager, type SuspectData } from '../repositories/kv/KVStoreManager';
+import {
+  getArchetypeData,
+  getArchetypeSpeechPatterns,
+  getEmotionalStateFromSuspicion,
+  type ArchetypeName,
+  type EmotionalStateName
+} from '../prompts/ArchetypePrompts';
 
 export interface ChatMessage {
   role: 'user' | 'suspect';
@@ -133,7 +140,7 @@ export class SuspectAIService {
   }
 
   /**
-   * 용의자 AI 프롬프트 생성
+   * 용의자 AI 프롬프트 생성 (Enhanced with suspect-ai-prompter skill)
    */
   private buildSuspectPrompt(
     suspect: SuspectData,
@@ -141,44 +148,161 @@ export class SuspectAIService {
     conversationHistory: ChatMessage[],
     currentTone: EmotionalTone
   ): string {
-    const toneGuidance = EmotionalStateManager.getToneGuidance(currentTone);
+    // Get emotional state from suspicion level (0-100 → COOPERATIVE/NERVOUS/DEFENSIVE/AGGRESSIVE)
+    const suspicionLevel =
+      currentTone === 'cooperative'
+        ? 20
+        : currentTone === 'nervous'
+          ? 40
+          : currentTone === 'defensive'
+            ? 65
+            : 90;
 
-    // 대화 기록 포맷팅
+    const emotionalState = getEmotionalStateFromSuspicion(suspicionLevel);
+
+    // Get archetype-specific data
+    const archetypeData = getArchetypeData(suspect.archetype as ArchetypeName);
+
+    if (!archetypeData) {
+      // Fallback to simple prompt if archetype not found
+      console.warn(`Archetype not found: ${suspect.archetype}, using fallback prompt`);
+      return this.buildFallbackPrompt(suspect, userQuestion, conversationHistory, currentTone);
+    }
+
+    // Get speech patterns for current emotional state
+    const speechPatterns = getArchetypeSpeechPatterns(
+      suspect.archetype as ArchetypeName,
+      emotionalState
+    );
+
+    // Format conversation history
     const historyText = conversationHistory
-      .slice(-5) // 최근 5개만
+      .slice(-5) // Last 5 messages
       .map(msg => {
-        const role = msg.role === 'user' ? '탐정' : suspect.name;
+        const role = msg.role === 'user' ? 'Detective' : suspect.name;
         return `${role}: ${msg.content}`;
       })
       .join('\n');
 
-    return `당신은 살인 미스터리 게임의 용의자입니다.
+    // Build enhanced prompt based on prompt-templates.md structure
+    return `# CHARACTER IDENTITY & BACKGROUND
 
-**당신의 정체:**
-- 이름: ${suspect.name}
-- 원형: ${suspect.archetype}
-- 배경: ${suspect.background}
-- 성격: ${suspect.personality}
-- ${suspect.isGuilty ? '당신은 **진범**입니다.' : '당신은 **무고**합니다.'}
+You are ${suspect.name}, a ${suspect.archetype}.
 
-**현재 감정 상태:**
-- ${toneGuidance}
+${suspect.background}
 
-**대화 기록:**
-${historyText || '(대화 시작)'}
+Your current situation: You are being questioned about a murder. The victim is ${suspect.victim || 'the victim'}. You are one of the suspects.
 
-**탐정의 질문:**
+# CORE PERSONALITY & VALUES
+
+**Personality Traits:**
+${archetypeData.personality.join('\n')}
+
+**Character Definition:**
+${archetypeData.definition}
+
+# CURRENT EMOTIONAL STATE
+
+**Suspicion Level:** ${suspicionLevel}/100
+**Emotional State:** ${emotionalState}
+
+**Current Mindset:** ${archetypeData.speechPatterns[emotionalState].mindset}
+
+**Tone Guidance:** ${archetypeData.speechPatterns[emotionalState].tone}
+
+# GUILTY/INNOCENT STATUS
+
+${
+  suspect.isGuilty
+    ? `You are GUILTY of this crime. You committed the murder.
+
+**Response Strategy:**
+- Deny involvement but don't be too defensive
+- Provide partial truths mixed with lies
+- Create plausible alternative explanations
+- Show appropriate emotional responses for an innocent person
+- Avoid direct contradictions that can be easily proven false
+- Under high pressure, you may slip and reveal inconsistencies`
+    : `You are INNOCENT of this crime. You did not commit the murder.
+
+**Response Strategy:**
+- Tell the truth about what you know
+- Show genuine confusion about why you're a suspect
+- Provide honest details that can be verified
+- Express appropriate concern about the investigation
+- Don't have knowledge of incriminating details only the killer would know
+- Your emotional responses reflect genuine innocence`
+}
+
+# SPEECH PATTERNS & STYLE
+
+**Your Natural Speaking Style (${suspect.archetype}):**
+${speechPatterns.slice(0, 3).join('\n')}
+
+**Common Vocabulary:**
+${archetypeData.vocabulary.primary.join(', ')}
+
+# CONVERSATION HISTORY
+
+${historyText || '(Beginning of conversation)'}
+
+# RESPONSE GUIDELINES
+
+1. **Stay in Character**: Maintain ${suspect.archetype} personality at all times
+2. **Match Emotional State**: Your tone must reflect ${emotionalState} consistently
+3. **Speech Pattern Consistency**: Use the speech patterns shown above as examples
+4. **Appropriate Information Disclosure**: Reveal information according to your ${suspect.isGuilty ? 'GUILTY' : 'INNOCENT'} status
+5. **Natural English**: Speak in natural, conversational English (will be translated to Korean)
+6. **Length Control**: Keep responses 2-4 sentences (15-80 words typically)
+7. **Show Don't Tell**: Demonstrate character through word choice, not explicit statements
+
+---
+
+Now respond to the detective's question in character as ${suspect.name}:
+
+Detective: ${userQuestion}
+
+${suspect.name}:`;
+  }
+
+  /**
+   * Fallback prompt for unknown archetypes
+   */
+  private buildFallbackPrompt(
+    suspect: SuspectData,
+    userQuestion: string,
+    conversationHistory: ChatMessage[],
+    currentTone: EmotionalTone
+  ): string {
+    const toneGuidance = EmotionalStateManager.getToneGuidance(currentTone);
+
+    const historyText = conversationHistory
+      .slice(-5)
+      .map(msg => {
+        const role = msg.role === 'user' ? 'Detective' : suspect.name;
+        return `${role}: ${msg.content}`;
+      })
+      .join('\n');
+
+    return `You are ${suspect.name}, a suspect in a murder investigation.
+
+**Your Character:**
+- Background: ${suspect.background}
+- Personality: ${suspect.personality}
+- ${suspect.isGuilty ? 'You are GUILTY and must lie convincingly.' : 'You are INNOCENT and tell the truth.'}
+
+**Current Emotional State:**
+${toneGuidance}
+
+**Conversation History:**
+${historyText || '(Beginning of conversation)'}
+
+**Detective's Question:**
 ${userQuestion}
 
-**응답 규칙:**
-1. **캐릭터 일관성**: 배경과 성격에 맞게 답변
-2. **감정 상태 반영**: 현재 tone에 맞는 말투와 태도
-3. **정보 제공**: ${suspect.isGuilty ? '진범이므로 거짓말하되 모순 없이' : '무고하므로 진실하게 답변'}
-4. **자연스러운 대화**: 로봇 같지 않고 인간적으로
-5. **간결함**: 2-4문장으로 답변
-6. **한국어 사용**: 자연스러운 한국어 회화체
+Respond in 2-4 sentences in natural English, staying in character:
 
-당신의 답변:`;
+${suspect.name}:`;
   }
 
   /**
