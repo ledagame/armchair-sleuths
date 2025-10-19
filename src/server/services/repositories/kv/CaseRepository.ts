@@ -45,13 +45,16 @@ export interface CreateCaseInput {
 export class CaseRepository {
   /**
    * 새로운 케이스 생성
+   * @param input - 케이스 생성 데이터
+   * @param date - 케이스 날짜 (선택, 기본값: 현재 날짜)
+   * @param customCaseId - 커스텀 케이스 ID (선택, 타임스탬프 기반 고유 ID 생성 시 사용)
    */
-  static async createCase(input: CreateCaseInput, date?: Date): Promise<CaseData> {
+  static async createCase(input: CreateCaseInput, date?: Date, customCaseId?: string): Promise<CaseData> {
     const targetDate = date || new Date();
     const dateStr = targetDate.toISOString().split('T')[0]; // YYYY-MM-DD
 
-    // 케이스 ID 생성
-    const caseId = `case-${dateStr}`;
+    // 케이스 ID 생성 (customCaseId가 있으면 사용, 없으면 기존 방식)
+    const caseId = customCaseId || `case-${dateStr}`;
 
     // 용의자 ID 생성 및 매핑
     const suspectsWithIds = input.suspects.map((suspect, index) => ({

@@ -35,7 +35,8 @@ export interface Suspect {
   background: string;
   personality: string;
   emotionalState: EmotionalState;
-  profileImageUrl?: string; // Profile image (Base64 data URL)
+  profileImageUrl?: string; // Profile image (Base64 data URL) - backwards compatibility
+  hasProfileImage?: boolean; // Flag to indicate if profile image is available for lazy loading
 }
 
 export interface EmotionalState {
@@ -169,6 +170,11 @@ export interface LeaderboardApiResponse {
   leaderboard: LeaderboardEntry[];
 }
 
+export interface SuspectImageApiResponse {
+  suspectId: string;
+  profileImageUrl: string; // Base64 data URL
+}
+
 // ============================================================================
 // UI State Types
 // ============================================================================
@@ -187,6 +193,27 @@ export interface GameState {
   hasSubmitted: boolean;
   scoringResult: ScoringResult | null;
 }
+
+// ============================================================================
+// Suspect Image Types (Progressive Loading)
+// ============================================================================
+
+/**
+ * State of a suspect's profile image during progressive loading
+ */
+export interface SuspectImageState {
+  /** Base64 data URL of the loaded image */
+  imageUrl: string | null;
+  /** Whether the image is currently being fetched */
+  loading: boolean;
+  /** Error message if image fetch failed */
+  error: string | null;
+}
+
+/**
+ * Map of suspect ID to their image state
+ */
+export type SuspectImagesMap = Map<string, SuspectImageState>;
 
 // ============================================================================
 // Hook Return Types
@@ -221,4 +248,16 @@ export interface UseSubmissionReturn {
   submitAnswer: (answer: W4HAnswer) => Promise<ScoringResult>;
   submitting: boolean;
   error: string | null;
+}
+
+/**
+ * Return type for useSuspectImages hook
+ */
+export interface UseSuspectImagesReturn {
+  /** Map of suspect ID to their image state */
+  images: SuspectImagesMap;
+  /** Whether any images are currently loading */
+  isLoading: boolean;
+  /** Whether all images have finished loading (success or failure) */
+  isComplete: boolean;
 }

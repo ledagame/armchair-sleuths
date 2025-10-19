@@ -134,7 +134,8 @@ export class DevvitStorageAdapter implements IStorageAdapter {
    */
   async del(...key: string[]): Promise<void> {
     if (key.length > 0) {
-      await redis.del(key);
+      // ✅ Spread the array as Devvit redis.del expects individual arguments
+      await redis.del(...key);
     }
   }
 }

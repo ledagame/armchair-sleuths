@@ -14,6 +14,7 @@ export interface GenerateCaseOptions {
   includeImage?: boolean;
   includeSuspectImages?: boolean; // Generate profile images for suspects
   temperature?: number;
+  customCaseId?: string; // Custom case ID for unique identification (timestamp-based)
 }
 
 export interface GeneratedCase {
@@ -69,7 +70,8 @@ export class CaseGeneratorService {
       date = new Date(),
       includeImage = false,
       includeSuspectImages = false,
-      temperature = 0.8
+      temperature = 0.8,
+      customCaseId
     } = options;
 
     console.log(`🔄 Generating case for ${date.toISOString().split('T')[0]}...`);
@@ -141,7 +143,7 @@ export class CaseGeneratorService {
       imageUrl
     };
 
-    const savedCase = await CaseRepository.createCase(createInput, date);
+    const savedCase = await CaseRepository.createCase(createInput, date, customCaseId);
 
     console.log(`✅ Case saved: ${savedCase.id}`);
 
@@ -318,7 +320,12 @@ High quality, detailed, atmospheric.`;
   }
 
   /**
-   * 용의자 프로필 이미지 생성 (병렬 처리)
+   * 용의자 프로필 이미지 생성 (순차 처리)
+   *
+   * Phase 1 수정: 병렬 → 순차 실행으로 변경
+   * - Gemini API rate limiting 우회
+   * - 각 이미지가 완전히 생성된 후 다음 이미지 생성
+   * - 시간은 늘어나지만(~15초) 성공률 향상
    */
   private async generateSuspectProfileImages(
     suspects: Array<{
@@ -341,11 +348,22 @@ High quality, detailed, atmospheric.`;
       return suspects;
     }
 
-    console.log('🎨 Generating profile images for suspects...');
+    console.log('🎨 Generating profile images for suspects (sequential)...');
 
-    // 병렬 처리로 시간 단축
-    const imagePromises = suspects.map(async (suspect, index) => {
+    // 순차 처리로 Gemini API rate limiting 우회
+    const results: Array<{
+      name: string;
+      background: string;
+      personality: string;
+      isGuilty: boolean;
+      profileImageUrl?: string;
+    }> = [];
+
+    for (let index = 0; index < suspects.length; index++) {
+      const suspect = suspects[index];
       try {
+        console.log(`🎨 Generating image ${index + 1}/${suspects.length}: ${suspect.name}...`);
+
         const prompt = this.buildSuspectProfilePrompt(
           suspect,
           archetypes[index]
@@ -355,18 +373,16 @@ High quality, detailed, atmospheric.`;
 
         console.log(`✅ Profile image generated for ${suspect.name}`);
 
-        return {
+        results.push({
           ...suspect,
           profileImageUrl: response.imageUrl
-        };
+        });
       } catch (error) {
         console.error(`❌ Profile image generation failed for ${suspect.name}:`, error);
         // 이미지 실패해도 용의자 데이터는 유지
-        return suspect;
+        results.push(suspect);
       }
-    });
-
-    const results = await Promise.all(imagePromises);
+    }
 
     console.log(`✅ Suspect profile images generated: ${results.filter(r => r.profileImageUrl).length}/${suspects.length}`);
 

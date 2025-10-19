@@ -10,6 +10,7 @@
     "build:server": "cd src/server && vite build",
     "build": "npm run build:client && npm run build:server",
     "check": "npm run type-check && npm run lint:fix && npm run prettier",
+    "create-game-post": "npx tsx scripts/create-game-post.ts",
     "deploy": "npm run build && devvit upload",
     "dev": "concurrently -k -p \"[{name}]\" -n \"CLIENT,SERVER,DEVVIT\" -c \"blue,green,magenta\" \"npm run dev:client\" \"npm run dev:server\" \"npm run dev:devvit\"",
     "dev:client": "cd src/client && vite build --watch",
@@ -31,7 +32,6 @@
     "express": "5.1.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "sharp": "^0.33.5",
     "tailwind-merge": "3.3.0"
   },
   "devDependencies": {

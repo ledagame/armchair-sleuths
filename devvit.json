@@ -22,6 +22,12 @@
         "type": "string",
         "label": "Gemini API Key",
         "isSecret": true
+      },
+      "vercelImageFunctionUrl": {
+        "type": "string",
+        "label": "Vercel Image Generation Function URL",
+        "isSecret": false,
+        "defaultValue": "https://armchair-sleuths-silk.vercel.app/api/generate-image"
       }
     }
   },

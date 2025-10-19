@@ -3,7 +3,7 @@
  *
  * Gemini API 통합 클라이언트
  * - 텍스트 생성 (gemini-flash-lite-latest)
- * - 이미지 생성 (Vercel Function으로 위임)
+ * - 이미지 생성 (gemini-2.5-flash-image, raw base64 with retry)
  * - 임베딩 생성 (text-embedding-004, Phase 2-3용)
  */
 
@@ -37,14 +37,12 @@ export class GeminiClient {
   private readonly EMBEDDING_MODEL = 'text-embedding-004';
   private readonly BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
   private readonly apiKey: string;
-  private readonly vercelFunctionUrl?: string;
 
-  constructor(apiKey: string, vercelFunctionUrl?: string) {
+  constructor(apiKey: string) {
     if (!apiKey) {
       throw new Error('Gemini API key is required');
     }
     this.apiKey = apiKey;
-    this.vercelFunctionUrl = vercelFunctionUrl;
   }
 
   /**
@@ -119,41 +117,98 @@ export class GeminiClient {
   }
 
   /**
-   * 이미지 생성 (Vercel Function으로 위임)
+   * 이미지 생성 (Gemini API 직접 호출, raw base64)
    *
-   * Phase 1: 캐싱 없음 (직접 생성)
-   * Phase 2-3: Redis/Vector 캐싱 (Vercel Function에서 처리)
+   * Phase 1: Devvit 내부에서 직접 생성 (압축 없음)
+   * - Gemini API 직접 호출 (외부 도메인 차단 우회)
+   * - Raw base64를 data URL로 직접 사용
+   * - 재시도 로직 (최대 3회)
+   *
+   * Note: 압축 없이 사용하여 이미지 크기가 큽니다 (~1-2MB per image)
+   * 작동 확인 후 최적화 예정
    */
-  async generateImage(prompt: string): Promise<GeminiImageResponse> {
-    if (!this.vercelFunctionUrl) {
-      throw new Error('Vercel Function URL is not configured');
-    }
+  async generateImage(prompt: string, maxRetries: number = 3): Promise<GeminiImageResponse> {
+    let lastError: Error | null = null;
 
-    try {
-      const response = await fetch(this.vercelFunctionUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ prompt })
-      });
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`🎨 Image generation attempt ${attempt}/${maxRetries}...`);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Image generation error (${response.status}): ${errorText}`);
+        // 1. Gemini Image API 직접 호출
+        const response = await fetch(
+          `${this.BASE_URL}/${this.IMAGE_MODEL}:generateContent`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-goog-api-key': this.apiKey
+            },
+            body: JSON.stringify({
+              contents: [{
+                parts: [{ text: prompt }]
+              }],
+              generationConfig: {
+                temperature: 0.4,
+                topP: 0.95,
+                topK: 40
+              }
+            })
+          }
+        );
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Gemini Image API error (${response.status}): ${errorText}`);
+        }
+
+        const data = await response.json();
+
+        if (!data.candidates || data.candidates.length === 0) {
+          throw new Error('No image candidates returned from Gemini API');
+        }
+
+        // 2. Base64 이미지 추출 (parts 배열에서 inlineData 검색)
+        // Gemini는 text와 image를 모두 반환할 수 있으므로 parts를 순회해야 함
+        const parts = data.candidates[0].content.parts;
+        const imagePart = parts.find((part: any) => part.inlineData);
+
+        if (!imagePart || !imagePart.inlineData || !imagePart.inlineData.data) {
+          console.error('❌ No inlineData found in response parts');
+          console.error('Response parts:', JSON.stringify(parts, null, 2));
+          throw new Error('No image data in Gemini API response');
+        }
+
+        const base64Image = imagePart.inlineData.data;
+        const mimeType = imagePart.inlineData.mimeType || 'image/png';
+
+        // 3. Data URL 생성 (압축 없이 raw base64 사용)
+        const imageUrl = `data:${mimeType};base64,${base64Image}`;
+
+        // 크기 추정 (base64는 원본의 약 4/3 크기)
+        const estimatedSizeKB = Math.round((base64Image.length * 3/4) / 1024);
+        console.log(`✅ Image generated (raw base64, with retry): ~${estimatedSizeKB}KB (attempt ${attempt}/${maxRetries})`);
+
+        return {
+          imageUrl,
+          cached: false
+        };
+
+      } catch (error) {
+        lastError = error as Error;
+        console.error(`❌ Image generation attempt ${attempt}/${maxRetries} failed:`, error);
+
+        // 마지막 시도가 아니면 재시도 전 대기
+        if (attempt < maxRetries) {
+          const waitMs = 1000 * attempt; // 1초, 2초, 3초 대기
+          console.log(`⏳ Waiting ${waitMs}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, waitMs));
+        }
       }
-
-      const data = await response.json();
-
-      return {
-        imageUrl: data.imageUrl,
-        cached: data.cached || false
-      };
-
-    } catch (error) {
-      console.error('Image generation error:', error);
-      throw error;
     }
+
+    // 모든 재시도 실패
+    console.error(`❌ All ${maxRetries} attempts failed for image generation`);
+    throw lastError || new Error('Image generation failed after all retries');
   }
 
   /**
@@ -294,7 +349,5 @@ export function createGeminiClient(apiKey?: string): GeminiClient {
     );
   }
 
-  const vercelFunctionUrl = process.env.VERCEL_IMAGE_FUNCTION_URL;
-
-  return new GeminiClient(key, vercelFunctionUrl);
+  return new GeminiClient(key);
 }

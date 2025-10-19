@@ -3,13 +3,30 @@
  *
  * Manages case data fetching and state
  * Handles loading, error states, and data caching
+ * Supports loading specific cases via postData.caseId (for archive/historical games)
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import type { CaseData, UseCaseReturn, CaseApiResponse, ApiError } from '../types';
 
+// Devvit postData interface
+interface DevvitPostData {
+  gameState?: string;
+  score?: number;
+  caseId?: string; // Custom case ID for loading specific historical cases
+}
+
+// Access Devvit postData from window (set by Devvit framework)
+declare global {
+  interface Window {
+    __POST_DATA__?: DevvitPostData;
+  }
+}
+
 /**
- * Hook for fetching and managing today's case data
+ * Hook for fetching and managing case data
+ * - If postData.caseId exists: loads that specific case (for historical posts)
+ * - Otherwise: loads today's case (default behavior)
  */
 export function useCase(): UseCaseReturn {
   const [caseData, setCaseData] = useState<CaseData | null>(null);
@@ -53,7 +70,21 @@ export function useCase(): UseCaseReturn {
     setError(null);
 
     try {
-      const response = await fetch('/api/case/today');
+      // Check if postData contains a specific caseId
+      const postData = window.__POST_DATA__;
+      const specificCaseId = postData?.caseId;
+
+      // Determine which endpoint to use
+      const endpoint = specificCaseId
+        ? `/api/case/${specificCaseId}`
+        : '/api/case/today';
+
+      console.log(specificCaseId
+        ? `📦 Loading specific case: ${specificCaseId}`
+        : '📅 Loading today\'s case'
+      );
+
+      const response = await fetch(endpoint);
 
       if (!response.ok) {
         const errorData: ApiError = await response.json();

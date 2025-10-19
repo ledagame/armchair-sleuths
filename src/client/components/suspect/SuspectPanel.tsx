@@ -1,12 +1,13 @@
 /**
  * SuspectPanel.tsx
  *
- * Suspect panel component - Enhanced production version
- * Displays all suspects with emotional states and selection
+ * Suspect panel component - Enhanced production version with progressive image loading
+ * Displays all suspects with emotional states, profile images, and selection
  */
 
 import { } from 'react';
 import type { Suspect, EmotionalTone } from '../../types';
+import { useSuspectImages } from '../../hooks/useSuspectImages';
 
 export interface SuspectPanelProps {
   suspects: Suspect[];
@@ -15,9 +16,12 @@ export interface SuspectPanelProps {
 }
 
 /**
- * Enhanced suspect panel with better visual feedback
+ * Enhanced suspect panel with progressive image loading and better visual feedback
  */
 export function SuspectPanel({ suspects, selectedSuspectId, onSelectSuspect }: SuspectPanelProps) {
+  // Progressive image loading hook
+  const { images } = useSuspectImages(suspects);
+
   // Get emoji for emotional tone
   const getToneEmoji = (tone: EmotionalTone): string => {
     const toneMap: Record<EmotionalTone, string> = {
@@ -58,6 +62,78 @@ export function SuspectPanel({ suspects, selectedSuspectId, onSelectSuspect }: S
     return 'bg-green-500';
   };
 
+  /**
+   * Renders the profile image section with progressive loading states
+   */
+  const renderProfileImage = (suspect: Suspect) => {
+    const imageState = images.get(suspect.id);
+
+    // Backwards compatibility: use profileImageUrl if present
+    if (suspect.profileImageUrl) {
+      return (
+        <div className="mb-4 flex justify-center">
+          <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-gray-700 shadow-lg">
+            <img
+              src={suspect.profileImageUrl}
+              alt={`${suspect.name} profile`}
+              className="w-full h-full object-cover transition-opacity duration-300 opacity-100"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+        </div>
+      );
+    }
+
+    // Progressive loading: Show skeleton while loading
+    if (imageState?.loading) {
+      return (
+        <div className="mb-4 flex justify-center">
+          <div className="w-32 h-32 rounded-full border-4 border-gray-700 shadow-lg overflow-hidden bg-gray-700">
+            {/* Animated skeleton loader */}
+            <div className="w-full h-full relative bg-gradient-to-r from-gray-700 via-gray-600 to-gray-700 animate-pulse">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-4xl opacity-30">👤</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Progressive loading: Show loaded image with fade-in
+    if (imageState?.imageUrl) {
+      return (
+        <div className="mb-4 flex justify-center">
+          <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-gray-700 shadow-lg">
+            <img
+              src={imageState.imageUrl}
+              alt={`${suspect.name} profile`}
+              className="w-full h-full object-cover transition-opacity duration-300 opacity-0"
+              loading="lazy"
+              decoding="async"
+              onLoad={(e) => {
+                // Trigger fade-in animation
+                e.currentTarget.classList.remove('opacity-0');
+                e.currentTarget.classList.add('opacity-100');
+              }}
+            />
+          </div>
+        </div>
+      );
+    }
+
+    // Progressive loading: Error state or no image available
+    // Show placeholder with default avatar
+    return (
+      <div className="mb-4 flex justify-center">
+        <div className="w-32 h-32 rounded-full bg-gray-700 flex items-center justify-center border-4 border-gray-600">
+          <span className="text-6xl">👤</span>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="suspect-panel p-6">
       <div className="mb-6">
@@ -83,28 +159,8 @@ export function SuspectPanel({ suspects, selectedSuspectId, onSelectSuspect }: S
                 }
               `}
             >
-              {/* Profile Image */}
-              {suspect.profileImageUrl && (
-                <div className="mb-4 flex justify-center">
-                  <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-gray-700 shadow-lg">
-                    <img
-                      src={suspect.profileImageUrl}
-                      alt={`${suspect.name} profile`}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Profile image placeholder */}
-              {!suspect.profileImageUrl && (
-                <div className="mb-4 flex justify-center">
-                  <div className="w-32 h-32 rounded-full bg-gray-700 flex items-center justify-center border-4 border-gray-600">
-                    <span className="text-6xl">👤</span>
-                  </div>
-                </div>
-              )}
+              {/* Profile Image with Progressive Loading */}
+              {renderProfileImage(suspect)}
 
               {/* Header with name and emotion */}
               <div className="flex justify-between items-start mb-3">
@@ -172,6 +228,34 @@ export function SuspectPanel({ suspects, selectedSuspectId, onSelectSuspect }: S
           </p>
         </div>
       )}
+
+      <style>{`
+        @keyframes shimmer {
+          0% {
+            background-position: -200% 0;
+          }
+          100% {
+            background-position: 200% 0;
+          }
+        }
+
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        .animate-shimmer {
+          animation: shimmer 2s ease-in-out infinite;
+        }
+
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-in-out forwards;
+        }
+      `}</style>
     </div>
   );
 }
