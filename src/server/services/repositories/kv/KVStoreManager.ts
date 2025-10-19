@@ -6,7 +6,9 @@
  */
 
 import { IStorageAdapter } from '../adapters/IStorageAdapter';
-import type { IntroNarration } from '../../../shared/types/index';
+import type { IntroNarration, CinematicImages, ImageGenerationStatus, ImageGenerationMeta } from '../../../shared/types/index';
+import type { Location } from '../../../shared/types/Case';
+import type { EvidenceItem } from '../../../shared/types/Evidence';
 
 export interface CaseData {
   id: string;
@@ -40,7 +42,14 @@ export interface CaseData {
   };
   generatedAt: number; // timestamp
   imageUrl?: string;
+  cinematicImages?: CinematicImages; // 시네마틱 인트로 이미지 (Gemini API로 생성, 3개 핵심 씬)
   introNarration?: IntroNarration; // 인트로 나레이션 (Gemini API로 생성)
+  // Image generation status (백그라운드 생성 추적)
+  imageGenerationStatus?: ImageGenerationStatus; // 이미지 생성 상태
+  imageGenerationMeta?: ImageGenerationMeta; // 이미지 생성 메타데이터
+  // Discovery system data (NEW)
+  locations?: Location[]; // 탐색 가능한 장소 목록 (4개, Medium 난이도)
+  evidence?: EvidenceItem[]; // 증거 목록 (10개, Medium 난이도)
 }
 
 export interface SuspectData {

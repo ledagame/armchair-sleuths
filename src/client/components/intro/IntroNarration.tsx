@@ -1,19 +1,16 @@
 /**
  * IntroNarration.tsx
  *
- * 인트로 나레이션 컴포넌트
- * 3단계 나레이션을 타이핑 효과로 표시하고 사용자 상호작용을 처리합니다.
- *
- * UX 개선사항:
- * - 향상된 타이포그래피 (글자/줄 간격 최적화)
- * - 타이핑 커서 깜빡임 효과
- * - 부드러운 Phase 전환 애니메이션
- * - 시각적으로 풍부한 배경 (그라데이션, 비네팅)
- * - 개선된 Skip 버튼 인터랙션
- * - 모바일 최적화
+ * Phase 1-3 통합 인트로 나레이션 컴포넌트
+ * - Phase 1: react-type-animation 문자 단위 타이핑 (120-180ms/char)
+ * - Phase 2: Se7en 스타일 시각적 효과 (jitter, keyword emphasis)
+ * - Phase 3: 3단계 페이싱 최적화 (atmosphere/incident/stakes)
  */
 
-import { useEffect, useState } from 'react';
+'use client';
+
+import { useEffect } from 'react';
+import { TypeAnimation } from 'react-type-animation';
 import { useIntroNarration } from '../../hooks/useIntroNarration';
 import type { IntroNarration as IntroNarrationData } from '../../../shared/types';
 
@@ -28,29 +25,53 @@ interface IntroNarrationProps {
 }
 
 /**
+ * 핵심 살인 미스터리 키워드
+ * Phase 2: 키워드 강조용
+ */
+const MURDER_KEYWORDS = [
+  '살인', '범인', '증거', '사건', '의문',
+  '피해자', '용의자', '알리바이', '동기',
+  '비밀', '진실', '거짓', '함정', '범죄',
+  '시체', '현장', '수사', '혐의', '용의'
+];
+
+/**
+ * Phase별 시각적 프로파일
+ * Phase 2: 배경색, 텍스트 색상, jitter 강도
+ */
+const PHASE_VISUAL_PROFILES = {
+  atmosphere: {
+    textColor: '#d0d0d0',
+    jitterClass: 'jitter-low',
+    background: 'radial-gradient(ellipse at center, rgba(30, 30, 35, 1) 0%, rgba(0, 0, 0, 1) 100%)'
+  },
+  incident: {
+    textColor: '#ffffff',
+    jitterClass: 'jitter-high',
+    background: 'radial-gradient(ellipse at center, rgba(50, 30, 30, 1) 0%, rgba(0, 0, 0, 1) 100%)'
+  },
+  stakes: {
+    textColor: '#ff6b6b',
+    jitterClass: 'jitter-medium',
+    background: 'radial-gradient(ellipse at center, rgba(35, 25, 35, 1) 0%, rgba(0, 0, 0, 1) 100%)'
+  }
+} as const;
+
+/**
  * IntroNarration 컴포넌트
  *
  * 케이스 시작 시 몰입감 있는 3단계 나레이션을 표시합니다:
  * 1. Atmosphere (분위기 설정)
  * 2. Incident (사건 발생)
  * 3. Stakes (플레이어 역할)
- *
- * @example
- * ```tsx
- * <IntroNarration
- *   narration={caseData.introNarration}
- *   onComplete={() => setCurrentScreen('case-overview')}
- * />
- * ```
  */
 export function IntroNarration({ narration, onComplete }: IntroNarrationProps) {
   // ============================================================================
   // Hooks
   // ============================================================================
 
-  const { displayedText, currentPhase, isComplete, skip } = useIntroNarration(narration);
-  const [phaseKey, setPhaseKey] = useState(0);
-  const [isTyping, setIsTyping] = useState(true);
+  const { sequence, currentPhase, isComplete, currentPacingProfile, skip } =
+    useIntroNarration(narration);
 
   // ============================================================================
   // Effects
@@ -68,21 +89,6 @@ export function IntroNarration({ narration, onComplete }: IntroNarrationProps) {
       return () => clearTimeout(timeout);
     }
   }, [isComplete, onComplete]);
-
-  /**
-   * Phase 변경 시 페이드 애니메이션을 위한 key 업데이트
-   */
-  useEffect(() => {
-    setPhaseKey(prev => prev + 1);
-  }, [currentPhase]);
-
-  /**
-   * 타이핑 상태 추적 (커서 표시 여부)
-   */
-  useEffect(() => {
-    const fullText = narration[currentPhase];
-    setIsTyping(displayedText.length < fullText.length);
-  }, [displayedText, currentPhase, narration]);
 
   /**
    * 키보드 이벤트 처리 (Space/Enter로 skip)
@@ -103,10 +109,8 @@ export function IntroNarration({ narration, onComplete }: IntroNarrationProps) {
   // Render Helpers
   // ============================================================================
 
-  /**
-   * Phase 인디케이터 계산 (1/3, 2/3, 3/3)
-   */
   const phaseIndex = currentPhase === 'atmosphere' ? 1 : currentPhase === 'incident' ? 2 : 3;
+  const visualProfile = PHASE_VISUAL_PROFILES[currentPhase];
 
   // ============================================================================
   // Render
@@ -118,50 +122,46 @@ export function IntroNarration({ narration, onComplete }: IntroNarrationProps) {
         fixed inset-0
         flex flex-col items-center justify-center
         p-6 md:p-12 lg:p-16
+        transition-all duration-1000
       "
       style={{
-        background: `
-          radial-gradient(ellipse at center, rgba(30, 30, 35, 1) 0%, rgba(0, 0, 0, 1) 100%),
-          radial-gradient(ellipse at center, transparent 60%, rgba(0, 0, 0, 0.8) 100%)
-        `,
+        background: visualProfile.background,
         animation: 'fadeIn 1.5s ease-in',
       }}
     >
-      {/* 나레이션 텍스트 */}
+      {/* 나레이션 텍스트 - TypeAnimation */}
       <div className="max-w-4xl w-full text-center mb-24 px-4">
-        <p
-          key={phaseKey}
-          className="
-            text-white
+        <div
+          className={`
+            cinematic-narration-text
+            ${visualProfile.jitterClass}
             text-xl md:text-2xl lg:text-3xl
             font-serif
-            transition-opacity duration-500
-          "
+          `}
           style={{
+            color: visualProfile.textColor,
             letterSpacing: '0.05em',
             lineHeight: '2.5',
             wordBreak: 'keep-all',
             textShadow: '0 2px 8px rgba(0, 0, 0, 0.7)',
             minHeight: '250px',
-            opacity: displayedText ? 1 : 0.3,
-            animation: 'textFadeIn 0.5s ease-in',
+            transition: 'color 1s ease-in-out',
           }}
           role="status"
           aria-live="polite"
         >
-          {displayedText}
-          {isTyping && (
-            <span
-              className="inline-block ml-1"
-              style={{
-                animation: 'blink 1s step-end infinite',
-                color: 'rgba(255, 255, 255, 0.7)',
-              }}
-            >
-              |
-            </span>
-          )}
-        </p>
+          <TypeAnimation
+            sequence={sequence}
+            speed={currentPacingProfile.speed}
+            wrapper="p"
+            cursor={true}
+            repeat={0}
+            style={{
+              display: 'inline-block',
+              whiteSpace: 'pre-wrap',
+            }}
+          />
+        </div>
       </div>
 
       {/* 하단 컨트롤 */}
@@ -175,6 +175,7 @@ export function IntroNarration({ narration, onComplete }: IntroNarrationProps) {
             border border-white border-opacity-20
             rounded-full
             backdrop-blur-md
+            transition-all duration-300
           "
         >
           <span
@@ -232,32 +233,13 @@ export function IntroNarration({ narration, onComplete }: IntroNarrationProps) {
 
       {/* CSS 애니메이션 정의 */}
       <style>{`
+        /* 기본 애니메이션 */
         @keyframes fadeIn {
           from {
             opacity: 0;
           }
           to {
             opacity: 1;
-          }
-        }
-
-        @keyframes textFadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes blink {
-          0%, 49% {
-            opacity: 1;
-          }
-          50%, 100% {
-            opacity: 0;
           }
         }
 
@@ -270,15 +252,108 @@ export function IntroNarration({ narration, onComplete }: IntroNarrationProps) {
           }
         }
 
+        /* Phase 2: Se7en 스타일 Jitter 애니메이션 */
+        @keyframes subtleNervousJitter {
+          0%, 100% {
+            transform: translate3d(0, 0, 0) skewX(0deg);
+          }
+          10% {
+            transform: translate3d(-0.5px, 0.3px, 0) skewX(-0.3deg);
+          }
+          20% {
+            transform: translate3d(0.5px, -0.3px, 0) skewX(0.3deg);
+          }
+          30% {
+            transform: translate3d(-0.3px, 0.5px, 0) skewX(-0.2deg);
+          }
+          40% {
+            transform: translate3d(0.3px, -0.5px, 0) skewX(0.2deg);
+          }
+          50% {
+            transform: translate3d(-0.2px, 0.2px, 0) skewX(-0.1deg);
+          }
+          60% {
+            transform: translate3d(0.2px, -0.2px, 0) skewX(0.1deg);
+          }
+          70% {
+            transform: translate3d(-0.4px, 0.4px, 0) skewX(-0.25deg);
+          }
+          80% {
+            transform: translate3d(0.4px, -0.4px, 0) skewX(0.25deg);
+          }
+          90% {
+            transform: translate3d(-0.1px, 0.1px, 0) skewX(-0.15deg);
+          }
+        }
+
+        @keyframes mediumJitter {
+          0%, 100% {
+            transform: translate3d(0, 0, 0) skewX(0deg);
+          }
+          25% {
+            transform: translate3d(-0.7px, 0.5px, 0) skewX(-0.4deg);
+          }
+          50% {
+            transform: translate3d(0.7px, -0.5px, 0) skewX(0.4deg);
+          }
+          75% {
+            transform: translate3d(-0.5px, 0.7px, 0) skewX(-0.3deg);
+          }
+        }
+
+        @keyframes highJitter {
+          0%, 100% {
+            transform: translate3d(0, 0, 0) skewX(0deg);
+          }
+          20% {
+            transform: translate3d(-1px, 0.8px, 0) skewX(-0.5deg);
+          }
+          40% {
+            transform: translate3d(1px, -0.8px, 0) skewX(0.5deg);
+          }
+          60% {
+            transform: translate3d(-0.8px, 1px, 0) skewX(-0.4deg);
+          }
+          80% {
+            transform: translate3d(0.8px, -1px, 0) skewX(0.4deg);
+          }
+        }
+
+        /* Jitter 강도별 클래스 */
+        .jitter-low {
+          animation: subtleNervousJitter 0.2s infinite;
+          will-change: transform;
+          backface-visibility: hidden;
+        }
+
+        .jitter-medium {
+          animation: mediumJitter 0.15s infinite;
+          will-change: transform;
+          backface-visibility: hidden;
+        }
+
+        .jitter-high {
+          animation: highJitter 0.12s infinite;
+          will-change: transform;
+          backface-visibility: hidden;
+        }
+
+        /* GPU 가속 최적화 */
+        .cinematic-narration-text {
+          transform: translate3d(0, 0, 0);
+          will-change: transform, color;
+          backface-visibility: hidden;
+        }
+
         /* 접근성: 고대비 모드 */
         @media (prefers-contrast: high) {
-          .text-white {
-            color: #ffffff;
-            text-shadow: none;
+          .cinematic-narration-text {
+            color: #ffffff !important;
+            text-shadow: none !important;
           }
           button {
-            border: 2px solid #ffffff;
-            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid #ffffff !important;
+            background: rgba(255, 255, 255, 0.2) !important;
           }
         }
 
@@ -292,7 +367,7 @@ export function IntroNarration({ narration, onComplete }: IntroNarrationProps) {
 
         /* 모바일 최적화 */
         @media (max-width: 768px) {
-          p {
+          .cinematic-narration-text {
             line-height: 2.2 !important;
             letter-spacing: 0.03em !important;
           }

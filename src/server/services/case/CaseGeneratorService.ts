@@ -8,11 +8,22 @@
 import { GeminiClient, type GeminiTextOptions } from '../gemini/GeminiClient';
 import { CaseElementLibrary, type Weapon, type Motive, type Location, type Suspect } from './CaseElementLibrary';
 import { CaseRepository, type CreateCaseInput } from '../repositories/kv/CaseRepository';
+import { CaseValidator } from './CaseValidator';
+import { WorkflowExecutor, DEFAULT_RETRY_POLICIES } from '../workflow/WorkflowExecutor';
+import { TransactionManager, CaseCreationTransaction } from '../workflow/TransactionManager';
+import { KVStoreManager } from '../repositories/kv/KVStoreManager';
+import type { SuspectData, CaseData, ImageGenerationStatus } from '../repositories/kv/KVStoreManager';
+import { CinematicImageService, type CinematicImages } from '../image/CinematicImageService';
+import { LocationDiscoveryService } from '../discovery/LocationDiscoveryService';
+import { DiscoveryStateManager } from '../discovery/DiscoveryStateManager';
+import type { EvidenceItem } from '@/shared/types/Evidence';
+import type { Location as DiscoveryLocation } from '@/shared/types/Case';
 
 export interface GenerateCaseOptions {
   date?: Date;
   includeImage?: boolean;
   includeSuspectImages?: boolean; // Generate profile images for suspects
+  includeCinematicImages?: boolean; // Generate cinematic intro images (5 scenes)
   temperature?: number;
   customCaseId?: string; // Custom case ID for unique identification (timestamp-based)
 }
@@ -46,6 +57,13 @@ export interface GeneratedCase {
     how: string;
   };
   imageUrl?: string;
+  cinematicImages?: {
+    establishing?: string;
+    entry?: string;
+    confrontation?: string;
+    suspects?: string;
+    action?: string;
+  };
   introNarration?: {
     atmosphere: string;
     incident: string;
@@ -55,17 +73,31 @@ export interface GeneratedCase {
 }
 
 /**
- * 케이스 생성 서비스
+ * 케이스 생성 서비스 (개선된 버전)
+ *
+ * 개선사항:
+ * - CaseValidator로 사전/사후 검증
+ * - WorkflowExecutor로 재시도 및 에러 처리
+ * - TransactionManager로 안전한 저장
  */
 export class CaseGeneratorService {
   private geminiClient: GeminiClient;
+  private workflowExecutor: WorkflowExecutor;
+  private cinematicImageService: CinematicImageService;
 
   constructor(geminiClient: GeminiClient) {
     this.geminiClient = geminiClient;
+    this.workflowExecutor = new WorkflowExecutor();
+    this.cinematicImageService = new CinematicImageService(geminiClient);
   }
 
   /**
-   * 새로운 케이스 생성
+   * 새로운 케이스 생성 (개선된 버전)
+   *
+   * 개선사항:
+   * - CaseValidator로 사전/사후 검증
+   * - WorkflowExecutor로 재시도 및 에러 처리
+   * - TransactionManager로 안전한 저장
    *
    * Phase 1: 텍스트 케이스만 생성 (이미지는 선택)
    * Phase 2-3: 이미지 포함 생성
@@ -75,6 +107,7 @@ export class CaseGeneratorService {
       date = new Date(),
       includeImage = false,
       includeSuspectImages = false,
+      includeCinematicImages = false,
       temperature = 0.8,
       customCaseId
     } = options;
@@ -91,90 +124,126 @@ export class CaseGeneratorService {
       - Suspects: ${elements.suspects.map(s => s.archetype).join(', ')}`
     );
 
-    // 2. 케이스 스토리 생성 (Gemini)
-    const caseStory = await this.generateCaseStory(
-      elements.weapon,
-      elements.motive,
-      elements.location,
-      elements.suspects,
-      temperature
+    // 1.5. 요소 사전 검증 (NEW!)
+    const elementValidation = CaseValidator.validateCaseElements(elements);
+    CaseValidator.logValidationResult(elementValidation, 'Case Elements');
+
+    if (!elementValidation.isValid) {
+      throw new Error(`Case element validation failed: ${elementValidation.errors.map(e => e.message).join(', ')}`);
+    }
+
+    // 2. 케이스 스토리 생성 (Gemini with Retry)
+    const caseStory = await this.workflowExecutor.executeWithRetry(
+      () => this.generateCaseStory(
+        elements.weapon,
+        elements.motive,
+        elements.location,
+        elements.suspects,
+        temperature
+      ),
+      DEFAULT_RETRY_POLICIES.TEXT_GENERATION,
+      'Generate Case Story'
     );
 
     console.log(`✅ Case story generated`);
 
-    // 2.5. 인트로 나레이션 생성 (NEW!)
-    let introNarration: { atmosphere: string; incident: string; stakes: string };
-    try {
-      introNarration = await this.generateIntroNarration(
+    // 2.5. 생성된 케이스 사후 검증 (NEW!)
+    const storyValidation = CaseValidator.validateGeneratedCase(caseStory);
+    CaseValidator.logValidationResult(storyValidation, 'Generated Case Story');
+
+    if (!storyValidation.isValid) {
+      throw new Error(`Generated case validation failed: ${storyValidation.errors.map(e => e.message).join(', ')}`);
+    }
+
+    // 3. 인트로 나레이션 생성 (with Fallback)
+    const introNarration = await this.workflowExecutor.executeWithFallback(
+      () => this.generateIntroNarration(
         caseStory,
         elements.weapon,
         elements.location,
         temperature
-      );
-      console.log(`✅ Intro narration generated`);
-    } catch (error) {
-      console.error('❌ Narration generation failed:', error);
-      // Fallback to basic narration
-      introNarration = this.generateFallbackNarration(
+      ),
+      () => this.generateFallbackNarration(
         caseStory,
         elements.weapon,
         elements.location
-      );
-      console.log(`✅ Fallback narration generated`);
-    }
+      ),
+      'Generate Intro Narration'
+    );
 
-    // 3. 케이스 이미지 생성 (선택)
+    console.log(`✅ Intro narration generated`);
+
+    // 4. 케이스 이미지 생성 (선택, with Retry)
     let imageUrl: string | undefined;
     if (includeImage) {
       try {
-        imageUrl = await this.generateCaseImage(
-          elements.location,
-          elements.weapon,
-          caseStory.victim.name
+        imageUrl = await this.workflowExecutor.executeWithRetry(
+          () => this.generateCaseImage(
+            elements.location,
+            elements.weapon,
+            caseStory.victim.name
+          ),
+          DEFAULT_RETRY_POLICIES.IMAGE_GENERATION,
+          'Generate Case Image'
         );
         console.log(`✅ Case image generated`);
       } catch (error) {
-        console.error('❌ Image generation failed:', error);
+        console.warn('⚠️  Case image generation failed after retries, continuing without image', error);
         // 이미지 실패해도 케이스는 생성 (Phase 1 철학)
       }
     }
 
-    // 3.5. 용의자 프로필 이미지 생성 (선택)
-    const suspectsWithImages = await this.generateSuspectProfileImages(
-      caseStory.suspects,
-      elements.suspects,
-      includeSuspectImages
+    // 5. 용의자 프로필 이미지 생성 (선택)
+    const suspectsWithImages = includeSuspectImages
+      ? await this.generateSuspectProfileImages(
+          caseStory.suspects,
+          elements.suspects,
+          includeSuspectImages
+        )
+      : caseStory.suspects;
+
+    // 5.5. 시네마틱 인트로 이미지는 백그라운드에서 생성됨 (상태: pending)
+    console.log(`✅ All generation steps completed (cinematic images will be generated in background)`);
+
+    // 5.6. 증거 발견 데이터 생성 (saveCaseWithTransaction 전에 생성)
+    const locations = this.generateLocationsForCase(elements.location, elements.weapon);
+    const evidence = this.generateEvidenceForCase(
+      elements.weapon,
+      elements.motive,
+      caseStory.suspects
     );
 
-    // 4. CaseRepository에 저장
-    const createInput: CreateCaseInput = {
-      victim: caseStory.victim,
-      weapon: {
-        name: elements.weapon.name,
-        description: elements.weapon.description
-      },
-      location: {
-        name: elements.location.name,
-        description: elements.location.description
-      },
-      suspects: suspectsWithImages.map((suspect, index) => ({
-        name: suspect.name,
-        archetype: elements.suspects[index].archetype,
-        background: suspect.background,
-        personality: suspect.personality,
-        isGuilty: suspect.isGuilty,
-        profileImageUrl: suspect.profileImageUrl
-      })),
-      solution: caseStory.solution,
+    console.log(`✅ Discovery data generated: ${locations.length} locations, ${evidence.length} evidence`);
+
+    // 6. 트랜잭션으로 데이터 저장 (locations와 evidence 포함)
+    const savedCase = await this.saveCaseWithTransaction(
+      caseStory,
+      elements,
+      suspectsWithImages,
       imageUrl,
-      introNarration  // 새로 추가
-    };
+      introNarration,
+      date,
+      customCaseId,
+      locations,
+      evidence
+    );
 
-    const savedCase = await CaseRepository.createCase(createInput, date, customCaseId);
+    console.log(`✅ Case saved with transaction: ${savedCase.id}`);
 
-    console.log(`✅ Case saved: ${savedCase.id}`);
+    // 6.5. 증거를 장소에 분배
+    const locationDiscovery = new LocationDiscoveryService();
+    const distribution = locationDiscovery.distributeEvidence(
+      savedCase.id,
+      locations,
+      evidence
+    );
 
-    // 5. GeneratedCase 형식으로 반환
+    // 6.6. 분배 데이터를 KV Store에 저장
+    await DiscoveryStateManager.saveDistribution(distribution);
+
+    console.log(`✅ Evidence distribution saved: ${distribution.totalEvidence} evidence across ${distribution.locations.length} locations`);
+
+    // 7. GeneratedCase 형식으로 반환
     return {
       caseId: savedCase.id,
       id: savedCase.id,        // Alias for backward compatibility
@@ -193,9 +262,103 @@ export class CaseGeneratorService {
       })),
       solution: savedCase.solution,
       imageUrl: savedCase.imageUrl,
+      cinematicImages: undefined, // Will be generated in background
       introNarration: savedCase.introNarration,
       generatedAt: savedCase.generatedAt
     };
+  }
+
+  /**
+   * 트랜잭션으로 케이스 저장 (NEW!)
+   *
+   * TransactionManager를 사용하여 원자적 저장 및 롤백 보장
+   */
+  private async saveCaseWithTransaction(
+    caseStory: {
+      victim: { name: string; background: string; relationship: string };
+      suspects: Array<{ name: string; background: string; personality: string; isGuilty: boolean; profileImageUrl?: string }>;
+      solution: {
+        who: string;
+        what: string;
+        where: string;
+        when: string;
+        why: string;
+        how: string;
+      };
+    },
+    elements: {
+      weapon: Weapon;
+      motive: Motive;
+      location: Location;
+      suspects: Suspect[];
+    },
+    suspectsWithImages: Array<{ name: string; background: string; personality: string; isGuilty: boolean; profileImageUrl?: string }>,
+    imageUrl: string | undefined,
+    introNarration: { atmosphere: string; incident: string; stakes: string },
+    date: Date,
+    customCaseId?: string,
+    locations?: DiscoveryLocation[],
+    evidence?: EvidenceItem[]
+  ): Promise<CaseData> {
+    const targetDate = date;
+    const dateStr = targetDate.toISOString().split('T')[0];
+    const caseId = customCaseId || `case-${dateStr}`;
+
+    const suspectsWithIds = suspectsWithImages.map((suspect, index) => ({
+      id: `${caseId}-suspect-${index + 1}`,
+      name: suspect.name,
+      archetype: elements.suspects[index].archetype,
+      isGuilty: suspect.isGuilty
+    }));
+
+    const caseData: CaseData = {
+      id: caseId,
+      date: dateStr,
+      victim: caseStory.victim,
+      weapon: { name: elements.weapon.name, description: elements.weapon.description },
+      location: { name: elements.location.name, description: elements.location.description },
+      suspects: suspectsWithIds,
+      solution: caseStory.solution,
+      generatedAt: Date.now(),
+      imageUrl,
+      introNarration,
+      locations,
+      evidence,
+      // 시네마틱 이미지는 백그라운드에서 생성
+      cinematicImages: null,
+      imageGenerationStatus: 'pending' as ImageGenerationStatus,
+      imageGenerationMeta: {
+        startedAt: undefined,
+        retryCount: 0
+      }
+    };
+
+    const suspectDataList: SuspectData[] = suspectsWithImages.map((suspect, index) => ({
+      id: suspectsWithIds[index].id,
+      caseId: caseId,
+      name: suspect.name,
+      archetype: elements.suspects[index].archetype,
+      background: suspect.background,
+      personality: suspect.personality,
+      isGuilty: suspect.isGuilty,
+      emotionalState: {
+        suspicionLevel: 0,
+        tone: 'cooperative',
+        lastUpdated: Date.now()
+      },
+      profileImageUrl: suspect.profileImageUrl
+    }));
+
+    // 트랜잭션 단계 생성
+    const steps = CaseCreationTransaction.createSteps(caseData, suspectDataList, KVStoreManager);
+
+    // 트랜잭션 실행 (실패 시 자동 롤백)
+    const transactionManager = new TransactionManager();
+    await transactionManager.executeTransaction(steps);
+
+    console.log(`✅ Transaction completed in ${transactionManager.getDuration()}ms`);
+
+    return caseData;
   }
 
   /**
@@ -646,6 +809,182 @@ Focus: Face and upper shoulders, direct eye contact with camera.
 Quality: Photorealistic, high detail, professional photography.
 Format: 512x512 portrait photograph.
 Mood: Mystery, intrigue, subtle emotional expression.`;
+  }
+
+  /**
+   * 케이스에 대한 장소 생성
+   *
+   * @param location - 범죄 현장 정보
+   * @param weapon - 사용된 무기
+   * @returns 4개의 탐색 가능한 장소
+   */
+  private generateLocationsForCase(
+    location: Location,
+    weapon: Weapon
+  ): DiscoveryLocation[] {
+    return [
+      {
+        id: 'crime-scene',
+        name: location.name,
+        description: `범죄 현장. ${location.description}`,
+        emoji: '🔍'
+      },
+      {
+        id: 'victim-residence',
+        name: '피해자의 거주지',
+        description: '피해자가 살던 곳. 개인적인 물건과 흔적이 남아있다.',
+        emoji: '🏠'
+      },
+      {
+        id: 'suspect-location',
+        name: '용의자 관련 장소',
+        description: '범인과 연관된 장소. 중요한 단서가 있을 수 있다.',
+        emoji: '📍'
+      },
+      {
+        id: 'witness-area',
+        name: '목격자 지역',
+        description: '사건 당시 목격자들이 있던 구역. 추가 정보를 얻을 수 있다.',
+        emoji: '👥'
+      }
+    ];
+  }
+
+  /**
+   * 케이스에 대한 증거 생성
+   *
+   * @param weapon - 사용된 무기
+   * @param motive - 범행 동기
+   * @param suspects - 용의자 목록
+   * @returns 10개의 증거 (4 critical, 3 supporting, 3 red herrings)
+   */
+  private generateEvidenceForCase(
+    weapon: Weapon,
+    motive: Motive,
+    suspects: Array<{ name: string; isGuilty: boolean }>
+  ): EvidenceItem[] {
+    // 범인 찾기
+    const guiltyIndex = suspects.findIndex(s => s.isGuilty);
+    const guiltyName = suspects[guiltyIndex]?.name || '알 수 없음';
+
+    const evidence: EvidenceItem[] = [];
+
+    // Critical Evidence (4개) - 범인을 가리키는 결정적 증거
+    evidence.push({
+      id: 'evidence-critical-1',
+      type: 'physical',
+      name: `${weapon.name} 발견`,
+      description: `범행에 사용된 ${weapon.name}이(가) 발견되었다. ${weapon.description}`,
+      discoveryHint: '범죄 현장을 주의 깊게 살펴보세요.',
+      interpretationHint: `이 무기는 ${guiltyName}의 소유물로 추정됩니다.`,
+      relevance: 'critical',
+      pointsToSuspect: guiltyIndex
+    });
+
+    evidence.push({
+      id: 'evidence-critical-2',
+      type: 'forensic',
+      name: '지문 분석 결과',
+      description: '범행 현장에서 채취한 지문이 특정 인물과 일치합니다.',
+      discoveryHint: '감식팀의 보고서를 확인하세요.',
+      interpretationHint: `지문은 ${guiltyName}의 것으로 확인되었습니다.`,
+      relevance: 'critical',
+      pointsToSuspect: guiltyIndex
+    });
+
+    evidence.push({
+      id: 'evidence-critical-3',
+      type: 'communication',
+      name: '협박 메시지',
+      description: `피해자에게 보낸 협박 메시지가 발견되었습니다. 동기: ${motive.category}`,
+      discoveryHint: '피해자의 휴대폰을 조사하세요.',
+      interpretationHint: `발신자는 ${guiltyName}입니다.`,
+      relevance: 'critical',
+      pointsToSuspect: guiltyIndex
+    });
+
+    evidence.push({
+      id: 'evidence-critical-4',
+      type: 'alibi',
+      name: '목격자 진술',
+      description: '사건 당시 특정 인물이 현장 근처에 있었다는 목격 증언.',
+      discoveryHint: '주변 목격자들과 대화하세요.',
+      interpretationHint: `목격자는 ${guiltyName}을(를) 봤다고 진술했습니다.`,
+      relevance: 'critical',
+      pointsToSuspect: guiltyIndex
+    });
+
+    // Supporting Evidence (3개) - 보조 증거
+    evidence.push({
+      id: 'evidence-supporting-1',
+      type: 'financial',
+      name: '금융 거래 기록',
+      description: '수상한 금융 거래 내역이 발견되었습니다.',
+      discoveryHint: '피해자의 은행 계좌를 추적하세요.',
+      interpretationHint: '범행 동기와 연관이 있을 수 있습니다.',
+      relevance: 'important'
+    });
+
+    evidence.push({
+      id: 'evidence-supporting-2',
+      type: 'documentary',
+      name: '계약서 사본',
+      description: '피해자와 용의자 간의 계약 문서가 발견되었습니다.',
+      discoveryHint: '피해자의 서류를 검토하세요.',
+      interpretationHint: '관계의 성격을 파악하는 데 도움이 됩니다.',
+      relevance: 'important'
+    });
+
+    evidence.push({
+      id: 'evidence-supporting-3',
+      type: 'testimony',
+      name: '주변인 증언',
+      description: '피해자와 용의자의 관계에 대한 제3자 증언.',
+      discoveryHint: '주변 사람들과 인터뷰하세요.',
+      interpretationHint: '사건 배경을 이해하는 데 유용합니다.',
+      relevance: 'important'
+    });
+
+    // Red Herrings (3개) - 혼란을 주는 증거
+    const innocentIndices = suspects
+      .map((s, i) => ({ index: i, guilty: s.isGuilty }))
+      .filter(s => !s.guilty)
+      .map(s => s.index);
+
+    evidence.push({
+      id: 'evidence-redherring-1',
+      type: 'physical',
+      name: '의심스러운 물건',
+      description: '현장에서 발견된 의심스러운 물건이지만 범행과는 무관합니다.',
+      discoveryHint: '현장을 철저히 수색하세요.',
+      interpretationHint: '이 증거는 실제 범인과 관련이 없습니다.',
+      relevance: 'minor',
+      pointsToSuspect: innocentIndices[0]
+    });
+
+    evidence.push({
+      id: 'evidence-redherring-2',
+      type: 'alibi',
+      name: '잘못된 목격 정보',
+      description: '사건과 무관한 시간대의 목격 정보입니다.',
+      discoveryHint: '목격자들의 진술을 수집하세요.',
+      interpretationHint: '이 정보는 사건과 무관할 수 있습니다.',
+      relevance: 'minor',
+      pointsToSuspect: innocentIndices[1]
+    });
+
+    evidence.push({
+      id: 'evidence-redherring-3',
+      type: 'communication',
+      name: '오해의 소지가 있는 대화',
+      description: '의심스러워 보이지만 실제로는 무관한 대화 기록.',
+      discoveryHint: '통신 기록을 분석하세요.',
+      interpretationHint: '맥락을 고려하면 범행과 무관합니다.',
+      relevance: 'minor',
+      pointsToSuspect: innocentIndices[0]
+    });
+
+    return evidence;
   }
 
   /**

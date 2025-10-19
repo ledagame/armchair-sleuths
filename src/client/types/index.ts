@@ -3,6 +3,9 @@
  * Matches backend data models from server services
  */
 
+// Import shared types
+import type { CinematicImages } from '../../shared/types';
+
 // ============================================================================
 // Case Types
 // ============================================================================
@@ -54,6 +57,7 @@ export interface CaseData {
   location: Location;
   suspects: Suspect[];
   imageUrl?: string;
+  cinematicImages?: CinematicImages;
   introNarration?: IntroNarration;
   generatedAt: number;
 }
@@ -168,6 +172,7 @@ export interface CaseApiResponse {
   location: Location;
   suspects: Suspect[];
   imageUrl?: string;
+  cinematicImages?: CinematicImages;
   introNarration?: IntroNarration;
   generatedAt: number;
 }

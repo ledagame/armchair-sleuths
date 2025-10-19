@@ -5,7 +5,7 @@
  */
 
 import { KVStoreManager, type CaseData, type SuspectData } from './KVStoreManager';
-import type { IntroNarration } from '../../../shared/types/index';
+import type { IntroNarration, CinematicImages } from '../../../shared/types/index';
 
 export interface CreateCaseInput {
   victim: {
@@ -38,6 +38,7 @@ export interface CreateCaseInput {
     how: string;
   };
   imageUrl?: string;
+  cinematicImages?: CinematicImages; // 시네마틱 인트로 이미지 (Gemini API로 생성, 5개 씬)
   introNarration?: IntroNarration; // 인트로 나레이션 (Gemini API로 생성)
 }
 
@@ -77,6 +78,7 @@ export class CaseRepository {
       solution: input.solution,
       generatedAt: Date.now(),
       imageUrl: input.imageUrl,
+      cinematicImages: input.cinematicImages,
       introNarration: input.introNarration
     };
 
@@ -204,6 +206,86 @@ export class CaseRepository {
     await KVStoreManager.saveCase(caseData);
 
     console.log(`✅ Case image updated: ${caseId}`);
+  }
+
+  /**
+   * 이미지 생성 상태 업데이트
+   * (백그라운드 이미지 생성 진행 상황 추적)
+   */
+  static async updateImageGenerationStatus(
+    caseId: string,
+    status: import('../../../shared/types/index').ImageGenerationStatus,
+    meta?: Partial<import('../../../shared/types/index').ImageGenerationMeta>
+  ): Promise<void> {
+    const caseData = await KVStoreManager.getCase(caseId);
+    if (!caseData) {
+      throw new Error(`Case not found: ${caseId}`);
+    }
+
+    caseData.imageGenerationStatus = status;
+
+    // 메타데이터 업데이트
+    if (meta) {
+      caseData.imageGenerationMeta = {
+        ...caseData.imageGenerationMeta,
+        ...meta
+      };
+    }
+
+    await KVStoreManager.saveCase(caseData);
+
+    console.log(`✅ Image generation status updated: ${caseId} -> ${status}`);
+  }
+
+  /**
+   * 시네마틱 이미지 저장
+   * (백그라운드 생성 완료 시 호출)
+   */
+  static async updateCinematicImages(
+    caseId: string,
+    images: import('../../../shared/types/index').CinematicImages
+  ): Promise<void> {
+    const caseData = await KVStoreManager.getCase(caseId);
+    if (!caseData) {
+      throw new Error(`Case not found: ${caseId}`);
+    }
+
+    caseData.cinematicImages = images;
+    caseData.imageGenerationStatus = 'completed';
+
+    // 완료 시간 기록
+    if (caseData.imageGenerationMeta) {
+      caseData.imageGenerationMeta.completedAt = Date.now();
+    } else {
+      caseData.imageGenerationMeta = {
+        completedAt: Date.now()
+      };
+    }
+
+    await KVStoreManager.saveCase(caseData);
+
+    console.log(`✅ Cinematic images updated: ${caseId}`);
+  }
+
+  /**
+   * 이미지 생성 상태 조회
+   * (클라이언트 폴링용)
+   */
+  static async getImageGenerationStatus(caseId: string): Promise<{
+    status: import('../../../shared/types/index').ImageGenerationStatus;
+    images: import('../../../shared/types/index').CinematicImages | null;
+    meta?: import('../../../shared/types/index').ImageGenerationMeta;
+  }> {
+    const caseData = await KVStoreManager.getCase(caseId);
+    if (!caseData) {
+      throw new Error(`Case not found: ${caseId}`);
+    }
+
+    return {
+      status: caseData.imageGenerationStatus || 'pending',
+      images: caseData.cinematicImages || null,
+      meta: caseData.imageGenerationMeta
+    };
   }
 
   /**

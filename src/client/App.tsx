@@ -11,7 +11,8 @@ import { SuspectPanel } from './components/suspect/SuspectPanel';
 import { ChatInterface } from './components/chat/ChatInterface';
 import { SubmissionForm } from './components/submission/SubmissionForm';
 import { ResultView } from './components/results/ResultView';
-import { IntroNarration } from './components/intro/IntroNarration';
+import { CinematicIntro } from './components/intro/cinematic/CinematicIntro';
+import { LocationExplorer } from './components/discovery/LocationExplorer';
 import { useCase } from './hooks/useCase';
 import { useSuspect } from './hooks/useSuspect';
 import { useChat } from './hooks/useChat';
@@ -173,8 +174,9 @@ export const App = () => {
     // Intro narration screen
     if (currentScreen === 'intro' && caseData && caseData.introNarration) {
       return (
-        <IntroNarration
+        <CinematicIntro
           narration={caseData.introNarration}
+          cinematicImages={caseData.cinematicImages}
           onComplete={handleIntroComplete}
         />
       );
@@ -249,6 +251,23 @@ export const App = () => {
             >
               📝 답안 제출하기
             </button>
+          </div>
+
+          {/* Location Explorer - 장소 탐색 */}
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold mb-4">🗺️ 장소 탐색</h2>
+            <LocationExplorer
+              caseId={caseData.id}
+              locations={caseData.locations || []}
+              onSearchLocation={async (locationId: string) => {
+                const response = await fetch(`/api/cases/${caseData.id}/search-location`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ locationId, searchType: 'quick' })
+                });
+                return response.json();
+              }}
+            />
           </div>
 
           {/* Suspect selection */}

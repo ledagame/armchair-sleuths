@@ -167,6 +167,7 @@ router.post('/internal/menu/post-create', async (_req, res): Promise<void> => {
       date: now,
       includeImage: true,
       includeSuspectImages: true,
+      includeCinematicImages: true, // ✅ Include cinematic intro images
       temperature: 0.8,
       customCaseId: customCaseId
     });
@@ -231,7 +232,8 @@ router.post('/api/case/generate', async (_req, res): Promise<void> => {
     const caseData = await caseGenerator.generateCase({
       date: new Date(),
       includeImage: false, // Skip case image for faster generation
-      includeSuspectImages: true // ✅ Include suspect profile images
+      includeSuspectImages: true, // ✅ Include suspect profile images
+      includeCinematicImages: true // ✅ Include cinematic intro images (5 scenes)
     });
 
     console.log(`✅ Case generated: ${caseData.id}`);
@@ -328,6 +330,7 @@ router.post('/api/case/regenerate', async (req, res): Promise<void> => {
       date: caseDate,
       includeImage: true,
       includeSuspectImages: true,
+      includeCinematicImages: true, // ✅ Include cinematic intro images
       temperature: 0.8
     });
 
@@ -393,6 +396,7 @@ router.post('/api/create-game-post', async (req, res): Promise<void> => {
       date: now,
       includeImage: true,
       includeSuspectImages: true,
+      includeCinematicImages: true, // ✅ Include cinematic intro images
       temperature: 0.8,
       customCaseId: customCaseId
     });
@@ -555,6 +559,7 @@ router.get('/api/case/today', async (req, res): Promise<void> => {
             date: caseDate,
             includeImage: true,
             includeSuspectImages: true,
+            includeCinematicImages: true, // ✅ Include cinematic intro images
             temperature: 0.8
           });
 
