@@ -36,8 +36,8 @@ export interface UseActionPointsReturn {
  * - Persists AP state to localStorage
  */
 export function useActionPoints({
-  initialAP = 10,
-  maxAP = 10,
+  initialAP = 3,
+  maxAP = 12,
   caseId,
   userId,
 }: UseActionPointsOptions = {}): UseActionPointsReturn {

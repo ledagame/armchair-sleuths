@@ -6,13 +6,20 @@
   "type": "module",
   "scripts": {
     "postinstall": "npm run build",
+    "prebuild:server": "node scripts/convert-yaml-to-json.cjs",
     "build:client": "cd src/client && vite build",
-    "build:server": "cd src/server && vite build",
+    "build:server": "npm run prebuild:server && cd src/server && vite build",
     "build": "npm run build:client && npm run build:server",
     "case:generate": "tsx scripts/generate-case.ts",
     "case:generate:images": "tsx scripts/generate-case.ts --with-images",
     "case:validate": "tsx scripts/validate-case.ts",
     "check": "npm run type-check && npm run lint:fix && npm run prettier",
+    "suspect:add-archetype": "tsx skills/suspect-ai-prompter/scripts/generate-archetype.ts",
+    "suspect:generate-examples": "tsx skills/suspect-ai-prompter/scripts/generate-examples.ts",
+    "suspect:improve-prompt": "tsx skills/suspect-ai-prompter/scripts/improve-prompt.ts",
+    "suspect:validate": "tsx skills/suspect-ai-prompter/scripts/validate-quality.ts",
+    "suspect:validate-consistency": "node scripts/validate-archetype-consistency.cjs",
+    "suspect:test": "cd src/server/services/prompts && npx vitest run __tests__/ArchetypePrompts.test.ts",
     "create-game-post": "npx tsx scripts/create-game-post.ts",
     "deploy": "npm run build && devvit upload",
     "dev": "concurrently -k -p \"[{name}]\" -n \"CLIENT,SERVER,DEVVIT\" -c \"blue,green,magenta\" \"npm run dev:client\" \"npm run dev:server\" \"npm run dev:devvit\"",
@@ -37,7 +44,8 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-type-animation": "^3.2.0",
-    "tailwind-merge": "3.3.0"
+    "tailwind-merge": "3.3.0",
+    "yaml": "^2.8.1"
   },
   "devDependencies": {
     "@eslint/js": "9.23.0",

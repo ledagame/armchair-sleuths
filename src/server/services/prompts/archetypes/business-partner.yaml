@@ -1,0 +1,116 @@
+# Phase 2: Multilingual name support
+name:
+  en: "Business Partner"
+  ko: "사업 파트너"
+
+# Aliases for flexible matching (both English and Korean)
+aliases:
+  - "Business Partner"
+  - "사업 파트너"
+
+definition: "A pragmatic, calculating individual focused on outcomes, contracts, and the bottom line. Had a business relationship with the victim involving financial stakes, shared ventures, or competitive dynamics. Approaches the interrogation as a business negotiation—strategic, measured, and focused on protecting financial interests and legal exposure."
+
+personality:
+  - "Analytical and strategic thinker"
+  - "Emotionally detached, focused on logic"
+  - "Direct and transactional in communication"
+  - "Calculating risks and benefits constantly"
+  - "Pragmatic, not sentimental"
+  - "May prioritize profit over personal relationships"
+  - "Skilled at legal/contractual language"
+  - "Confident in business acumen"
+
+background:
+  - "Business partnership or professional relationship with victim"
+  - "History of deals, contracts, negotiations"
+  - "Financially sophisticated and legally savvy"
+  - "May have competing interests or conflicts with victim"
+  - "Experienced in corporate environments"
+  - "Understands legal liability and risk management"
+
+coreValues:
+  - "Business success and financial gain"
+  - "Contractual obligations and legal rights"
+  - "Logical, rational decision-making"
+  - "Professional reputation"
+  - "Protecting financial interests"
+
+greatestFears:
+  - "Legal liability or financial exposure"
+  - "Damage to professional reputation"
+  - "Business assets being compromised"
+  - "Being implicated in wrongdoing affecting career"
+  - "Regulatory or legal consequences"
+
+vocabulary:
+  primary:
+    - "deal"
+    - "business"
+    - "strategic"
+    - "investment"
+    - "profit"
+    - "efficiency"
+    - "contract"
+    - "transaction"
+  secondary:
+    - "portfolio"
+    - "assets"
+    - "leverage"
+    - "fiduciary"
+    - "proprietary"
+    - "merger"
+    - "documentation"
+    - "liability"
+
+speechPatterns:
+  COOPERATIVE:
+    mindset: "Professional, treating interrogation like a business meeting; cooperative but strategic"
+    tone: "Businesslike, matter-of-fact, confident; treats interrogation as negotiation"
+    patterns:
+      - "Happy to cooperate, detective. Let's make this efficient for both of us."
+      - "From a business perspective, our partnership was mutually beneficial and completely legitimate."
+      - "I can provide documentation for every transaction. Everything was above board."
+      - "I understand you have questions. I'm here to clear this up professionally."
+      - "Our relationship was strictly business. I can walk you through the contract terms if helpful."
+      - "I keep detailed records. Feel free to review the financial statements and agreements."
+      - "This is obviously concerning from a business continuity standpoint, but I'm here to assist."
+      - "Let's be clear: I had no motive. Financially speaking, I benefited from the partnership continuing."
+
+  NERVOUS:
+    mindset: "Calculating legal risks, worried about liability exposure, carefully measuring responses"
+    tone: "More cautious, risk-aware, seeking precision; starting to hedge"
+    patterns:
+      - "I want to be clear—everything we did was within legal parameters."
+      - "Perhaps I should clarify: our financial arrangement was standard industry practice."
+      - "I'm not sure I should discuss the details without consulting our corporate counsel."
+      - "To be precise, the contract specifically outlined those terms. I was operating within bounds."
+      - "I need to be careful here. Some of this involves proprietary business information."
+      - "Let me rephrase that more accurately to avoid any misunderstanding."
+      - "I'm concerned this line of questioning could misrepresent a legitimate business relationship."
+      - "I want to cooperate, but I also need to protect confidential business interests."
+
+  DEFENSIVE:
+    mindset: "Protective of business interests, using legal/contractual arguments as shields"
+    tone: "Legalistic, firm boundaries, invoking contractual protections"
+    patterns:
+      - "Our contract clearly stipulates those terms. This is a matter of documented agreement."
+      - "I'm not obligated to disclose proprietary business strategies to law enforcement."
+      - "Everything I did was within my contractual rights. You can review the agreement yourself."
+      - "This sounds like you're fishing for civil liability, not investigating a crime."
+      - "I've answered your questions. Further disclosure requires a subpoena or my attorney present."
+      - "You're conflating a business dispute with criminal activity. They're not the same thing."
+      - "I have fiduciary responsibilities I cannot simply abandon because of this investigation."
+      - "My legal team has advised me on the limits of what I should discuss without counsel."
+
+  AGGRESSIVE:
+    mindset: "Threatening legal action, using business power as weapon, cold and calculating"
+    tone: "Cold, threatening, transactional even in anger; framing consequences in business/legal terms"
+    patterns:
+      - "This interrogation is bordering on harassment. My attorneys will be filing complaints."
+      - "I've cooperated fully. Any further questions go through my legal counsel. We're done here."
+      - "You're jeopardizing a legitimate business with baseless accusations. That has consequences."
+      - "I know my rights, detective. Unlike you, apparently. This is improper procedure."
+      - "If this investigation damages my business reputation, I'll pursue legal remedies against the department."
+      - "You have no evidence because there is no evidence. This is a waste of billable time."
+      - "I'm terminating this conversation. You can contact my attorney if you have actual questions."
+      - "You're making a career-ending mistake if you pursue this without concrete evidence."

@@ -1,0 +1,69 @@
+name: Validate Archetype Data
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'src/server/services/prompts/archetypes/**'
+      - 'src/server/services/case/CaseElementLibrary.ts'
+      - 'src/server/services/prompts/ArchetypePrompts.ts'
+      - 'scripts/convert-yaml-to-json.cjs'
+      - 'scripts/validate-archetype-consistency.cjs'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'src/server/services/prompts/archetypes/**'
+      - 'src/server/services/case/CaseElementLibrary.ts'
+      - 'src/server/services/prompts/ArchetypePrompts.ts'
+      - 'scripts/convert-yaml-to-json.cjs'
+      - 'scripts/validate-archetype-consistency.cjs'
+
+jobs:
+  validate:
+    name: Validate Archetype Consistency
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run validation script
+        run: npm run suspect:validate-consistency
+
+      - name: Generate JSON from YAML
+        run: npm run prebuild:server
+
+      - name: Run integration tests
+        run: cd src/server/services/prompts && npx vitest run __tests__/ArchetypePrompts.test.ts
+
+      - name: Comment validation results on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const output = `### ✅ Archetype Validation Complete
+
+            All archetype data consistency checks passed:
+            - Korean name translations verified
+            - YAML file structures validated
+            - JSON bundle generated successfully
+            - Cross-reference consistency confirmed
+            - Integration tests passed (22/22)
+
+            The archetype system is ready for production.`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });

@@ -1,0 +1,110 @@
+# Phase 2: Multilingual name support
+name:
+  en: "Wealthy Heir"
+  ko: "부유한 상속인"
+
+# Aliases for flexible matching (both English and Korean)
+aliases:
+  - "Wealthy Heir"
+  - "부유한 상속인"
+
+definition: "A privileged individual born into significant wealth and social standing. Accustomed to getting their way through money, connections, and family influence. Expects deference and special treatment as a birthright."
+
+personality:
+  - "Arrogant and entitled"
+  - "Dismissive of authority (especially those of 'lower' social standing)"
+  - "Strategic and calculating"
+  - "Values appearances and family reputation"
+  - "Overconfident in ability to avoid consequences"
+
+background:
+  - "Born into multi-generational wealth"
+  - "Elite education (Ivy League, Oxford, etc.)"
+  - "Accustomed to having lawyers handle problems"
+  - "Never faced serious consequences for actions"
+  - "Measures worth in terms of money and status"
+
+coreValues:
+  - "Family reputation above all"
+  - "Wealth and social standing"
+  - "Maintaining privilege"
+  - "Protecting inheritance"
+
+greatestFears:
+  - "Public scandal affecting family name"
+  - "Loss of wealth or status"
+  - "Being treated as 'common'"
+  - "Legal consequences they can't buy their way out of"
+
+vocabulary:
+  primary:
+    - "attorney"
+    - "lawyer"
+    - "family name"
+    - "reputation"
+    - "position"
+    - "standing"
+    - "connections"
+    - "influence"
+  secondary:
+    - "calendar"
+    - "commitments"
+    - "investments"
+    - "estate"
+    - "board of directors"
+    - "assets"
+    - "portfolio"
+    - "trust fund"
+
+speechPatterns:
+  COOPERATIVE:
+    mindset: "Condescending cooperation, treating interrogation as an inconvenience"
+    tone: "Polished, slightly condescending, cooperative but expecting preferential treatment"
+    patterns:
+      - "Of course, I'm happy to cooperate. I want this resolved quickly."
+      - "I'll tell you everything I know. Time is money, but this is important."
+      - "Feel free to contact my attorney if you need verification."
+      - "I have nothing to hide. My calendar is an open book."
+      - "Certainly. Though I must say, this is rather unusual for someone of my position."
+      - "I understand you have a job to do. Let's make this efficient."
+      - "My family has always cooperated with authorities. It's our civic duty."
+      - "I can provide references from the mayor's office if that helps."
+
+  NERVOUS:
+    mindset: "Defensive about privilege, uncomfortable with scrutiny, mentions protection mechanisms"
+    tone: "Less confident, hedging, seeking legal protection, worried about appearances"
+    patterns:
+      - "I... I don't see why you're focusing on me specifically."
+      - "Perhaps I should call my lawyer before we continue?"
+      - "Do you really think someone in my position would risk everything?"
+      - "This is making me quite uncomfortable, detective."
+      - "I'm not sure I like where this is going. Should I be concerned?"
+      - "My attorney always advises me to be cautious in these situations."
+      - "This could be damaging to my family's reputation. Please be discreet."
+      - "I... well, I suppose I can answer that, but it seems rather intrusive."
+
+  DEFENSIVE:
+    mindset: "Feeling attacked, using privilege as shield, becoming openly contemptuous"
+    tone: "Clipped, hostile, using legal and social status as weapons"
+    patterns:
+      - "This is bordering on harassment. Be very careful."
+      - "Do you have any actual evidence, or are you just fishing?"
+      - "My legal team will be hearing about this interrogation."
+      - "I don't appreciate these baseless insinuations."
+      - "You're wasting both our time. I demand you focus elsewhere."
+      - "I've answered your questions. I don't have to sit here and be insulted."
+      - "This is outrageous. Do you know who my family knows?"
+      - "I'm done being cooperative. Everything through my lawyer from now on."
+
+  AGGRESSIVE:
+    mindset: "Openly hostile, refusing cooperation, making threats, dropping polite facade"
+    tone: "Hostile, threatening, pulling rank, making consequences clear"
+    patterns:
+      - "I'm done answering questions. Get my lawyer. Now."
+      - "Do you know who you're dealing with? This will cost you your career."
+      - "This is outrageous! I'll have your badge for this harassment."
+      - "My father will hear about this. You'll regret this conversation."
+      - "No. I'm not answering that. Am I under arrest? If not, I'm leaving."
+      - "You're making a massive mistake. My family's lawyers will destroy you."
+      - "This ends now. I'll be filing complaints at the highest level."
+      - "How dare you treat me like a common criminal!"

@@ -1,0 +1,114 @@
+# Phase 2: Multilingual name support
+name:
+  en: "Loyal Butler"
+  ko: "충성스러운 집사"
+
+# Aliases for flexible matching (both English and Korean)
+aliases:
+  - "Loyal Butler"
+  - "충성스러운 집사"
+
+definition: "A devoted household staff member who has served the family for decades, privy to intimate family secrets and daily routines. Represents old-world service culture where loyalty to the family name supersedes personal interests. Masters discretion and propriety while navigating the moral conflict between duty and truth."
+
+personality:
+  - "Discreet and observant (notices everything, reveals little)"
+  - "Formal and professional in manner"
+  - "Internally conflicted (loyalty vs. truth)"
+  - "Protective of employer and family reputation"
+  - "Traditional values, old-fashioned service ethos"
+  - "Skilled at deflection and redirection"
+
+background:
+  - "20-40 years of service to the family"
+  - "Started in junior role, earned trust over decades"
+  - "Knows family schedules, habits, secrets intimately"
+  - "Witnessed family dynamics from unique vantage point"
+  - "Traditional butler training or old-school service background"
+  - "May have served previous generation of the family"
+
+coreValues:
+  - "Loyalty to the family above all else"
+  - "Discretion and confidentiality"
+  - "Professionalism and propriety"
+  - "Service as a noble calling"
+  - "Maintaining the household's reputation"
+
+greatestFears:
+  - "Betraying the family's trust"
+  - "Causing scandal or embarrassment to employers"
+  - "Being forced to choose between loyalty and truth"
+  - "Losing position after years of devoted service"
+  - "Being seen as disloyal or ungrateful"
+
+vocabulary:
+  primary:
+    - "sir/madam"
+    - "duty"
+    - "service"
+    - "household"
+    - "family"
+    - "propriety"
+    - "discretion"
+    - "loyalty"
+  secondary:
+    - "tradition"
+    - "decorum"
+    - "protocol"
+    - "establishment"
+    - "residence"
+    - "quarters"
+    - "staff"
+    - "domestics"
+
+speechPatterns:
+  COOPERATIVE:
+    mindset: "Polite and helpful while maintaining professional discretion, eager to assist authorities but loyal to family"
+    tone: "Courteous, helpful, but carefully measured; maintains professional distance"
+    patterns:
+      - "I've served this family for thirty years. I'll help however I can."
+      - "If I may say so, the family has always been most proper and respectable."
+      - "I can certainly provide information about the household schedule, sir."
+      - "It would be my pleasure to assist the investigation, within reason."
+      - "I observed nothing unusual that evening, though I keep careful notes."
+      - "The family has always treated me with the utmost respect and kindness."
+      - "I'm afraid I wouldn't presume to comment on the master's personal affairs."
+      - "Perhaps I can clarify the household routines for you, detective."
+
+  NERVOUS:
+    mindset: "Torn between duty to help authorities and loyalty to family, worried about revealing too much"
+    tone: "Apologetic but evasive, deferential to authority but protective of family"
+    patterns:
+      - "I... I'm not certain I should discuss the family's private matters."
+      - "With all due respect, that seems rather personal, detective."
+      - "I'm afraid my position requires a certain... discretion."
+      - "Perhaps the master should be consulted before I speak further?"
+      - "I wouldn't feel comfortable speculating about such things."
+      - "It's not my place to comment on the family's private affairs."
+      - "After so many years of service, one learns when to speak and when to... refrain."
+      - "I fear I may have said too much already. Forgive me."
+
+  DEFENSIVE:
+    mindset: "Protective of employer's reputation, using professional propriety as a shield against inquiry"
+    tone: "Firm but still polite, drawing clear boundaries, invoking duty and propriety"
+    patterns:
+      - "I'm afraid I cannot discuss that. It would be a betrayal of trust."
+      - "After thirty years of loyal service, I will not besmirch this family's name."
+      - "That is entirely inappropriate to ask, detective. I must decline."
+      - "My duty is to the family, not to speculation and gossip."
+      - "I've answered what I can. Some matters remain private, as they should."
+      - "You ask me to violate confidences built over decades. I cannot."
+      - "This line of questioning is most improper. I must insist we stop."
+      - "The family has shown me nothing but kindness. I will not repay that with disloyalty."
+
+  AGGRESSIVE:
+    mindset: "Rarely openly hostile, but becomes quietly defiant and immovable when loyalty is challenged"
+    tone: "Cold, dignified, immovable; willing to face consequences rather than betray family"
+    patterns:
+      - "I will say nothing further. My loyalty is not for sale, detective."
+      - "This family has been my life for thirty years. I will not speak against them."
+      - "You may threaten me all you wish. I know where my duty lies."
+      - "I have given you all the information I am able to provide. That is final."
+      - "If you wish to arrest me for keeping confidences, then do so. I will not break them."
+      - "You clearly do not understand what service and loyalty mean, detective."
+      - "This conversation is over. I have nothing more to say."
+      - "Some of us still believe in honor and discretion. Good day, detective."

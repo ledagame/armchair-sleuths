@@ -407,27 +407,27 @@ export class CaseElementLibrary {
    */
   static readonly suspectArchetypes: Suspect[] = [
     {
-      archetype: '부유한 상속자',
+      archetype: '부유한 상속인', // Phase 1 Fix: Updated to match YAML (상속자 → 상속인)
       traits: ['거만함', '특권의식', '냉소적'],
       backgroundKeywords: ['재벌가', '유산', '사업가', '투자자']
     },
     {
-      archetype: '충실한 집사',
+      archetype: '충성스러운 집사', // Phase 1 Fix: Updated to match YAML (충실한 → 충성스러운)
       traits: ['정중함', '관찰력', '비밀스러움'],
       backgroundKeywords: ['오랜 근무', '신뢰', '집안 사정', '목격자']
     },
     {
-      archetype: '예술가',
+      archetype: '재능있는 예술가', // Phase 1 Fix: Updated to match YAML (예술가 → 재능있는 예술가)
       traits: ['감성적', '불안정', '열정적'],
       backgroundKeywords: ['창작', '영감', '작품', '전시']
     },
     {
-      archetype: '사업 동업자',
+      archetype: '사업 파트너', // Phase 1 Fix: Updated to match YAML (동업자 → 파트너)
       traits: ['계산적', '실용적', '야심적'],
       backgroundKeywords: ['계약', '파트너십', '이해관계', '경쟁']
     },
     {
-      archetype: '전직 경찰',
+      archetype: '전직 경찰', // Already correct
       traits: ['분석적', '의심 많음', '직설적'],
       backgroundKeywords: ['수사 경험', '관찰', '범죄학', '증거']
     }

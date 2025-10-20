@@ -142,6 +142,49 @@ export interface EvidenceDiscoveryStats {
 }
 
 /**
+ * AP Acquisition Record
+ * Tracks when and how a player acquired Action Points
+ */
+export interface APAcquisition {
+  timestamp: Date;
+  amount: number;
+  source: 'topic' | 'bonus';
+  suspectId: string;
+  topicId?: string; // If source='topic'
+  bonusType?: 'suspect' | 'location' | 'secret'; // If source='bonus'
+  conversationId: string;
+  reason: string; // Display text like "알리바이 정보 획득"
+}
+
+/**
+ * AP Spending Record
+ * Tracks when and how a player spent Action Points
+ */
+export interface APSpending {
+  timestamp: Date;
+  amount: number;
+  action: 'quick' | 'thorough' | 'exhaustive';
+  locationId: string;
+  locationName: string;
+}
+
+/**
+ * Action Points State
+ * Tracks player's AP acquisition and spending
+ */
+export interface ActionPointsState {
+  current: number; // Current available AP
+  total: number; // Total acquired (including initial)
+  spent: number; // Total spent
+  initial: number; // Always 3
+  acquisitionHistory: APAcquisition[];
+  spendingHistory: APSpending[];
+  acquiredTopics: Set<string>; // Format: "suspect-1:topic-alibi-1"
+  bonusesAcquired: Set<string>; // Format: "suspect-1:suspect" or "suspect-1:location"
+  emergencyAPUsed: boolean; // Has emergency AP been used?
+}
+
+/**
  * Player evidence state
  * Tracks all evidence discoveries for a player in a specific case
  */
@@ -157,6 +200,7 @@ export interface PlayerEvidenceState {
   }>;
   stats: EvidenceDiscoveryStats;
   lastUpdated: Date;
+  actionPoints: ActionPointsState; // AP tracking
 }
 
 /**

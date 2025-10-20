@@ -61,9 +61,10 @@ export function InvestigationScreen({
 }: InvestigationScreenProps) {
   const [activeTab, setActiveTab] = useState<InvestigationTab>('locations');
 
-  // Determine initial AP based on case difficulty (from caseData if available)
-  const initialAP = 10; // TODO: Get from caseData or difficulty
-  const maxAP = 10;
+  // Get AP configuration from caseData (Phase 2)
+  const initialAP = caseData.actionPoints?.initial ?? 3;
+  const maxAP = caseData.actionPoints?.maximum ?? 12;
+  const maximumAP = caseData.actionPoints?.maximum ?? 12;
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
@@ -171,6 +172,7 @@ export function InvestigationScreen({
               caseId={caseId}
               userId={userId}
               suspects={suspects}
+              maximumAP={maximumAP}
             />
           </motion.div>
         )}

@@ -6,8 +6,7 @@
  * Enhanced with Claude Skills pattern (prompt templates)
  */
 
-import { promises as fs } from 'fs';
-import path from 'path';
+import suspectPromptTemplate from '../../../../skills/suspect-personality-core/PROMPT.md?raw';
 import { GeminiClient, type GeminiTextOptions } from '../gemini/GeminiClient';
 import { EmotionalStateManager, type EmotionalTone } from './EmotionalStateManager';
 import { KVStoreManager, type SuspectData } from '../repositories/kv/KVStoreManager';
@@ -15,6 +14,7 @@ import {
   getArchetypeData,
   getArchetypeSpeechPatterns,
   getEmotionalStateFromSuspicion,
+  normalizeArchetypeName,
   type ArchetypeName,
   type EmotionalStateName
 } from '../prompts/ArchetypePrompts';
@@ -41,9 +41,6 @@ export interface ChatResponse {
  */
 export class SuspectAIService {
   private geminiClient: GeminiClient;
-
-  // Claude Skills pattern: Prompt template cache
-  private static promptTemplate: string | null = null;
 
   constructor(geminiClient: GeminiClient) {
     this.geminiClient = geminiClient;
@@ -128,7 +125,7 @@ export class SuspectAIService {
     conversationHistory: ChatMessage[],
     currentTone: EmotionalTone
   ): Promise<string> {
-    const prompt = await this.buildSuspectPrompt(
+    const prompt = this.buildSuspectPrompt(
       suspect,
       userQuestion,
       conversationHistory,
@@ -146,30 +143,34 @@ export class SuspectAIService {
   }
 
   /**
-   * 용의자 AI 프롬프트 생성 (Enhanced with Claude Skills pattern)
-   * Uses template from skills/suspect-personality-core/PROMPT.md
+   * Detect language from user question
+   * Returns 'ko' if Korean characters detected, 'en' otherwise
    */
-  private async buildSuspectPrompt(
+  private detectLanguage(text: string): 'ko' | 'en' {
+    // 한글 문자 포함 여부 확인
+    return /[가-힣]/.test(text) ? 'ko' : 'en';
+  }
+
+  /**
+   * Get language-specific response instruction
+   */
+  private getResponseLanguageInstruction(language: 'ko' | 'en'): string {
+    if (language === 'ko') {
+      return 'Respond naturally in Korean. Use conversational Korean that feels authentic and natural. (한국어로 자연스럽게 대답하세요. 실제 대화처럼 자연스러운 한국어를 사용하세요.)';
+    }
+    return 'Respond naturally in English. Use conversational English that feels authentic and natural.';
+  }
+
+  /**
+   * 용의자 AI 프롬프트 생성 (Enhanced with Claude Skills pattern)
+   * Uses template from skills/suspect-personality-core/PROMPT.md (bundled at build time)
+   */
+  private buildSuspectPrompt(
     suspect: SuspectData,
     userQuestion: string,
     conversationHistory: ChatMessage[],
     currentTone: EmotionalTone
-  ): Promise<string> {
-    // Load prompt template from skills/ directory (cached)
-    if (!SuspectAIService.promptTemplate) {
-      try {
-        const templatePath = path.join(
-          __dirname,
-          '../../../skills/suspect-personality-core/PROMPT.md'
-        );
-        SuspectAIService.promptTemplate = await fs.readFile(templatePath, 'utf-8');
-        console.log('✅ Loaded suspect conversation prompt template');
-      } catch (error) {
-        console.error('❌ Failed to load prompt template, using fallback:', error);
-        return this.buildFallbackPrompt(suspect, userQuestion, conversationHistory, currentTone);
-      }
-    }
-
+  ): string {
     // Get emotional state from suspicion level
     const suspicionLevel =
       currentTone === 'cooperative'
@@ -182,17 +183,29 @@ export class SuspectAIService {
 
     const emotionalState = getEmotionalStateFromSuspicion(suspicionLevel);
 
-    // Get archetype-specific data
-    const archetypeData = getArchetypeData(suspect.archetype as ArchetypeName);
+    // Detect language and get instruction
+    const detectedLanguage = this.detectLanguage(userQuestion);
+    const languageInstruction = this.getResponseLanguageInstruction(detectedLanguage);
+
+    // Phase 1: Normalize archetype name (handles Korean → English conversion)
+    const normalizedArchetype = normalizeArchetypeName(suspect.archetype);
+
+    if (!normalizedArchetype) {
+      console.warn(`Archetype not found: ${suspect.archetype}, using fallback prompt`);
+      return this.buildFallbackPrompt(suspect, userQuestion, conversationHistory, currentTone);
+    }
+
+    // Get archetype-specific data with normalized name
+    const archetypeData = getArchetypeData(normalizedArchetype);
 
     if (!archetypeData) {
-      console.warn(`Archetype not found: ${suspect.archetype}, using fallback prompt`);
+      console.warn(`Archetype data not found: ${normalizedArchetype}, using fallback prompt`);
       return this.buildFallbackPrompt(suspect, userQuestion, conversationHistory, currentTone);
     }
 
     // Get speech patterns for current emotional state
     const speechPatterns = getArchetypeSpeechPatterns(
-      suspect.archetype as ArchetypeName,
+      normalizedArchetype,
       emotionalState
     );
 
@@ -226,10 +239,10 @@ export class SuspectAIService {
 - Don't have knowledge of incriminating details only the killer would know
 - Your emotional responses reflect genuine innocence`;
 
-    // Replace template variables
-    return SuspectAIService.promptTemplate
+    // Replace template variables (template is bundled at build time via ?raw import)
+    return suspectPromptTemplate
       .replace('{{SUSPECT_NAME}}', suspect.name)
-      .replace(/{{ARCHETYPE}}/g, suspect.archetype)
+      .replace(/{{ARCHETYPE}}/g, normalizedArchetype)
       .replace('{{BACKGROUND}}', suspect.background)
       .replace('{{PERSONALITY_TRAITS}}', archetypeData.personality.map(p => `- ${p}`).join('\n'))
       .replace('{{CHARACTER_DEFINITION}}', archetypeData.definition)
@@ -240,6 +253,7 @@ export class SuspectAIService {
       .replace('{{GUILTY_OR_INNOCENT_BLOCK}}', guiltyOrInnocentBlock)
       .replace('{{SPEECH_PATTERNS}}', speechPatterns.slice(0, 3).map(p => `- ${p}`).join('\n'))
       .replace('{{VOCABULARY}}', archetypeData.vocabulary.primary.join(', '))
+      .replace('{{RESPONSE_LANGUAGE_INSTRUCTION}}', languageInstruction)
       .replace('{{CONVERSATION_HISTORY}}', historyText || '(Beginning of conversation)')
       .replace('{{USER_QUESTION}}', userQuestion);
   }
@@ -263,6 +277,12 @@ export class SuspectAIService {
       })
       .join('\n');
 
+    // Detect language and get appropriate instruction
+    const detectedLanguage = this.detectLanguage(userQuestion);
+    const responseInstruction = detectedLanguage === 'ko'
+      ? '2-4문장으로 자연스러운 한국어로 캐릭터에 맞게 답변하세요:'
+      : 'Respond in 2-4 sentences in natural English, staying in character:';
+
     return `You are ${suspect.name}, a suspect in a murder investigation.
 
 **Your Character:**
@@ -279,7 +299,7 @@ ${historyText || '(Beginning of conversation)'}
 **Detective's Question:**
 ${userQuestion}
 
-Respond in 2-4 sentences in natural English, staying in character:
+${responseInstruction}
 
 ${suspect.name}:`;
   }

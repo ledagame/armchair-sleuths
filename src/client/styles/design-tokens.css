@@ -11,12 +11,13 @@
  */
 @theme {
   --color-detective-crimson: #dc2626;
-  --color-detective-gold: #f59e0b;
+  --color-detective-gold: #c9b037;
+  --color-detective-amber: #f0a500;
   --color-detective-navy: #1e3a8a;
   --color-detective-ink: #1f2937;
   --color-detective-fog: #f3f4f6;
   --color-detective-smoke: #e5e7eb;
-  --color-noir-charcoal: #111827;
+  --color-noir-charcoal: #2a2a2a;
 }
 
 /**

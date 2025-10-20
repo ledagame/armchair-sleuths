@@ -17,7 +17,8 @@ import { CinematicImageService, type CinematicImages } from '../image/CinematicI
 import { LocationDiscoveryService } from '../discovery/LocationDiscoveryService';
 import { DiscoveryStateManager } from '../discovery/DiscoveryStateManager';
 import type { EvidenceItem } from '@/shared/types/Evidence';
-import type { Location as DiscoveryLocation } from '@/shared/types/Case';
+import type { Location as DiscoveryLocation, APTopic, ActionPointsConfig } from '@/shared/types/Case';
+import { generateDefaultAPTopics, validateAPTopics } from '../ap/APTopicGenerator';
 
 export interface GenerateCaseOptions {
   date?: Date;
@@ -339,6 +340,16 @@ export class CaseGeneratorService {
       introNarration,
       locations,
       evidence,
+      // Action Points configuration
+      actionPoints: {
+        initial: 3,
+        maximum: 12,
+        costs: {
+          quick: 1,
+          thorough: 2,
+          exhaustive: 3
+        }
+      },
       // 시네마틱 이미지는 백그라운드에서 생성
       cinematicImages: null,
       imageGenerationStatus: 'pending' as ImageGenerationStatus,
@@ -348,7 +359,11 @@ export class CaseGeneratorService {
       }
     };
 
-    const suspectDataList: SuspectData[] = suspectsWithImages.map((suspect, index) => ({
+    const suspectDataList: SuspectData[] = suspectsWithImages.map((suspect, index) => {
+    // Generate AP topics for each suspect
+    const apTopics = generateDefaultAPTopics(suspect.isGuilty);
+
+    return {
       id: suspectsWithIds[index].id,
       caseId: caseId,
       name: suspect.name,
@@ -361,8 +376,10 @@ export class CaseGeneratorService {
         tone: 'cooperative',
         lastUpdated: Date.now()
       },
-      profileImageUrl: suspect.profileImageUrl
-    }));
+      profileImageUrl: suspect.profileImageUrl,
+      apTopics  // AP topics for interrogation
+    };
+  });
 
     // 트랜잭션 단계 생성
     const steps = CaseCreationTransaction.createSteps(caseData, suspectDataList, KVStoreManager);

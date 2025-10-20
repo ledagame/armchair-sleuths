@@ -119,7 +119,7 @@ Follow these rules strictly when formulating your response:
 - Avoid overly verbose explanations unless your character would naturally give them
 
 ### 6. **Natural Dialogue**
-- Speak in natural, conversational English (will be translated to Korean)
+- {{RESPONSE_LANGUAGE_INSTRUCTION}}
 - Include hesitations, pauses, or emotional outbursts when appropriate
 - Show personality through subtext, not just content
 

@@ -9,6 +9,7 @@ import { IStorageAdapter } from '../adapters/IStorageAdapter';
 import type { IntroNarration, CinematicImages, ImageGenerationStatus, ImageGenerationMeta } from '../../../shared/types/index';
 import type { Location, EvidenceDistribution } from '../../../shared/types/Discovery';
 import type { EvidenceItem, PlayerEvidenceState } from '../../../shared/types/Evidence';
+import type { APTopic, ActionPointsConfig } from '../../../shared/types/Case';
 
 export interface CaseData {
   id: string;
@@ -51,6 +52,8 @@ export interface CaseData {
   locations?: Location[]; // 탐색 가능한 장소 목록 (4개, Medium 난이도)
   evidence?: EvidenceItem[]; // 증거 목록 (10개, Medium 난이도)
   evidenceDistribution?: EvidenceDistribution; // 증거 분배 정보
+  // Action Points system
+  actionPoints: ActionPointsConfig; // AP configuration (initial, maximum, costs)
 }
 
 export interface SuspectData {
@@ -67,6 +70,7 @@ export interface SuspectData {
     lastUpdated: number; // timestamp
   };
   profileImageUrl?: string; // Profile image (Base64 data URL)
+  apTopics: APTopic[]; // AP topics for this suspect
 }
 
 export interface ConversationData {
@@ -397,7 +401,18 @@ export class KVStoreManager {
     }
 
     const key = `player-state:${state.caseId}:${state.userId}`;
-    await this.adapter.set(key, JSON.stringify(state));
+
+    // Convert Sets to arrays for JSON serialization
+    const serializable = {
+      ...state,
+      actionPoints: {
+        ...state.actionPoints,
+        acquiredTopics: Array.from(state.actionPoints.acquiredTopics),
+        bonusesAcquired: Array.from(state.actionPoints.bonusesAcquired)
+      }
+    };
+
+    await this.adapter.set(key, JSON.stringify(serializable));
   }
 
   /**
@@ -420,7 +435,7 @@ export class KVStoreManager {
 
     const parsed = JSON.parse(data);
 
-    // Convert date strings back to Date objects
+    // Convert date strings back to Date objects and arrays back to Sets
     return {
       ...parsed,
       discoveredEvidence: parsed.discoveredEvidence.map((d: any) => ({
@@ -431,7 +446,20 @@ export class KVStoreManager {
         ...s,
         timestamp: new Date(s.timestamp)
       })),
-      lastUpdated: new Date(parsed.lastUpdated)
+      lastUpdated: new Date(parsed.lastUpdated),
+      actionPoints: {
+        ...parsed.actionPoints,
+        acquisitionHistory: parsed.actionPoints.acquisitionHistory.map((a: any) => ({
+          ...a,
+          timestamp: new Date(a.timestamp)
+        })),
+        spendingHistory: parsed.actionPoints.spendingHistory.map((s: any) => ({
+          ...s,
+          timestamp: new Date(s.timestamp)
+        })),
+        acquiredTopics: new Set(parsed.actionPoints.acquiredTopics),
+        bonusesAcquired: new Set(parsed.actionPoints.bonusesAcquired)
+      }
     } as PlayerEvidenceState;
   }
 

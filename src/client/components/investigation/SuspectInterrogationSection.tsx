@@ -3,10 +3,13 @@
  *
  * Suspect Interrogation section for parallel investigation
  * Extracted from App.tsx investigation logic
+ * Integrated with AP (Action Points) system
  */
 
 import { SuspectPanel } from '../suspect/SuspectPanel';
 import { ChatInterface } from '../chat/ChatInterface';
+import { APHeader } from '../ap/APHeader';
+import { APAcquisitionToast } from '../ap/APAcquisitionToast';
 import { useSuspect } from '../../hooks/useSuspect';
 import { useChat } from '../../hooks/useChat';
 import type { Suspect } from '../../types';
@@ -15,6 +18,7 @@ export interface SuspectInterrogationSectionProps {
   caseId: string;
   userId: string;
   suspects: Suspect[];
+  maximumAP?: number;
 }
 
 /**
@@ -23,6 +27,7 @@ export interface SuspectInterrogationSectionProps {
  * Features:
  * - Suspect panel for selection
  * - AI-powered chat interface
+ * - AP header display and acquisition toasts
  * - Emotional state tracking
  * - Conversation history
  */
@@ -30,14 +35,23 @@ export function SuspectInterrogationSection({
   caseId,
   userId,
   suspects,
+  maximumAP = 12,
 }: SuspectInterrogationSectionProps) {
   // Suspect selection management
   const { selectedSuspect, selectSuspect } = useSuspect(suspects);
 
-  // Chat management (only active when suspect is selected)
-  const { messages, sendMessage, loading: chatLoading } = useChat({
+  // Chat management with AP integration (only active when suspect is selected)
+  const {
+    messages,
+    sendMessage,
+    loading: chatLoading,
+    currentAP,
+    latestAPGain,
+    clearAPToast,
+  } = useChat({
     suspectId: selectedSuspect?.id || '',
     userId,
+    caseId,
     enabled: !!selectedSuspect,
   });
 
@@ -83,7 +97,13 @@ export function SuspectInterrogationSection({
   }
 
   return (
-    <div className="p-6">
+    <div className="relative p-6">
+      {/* AP Header - Fixed position */}
+      <APHeader current={currentAP} maximum={maximumAP} />
+
+      {/* AP Acquisition Toast */}
+      <APAcquisitionToast apGain={latestAPGain} onComplete={clearAPToast} />
+
       {/* Suspect Panel */}
       <SuspectPanel
         suspects={suspects}

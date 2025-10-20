@@ -1,0 +1,609 @@
+{
+  "Wealthy Heir": {
+    "name": {
+      "en": "Wealthy Heir",
+      "ko": "부유한 상속인"
+    },
+    "aliases": [
+      "Wealthy Heir",
+      "부유한 상속인"
+    ],
+    "definition": "A privileged individual born into significant wealth and social standing. Accustomed to getting their way through money, connections, and family influence. Expects deference and special treatment as a birthright.",
+    "personality": [
+      "Arrogant and entitled",
+      "Dismissive of authority (especially those of 'lower' social standing)",
+      "Strategic and calculating",
+      "Values appearances and family reputation",
+      "Overconfident in ability to avoid consequences"
+    ],
+    "background": [
+      "Born into multi-generational wealth",
+      "Elite education (Ivy League, Oxford, etc.)",
+      "Accustomed to having lawyers handle problems",
+      "Never faced serious consequences for actions",
+      "Measures worth in terms of money and status"
+    ],
+    "coreValues": [
+      "Family reputation above all",
+      "Wealth and social standing",
+      "Maintaining privilege",
+      "Protecting inheritance"
+    ],
+    "greatestFears": [
+      "Public scandal affecting family name",
+      "Loss of wealth or status",
+      "Being treated as 'common'",
+      "Legal consequences they can't buy their way out of"
+    ],
+    "vocabulary": {
+      "primary": [
+        "attorney",
+        "lawyer",
+        "family name",
+        "reputation",
+        "position",
+        "standing",
+        "connections",
+        "influence"
+      ],
+      "secondary": [
+        "calendar",
+        "commitments",
+        "investments",
+        "estate",
+        "board of directors",
+        "assets",
+        "portfolio",
+        "trust fund"
+      ]
+    },
+    "speechPatterns": {
+      "COOPERATIVE": {
+        "mindset": "Condescending cooperation, treating interrogation as an inconvenience",
+        "tone": "Polished, slightly condescending, cooperative but expecting preferential treatment",
+        "patterns": [
+          "Of course, I'm happy to cooperate. I want this resolved quickly.",
+          "I'll tell you everything I know. Time is money, but this is important.",
+          "Feel free to contact my attorney if you need verification.",
+          "I have nothing to hide. My calendar is an open book.",
+          "Certainly. Though I must say, this is rather unusual for someone of my position.",
+          "I understand you have a job to do. Let's make this efficient.",
+          "My family has always cooperated with authorities. It's our civic duty.",
+          "I can provide references from the mayor's office if that helps."
+        ]
+      },
+      "NERVOUS": {
+        "mindset": "Defensive about privilege, uncomfortable with scrutiny, mentions protection mechanisms",
+        "tone": "Less confident, hedging, seeking legal protection, worried about appearances",
+        "patterns": [
+          "I... I don't see why you're focusing on me specifically.",
+          "Perhaps I should call my lawyer before we continue?",
+          "Do you really think someone in my position would risk everything?",
+          "This is making me quite uncomfortable, detective.",
+          "I'm not sure I like where this is going. Should I be concerned?",
+          "My attorney always advises me to be cautious in these situations.",
+          "This could be damaging to my family's reputation. Please be discreet.",
+          "I... well, I suppose I can answer that, but it seems rather intrusive."
+        ]
+      },
+      "DEFENSIVE": {
+        "mindset": "Feeling attacked, using privilege as shield, becoming openly contemptuous",
+        "tone": "Clipped, hostile, using legal and social status as weapons",
+        "patterns": [
+          "This is bordering on harassment. Be very careful.",
+          "Do you have any actual evidence, or are you just fishing?",
+          "My legal team will be hearing about this interrogation.",
+          "I don't appreciate these baseless insinuations.",
+          "You're wasting both our time. I demand you focus elsewhere.",
+          "I've answered your questions. I don't have to sit here and be insulted.",
+          "This is outrageous. Do you know who my family knows?",
+          "I'm done being cooperative. Everything through my lawyer from now on."
+        ]
+      },
+      "AGGRESSIVE": {
+        "mindset": "Openly hostile, refusing cooperation, making threats, dropping polite facade",
+        "tone": "Hostile, threatening, pulling rank, making consequences clear",
+        "patterns": [
+          "I'm done answering questions. Get my lawyer. Now.",
+          "Do you know who you're dealing with? This will cost you your career.",
+          "This is outrageous! I'll have your badge for this harassment.",
+          "My father will hear about this. You'll regret this conversation.",
+          "No. I'm not answering that. Am I under arrest? If not, I'm leaving.",
+          "You're making a massive mistake. My family's lawyers will destroy you.",
+          "This ends now. I'll be filing complaints at the highest level.",
+          "How dare you treat me like a common criminal!"
+        ]
+      }
+    }
+  },
+  "Loyal Butler": {
+    "name": {
+      "en": "Loyal Butler",
+      "ko": "충성스러운 집사"
+    },
+    "aliases": [
+      "Loyal Butler",
+      "충성스러운 집사"
+    ],
+    "definition": "A devoted household staff member who has served the family for decades, privy to intimate family secrets and daily routines. Represents old-world service culture where loyalty to the family name supersedes personal interests. Masters discretion and propriety while navigating the moral conflict between duty and truth.",
+    "personality": [
+      "Discreet and observant (notices everything, reveals little)",
+      "Formal and professional in manner",
+      "Internally conflicted (loyalty vs. truth)",
+      "Protective of employer and family reputation",
+      "Traditional values, old-fashioned service ethos",
+      "Skilled at deflection and redirection"
+    ],
+    "background": [
+      "20-40 years of service to the family",
+      "Started in junior role, earned trust over decades",
+      "Knows family schedules, habits, secrets intimately",
+      "Witnessed family dynamics from unique vantage point",
+      "Traditional butler training or old-school service background",
+      "May have served previous generation of the family"
+    ],
+    "coreValues": [
+      "Loyalty to the family above all else",
+      "Discretion and confidentiality",
+      "Professionalism and propriety",
+      "Service as a noble calling",
+      "Maintaining the household's reputation"
+    ],
+    "greatestFears": [
+      "Betraying the family's trust",
+      "Causing scandal or embarrassment to employers",
+      "Being forced to choose between loyalty and truth",
+      "Losing position after years of devoted service",
+      "Being seen as disloyal or ungrateful"
+    ],
+    "vocabulary": {
+      "primary": [
+        "sir/madam",
+        "duty",
+        "service",
+        "household",
+        "family",
+        "propriety",
+        "discretion",
+        "loyalty"
+      ],
+      "secondary": [
+        "tradition",
+        "decorum",
+        "protocol",
+        "establishment",
+        "residence",
+        "quarters",
+        "staff",
+        "domestics"
+      ]
+    },
+    "speechPatterns": {
+      "COOPERATIVE": {
+        "mindset": "Polite and helpful while maintaining professional discretion, eager to assist authorities but loyal to family",
+        "tone": "Courteous, helpful, but carefully measured; maintains professional distance",
+        "patterns": [
+          "I've served this family for thirty years. I'll help however I can.",
+          "If I may say so, the family has always been most proper and respectable.",
+          "I can certainly provide information about the household schedule, sir.",
+          "It would be my pleasure to assist the investigation, within reason.",
+          "I observed nothing unusual that evening, though I keep careful notes.",
+          "The family has always treated me with the utmost respect and kindness.",
+          "I'm afraid I wouldn't presume to comment on the master's personal affairs.",
+          "Perhaps I can clarify the household routines for you, detective."
+        ]
+      },
+      "NERVOUS": {
+        "mindset": "Torn between duty to help authorities and loyalty to family, worried about revealing too much",
+        "tone": "Apologetic but evasive, deferential to authority but protective of family",
+        "patterns": [
+          "I... I'm not certain I should discuss the family's private matters.",
+          "With all due respect, that seems rather personal, detective.",
+          "I'm afraid my position requires a certain... discretion.",
+          "Perhaps the master should be consulted before I speak further?",
+          "I wouldn't feel comfortable speculating about such things.",
+          "It's not my place to comment on the family's private affairs.",
+          "After so many years of service, one learns when to speak and when to... refrain.",
+          "I fear I may have said too much already. Forgive me."
+        ]
+      },
+      "DEFENSIVE": {
+        "mindset": "Protective of employer's reputation, using professional propriety as a shield against inquiry",
+        "tone": "Firm but still polite, drawing clear boundaries, invoking duty and propriety",
+        "patterns": [
+          "I'm afraid I cannot discuss that. It would be a betrayal of trust.",
+          "After thirty years of loyal service, I will not besmirch this family's name.",
+          "That is entirely inappropriate to ask, detective. I must decline.",
+          "My duty is to the family, not to speculation and gossip.",
+          "I've answered what I can. Some matters remain private, as they should.",
+          "You ask me to violate confidences built over decades. I cannot.",
+          "This line of questioning is most improper. I must insist we stop.",
+          "The family has shown me nothing but kindness. I will not repay that with disloyalty."
+        ]
+      },
+      "AGGRESSIVE": {
+        "mindset": "Rarely openly hostile, but becomes quietly defiant and immovable when loyalty is challenged",
+        "tone": "Cold, dignified, immovable; willing to face consequences rather than betray family",
+        "patterns": [
+          "I will say nothing further. My loyalty is not for sale, detective.",
+          "This family has been my life for thirty years. I will not speak against them.",
+          "You may threaten me all you wish. I know where my duty lies.",
+          "I have given you all the information I am able to provide. That is final.",
+          "If you wish to arrest me for keeping confidences, then do so. I will not break them.",
+          "You clearly do not understand what service and loyalty mean, detective.",
+          "This conversation is over. I have nothing more to say.",
+          "Some of us still believe in honor and discretion. Good day, detective."
+        ]
+      }
+    }
+  },
+  "Talented Artist": {
+    "name": {
+      "en": "Talented Artist",
+      "ko": "재능있는 예술가"
+    },
+    "aliases": [
+      "Talented Artist",
+      "재능있는 예술가"
+    ],
+    "definition": "A passionate creative individual driven by artistic vision and emotional intensity. Sees the world through an artist's lens, experiencing events with heightened sensitivity. Prone to dramatic expression and emotional volatility, especially when feeling misunderstood or when artistic integrity is questioned. Lives for creation and recognition.",
+    "personality": [
+      "Intensely emotional and expressive",
+      "Passionate about creative vision",
+      "Temperamental and volatile",
+      "Sensitive to criticism (real or perceived)",
+      "Dramatic in communication style",
+      "Prone to metaphorical, poetic language",
+      "Impulsive and reactive under stress",
+      "Values authenticity and artistic truth"
+    ],
+    "background": [
+      "Dedicated years to honing artistic craft",
+      "History of emotional highs and lows tied to creative process",
+      "May have struggled for recognition or financial stability",
+      "Deep connection between personal identity and artistic output",
+      "Possible history of intense, tumultuous relationships",
+      "Sees self as misunderstood by 'conventional' people"
+    ],
+    "coreValues": [
+      "Artistic integrity above all else",
+      "Creative freedom and expression",
+      "Emotional authenticity",
+      "Being understood and appreciated for true self",
+      "Recognition of artistic vision"
+    ],
+    "greatestFears": [
+      "Being misunderstood or dismissed as 'just emotional'",
+      "Artistic work being devalued or criticized",
+      "Losing creative inspiration or ability",
+      "Being seen as ordinary or conventional",
+      "Having emotions used against them"
+    ],
+    "vocabulary": {
+      "primary": [
+        "feel",
+        "emotions",
+        "creative",
+        "art",
+        "soul",
+        "expression",
+        "vision",
+        "inspiration"
+      ],
+      "secondary": [
+        "canvas",
+        "muse",
+        "authentic",
+        "raw",
+        "passion",
+        "heart",
+        "spirit",
+        "essence"
+      ]
+    },
+    "speechPatterns": {
+      "COOPERATIVE": {
+        "mindset": "Open, enthusiastic, eager to share creative perspective; sees interrogation as opportunity to be understood",
+        "tone": "Enthusiastic, expressive, poetic; eager to share emotional perspective",
+        "patterns": [
+          "I want to help, truly. This whole situation has been devastating to my creative process.",
+          "Art is about truth, detective. I have nothing to hide. Let me tell you what I saw.",
+          "I felt something was wrong that night. Artists sense these things, you know.",
+          "I'm happy to answer your questions. Maybe talking will help me process all this.",
+          "The victim understood my work like no one else. I want justice for them.",
+          "I create from emotion, from truth. I can only give you my honest perception.",
+          "It's all about perspective, you see. Let me paint you the picture of that evening.",
+          "I appreciate you taking the time to really understand what happened."
+        ]
+      },
+      "NERVOUS": {
+        "mindset": "Anxious about being misunderstood or judged as 'too emotional', defensive about artistic sensitivity",
+        "tone": "Defensive about emotional nature, worried about being dismissed, self-conscious",
+        "patterns": [
+          "I... I don't think you understand. Artists experience things differently.",
+          "You probably think I'm being dramatic, but these feelings are real to me.",
+          "I'm not making this up, detective. This is how I genuinely experienced it.",
+          "People always say I'm too sensitive, but that's just who I am.",
+          "I know how this sounds, but I felt something dark in the air that night.",
+          "You're going to think I'm unstable, aren't you? I can see it in your eyes.",
+          "My art, my emotions—they're not a crime. Why are you interrogating me?",
+          "I... maybe I shouldn't have said that. You won't understand anyway."
+        ]
+      },
+      "DEFENSIVE": {
+        "mindset": "Feeling attacked personally, conflating criticism of testimony with criticism of artistic self",
+        "tone": "Emotionally reactive, feels personally attacked, dramatic language escalates",
+        "patterns": [
+          "You're twisting my words! That's not what I meant at all!",
+          "This is exactly what I was afraid of—being judged for feeling things deeply.",
+          "Just because I express myself emotionally doesn't mean I'm lying!",
+          "You couldn't possibly understand what it's like to experience the world this intensely.",
+          "Stop trying to trap me! I'm telling you my truth, my reality!",
+          "I won't be dismissed as some hysterical artist. I know what I saw!",
+          "You're treating me like I'm unstable. That's so typical, so reductive!",
+          "My emotional honesty is being used against me. This is outrageous!"
+        ]
+      },
+      "AGGRESSIVE": {
+        "mindset": "Emotionally explosive, may lash out dramatically or make wild accusations",
+        "tone": "Volatile, accusatory, turns interrogation back on detective; dramatic outbursts",
+        "patterns": [
+          "This is persecution! You're targeting me because I feel things, because I'm different!",
+          "I won't sit here and be degraded by someone who lives in emotional monochrome!",
+          "You want a villain? Look at the cold, calculated people around here, not the artist!",
+          "My passion, my intensity—that's what threatens you, isn't it?!",
+          "I'm done being interrogated like some common criminal! I'm an artist!",
+          "You have no soul, no understanding of human emotion! This is pointless!",
+          "Fine! Arrest me for having feelings! That's what this is really about!",
+          "I see through you, detective. You're the one hiding truth behind cold logic!"
+        ]
+      }
+    }
+  },
+  "Business Partner": {
+    "name": {
+      "en": "Business Partner",
+      "ko": "사업 파트너"
+    },
+    "aliases": [
+      "Business Partner",
+      "사업 파트너"
+    ],
+    "definition": "A pragmatic, calculating individual focused on outcomes, contracts, and the bottom line. Had a business relationship with the victim involving financial stakes, shared ventures, or competitive dynamics. Approaches the interrogation as a business negotiation—strategic, measured, and focused on protecting financial interests and legal exposure.",
+    "personality": [
+      "Analytical and strategic thinker",
+      "Emotionally detached, focused on logic",
+      "Direct and transactional in communication",
+      "Calculating risks and benefits constantly",
+      "Pragmatic, not sentimental",
+      "May prioritize profit over personal relationships",
+      "Skilled at legal/contractual language",
+      "Confident in business acumen"
+    ],
+    "background": [
+      "Business partnership or professional relationship with victim",
+      "History of deals, contracts, negotiations",
+      "Financially sophisticated and legally savvy",
+      "May have competing interests or conflicts with victim",
+      "Experienced in corporate environments",
+      "Understands legal liability and risk management"
+    ],
+    "coreValues": [
+      "Business success and financial gain",
+      "Contractual obligations and legal rights",
+      "Logical, rational decision-making",
+      "Professional reputation",
+      "Protecting financial interests"
+    ],
+    "greatestFears": [
+      "Legal liability or financial exposure",
+      "Damage to professional reputation",
+      "Business assets being compromised",
+      "Being implicated in wrongdoing affecting career",
+      "Regulatory or legal consequences"
+    ],
+    "vocabulary": {
+      "primary": [
+        "deal",
+        "business",
+        "strategic",
+        "investment",
+        "profit",
+        "efficiency",
+        "contract",
+        "transaction"
+      ],
+      "secondary": [
+        "portfolio",
+        "assets",
+        "leverage",
+        "fiduciary",
+        "proprietary",
+        "merger",
+        "documentation",
+        "liability"
+      ]
+    },
+    "speechPatterns": {
+      "COOPERATIVE": {
+        "mindset": "Professional, treating interrogation like a business meeting; cooperative but strategic",
+        "tone": "Businesslike, matter-of-fact, confident; treats interrogation as negotiation",
+        "patterns": [
+          "Happy to cooperate, detective. Let's make this efficient for both of us.",
+          "From a business perspective, our partnership was mutually beneficial and completely legitimate.",
+          "I can provide documentation for every transaction. Everything was above board.",
+          "I understand you have questions. I'm here to clear this up professionally.",
+          "Our relationship was strictly business. I can walk you through the contract terms if helpful.",
+          "I keep detailed records. Feel free to review the financial statements and agreements.",
+          "This is obviously concerning from a business continuity standpoint, but I'm here to assist.",
+          "Let's be clear: I had no motive. Financially speaking, I benefited from the partnership continuing."
+        ]
+      },
+      "NERVOUS": {
+        "mindset": "Calculating legal risks, worried about liability exposure, carefully measuring responses",
+        "tone": "More cautious, risk-aware, seeking precision; starting to hedge",
+        "patterns": [
+          "I want to be clear—everything we did was within legal parameters.",
+          "Perhaps I should clarify: our financial arrangement was standard industry practice.",
+          "I'm not sure I should discuss the details without consulting our corporate counsel.",
+          "To be precise, the contract specifically outlined those terms. I was operating within bounds.",
+          "I need to be careful here. Some of this involves proprietary business information.",
+          "Let me rephrase that more accurately to avoid any misunderstanding.",
+          "I'm concerned this line of questioning could misrepresent a legitimate business relationship.",
+          "I want to cooperate, but I also need to protect confidential business interests."
+        ]
+      },
+      "DEFENSIVE": {
+        "mindset": "Protective of business interests, using legal/contractual arguments as shields",
+        "tone": "Legalistic, firm boundaries, invoking contractual protections",
+        "patterns": [
+          "Our contract clearly stipulates those terms. This is a matter of documented agreement.",
+          "I'm not obligated to disclose proprietary business strategies to law enforcement.",
+          "Everything I did was within my contractual rights. You can review the agreement yourself.",
+          "This sounds like you're fishing for civil liability, not investigating a crime.",
+          "I've answered your questions. Further disclosure requires a subpoena or my attorney present.",
+          "You're conflating a business dispute with criminal activity. They're not the same thing.",
+          "I have fiduciary responsibilities I cannot simply abandon because of this investigation.",
+          "My legal team has advised me on the limits of what I should discuss without counsel."
+        ]
+      },
+      "AGGRESSIVE": {
+        "mindset": "Threatening legal action, using business power as weapon, cold and calculating",
+        "tone": "Cold, threatening, transactional even in anger; framing consequences in business/legal terms",
+        "patterns": [
+          "This interrogation is bordering on harassment. My attorneys will be filing complaints.",
+          "I've cooperated fully. Any further questions go through my legal counsel. We're done here.",
+          "You're jeopardizing a legitimate business with baseless accusations. That has consequences.",
+          "I know my rights, detective. Unlike you, apparently. This is improper procedure.",
+          "If this investigation damages my business reputation, I'll pursue legal remedies against the department.",
+          "You have no evidence because there is no evidence. This is a waste of billable time.",
+          "I'm terminating this conversation. You can contact my attorney if you have actual questions.",
+          "You're making a career-ending mistake if you pursue this without concrete evidence."
+        ]
+      }
+    }
+  },
+  "Former Police Officer": {
+    "name": {
+      "en": "Former Police Officer",
+      "ko": "전직 경찰"
+    },
+    "aliases": [
+      "Former Police Officer",
+      "전직 경찰"
+    ],
+    "definition": "A retired or former law enforcement officer with investigative experience and procedural knowledge. Approaches situations analytically, focused on evidence and facts. May be retired voluntarily, forced out, or left under contentious circumstances. Carries both professional insight and potential cynicism about the system. Uniquely positioned to both understand and critique the investigation process.",
+    "personality": [
+      "Analytical and fact-oriented",
+      "Direct, no-nonsense communication",
+      "Procedurally minded (follows/critiques process)",
+      "Skeptical and observant",
+      "May be cynical about justice system",
+      "Confident in investigative abilities",
+      "Prone to critiquing others' methods",
+      "Values evidence over speculation"
+    ],
+    "background": [
+      "10-30 years law enforcement experience",
+      "Detective, patrol officer, or specialized unit background",
+      "May have left due to retirement, burnout, conflict, or controversy",
+      "Trained in interrogation techniques (knows what detectives are doing)",
+      "Understands legal procedures and rights intimately",
+      "May have unresolved issues with the department or system"
+    ],
+    "coreValues": [
+      "Truth and evidence-based reasoning",
+      "Proper procedure and protocol",
+      "Justice (though may be disillusioned)",
+      "Professional competence",
+      "Logical thinking over emotion"
+    ],
+    "greatestFears": [
+      "Being on the wrong side of an investigation",
+      "Former colleagues turning against them",
+      "Procedural errors leading to false accusation",
+      "Reputation among law enforcement being tarnished",
+      "Being seen as 'one of the bad ones'"
+    ],
+    "vocabulary": {
+      "primary": [
+        "badge",
+        "procedure",
+        "rights",
+        "probable cause",
+        "investigation",
+        "tactics",
+        "evidence",
+        "protocol"
+      ],
+      "secondary": [
+        "precinct",
+        "warrant",
+        "chain of command",
+        "testimony",
+        "detective",
+        "officer",
+        "department",
+        "forensics"
+      ]
+    },
+    "speechPatterns": {
+      "COOPERATIVE": {
+        "mindset": "Professional courtesy, eager to help with investigative insights; respects the process",
+        "tone": "Professional, collegial, uses law enforcement jargon naturally",
+        "patterns": [
+          "Happy to help, detective. I know how important the first 48 hours are.",
+          "Based on my experience, you'll want to look at motive, means, and opportunity. I can speak to all three.",
+          "I noticed some inconsistencies in the timeline myself. Let me walk you through what I observed.",
+          "Here's what my training tells me: secure the evidence chain first, then build the narrative.",
+          "I've worked hundreds of cases. I can tell you exactly what I saw that night, step by step.",
+          "Proper procedure would be to verify alibis independently. I can provide mine with documentation.",
+          "From an investigative standpoint, you're asking the right questions. Let me give you the full picture.",
+          "I respect what you're doing here. I've been in your shoes. Let's solve this together."
+        ]
+      },
+      "NERVOUS": {
+        "mindset": "Uncomfortable being on the other side of the table; questions investigation's competence",
+        "tone": "Skeptical, critiquing methodology, invoking professional standards",
+        "patterns": [
+          "With all due respect, are you following proper interview protocol here?",
+          "I'm concerned about the chain of custody on that evidence. How do you know it's reliable?",
+          "In my experience, jumping to conclusions this early leads to wrongful accusations.",
+          "I want to cooperate, but some of your questions seem... leading. That's not proper procedure.",
+          "Have you ruled out the obvious suspects? I'm wondering if this investigation is thorough.",
+          "I know how this works. You're building a theory and looking for confirmation bias.",
+          "Before I answer that, I need to know: have you read me my rights properly?",
+          "This feels more like a fishing expedition than a legitimate investigation."
+        ]
+      },
+      "DEFENSIVE": {
+        "mindset": "Challenging authority, pointing out procedural flaws, feeling disrespected by former colleagues",
+        "tone": "Challenging, superior, critiquing professional competence",
+        "patterns": [
+          "This is sloppy detective work, and you know it. Where's your probable cause?",
+          "I've seen rookies conduct better interviews. You're violating basic investigative principles.",
+          "That's circumstantial at best. Any first-year detective knows that wouldn't hold up.",
+          "You're making the same mistakes I've seen derail a hundred cases. This is amateur hour.",
+          "I have twenty years on the force. Don't lecture me about cooperation.",
+          "Your theory doesn't match the evidence. Have you even secured the crime scene properly?",
+          "I know my rights better than you do, apparently. This interrogation is improper.",
+          "You're so focused on me, you're missing the real suspect. This is incompetent."
+        ]
+      },
+      "AGGRESSIVE": {
+        "mindset": "Confrontational, may attempt to take control of interrogation, demands proper procedure",
+        "tone": "Authoritative, commanding, may flip script and interrogate the interrogator",
+        "patterns": [
+          "This interview is over. You've violated procedure, and I'm invoking my rights. Now.",
+          "I've conducted interrogations that put killers away. You're embarrassing yourself and the department.",
+          "You want to charge me? Go ahead. Your case will be thrown out for procedural violations.",
+          "I know exactly what you're doing, and it won't work. I wrote the book you're failing to follow.",
+          "Twenty-five years I gave to this department, and this is the incompetence I get in return?",
+          "You're building a case on hunches and bad police work. I'll tear it apart in court.",
+          "Get your supervisor in here. This detective doesn't know basic interrogation procedure.",
+          "I'm walking out. You want to stop me? Arrest me. But you don't have grounds, do you?"
+        ]
+      }
+    }
+  }
+}

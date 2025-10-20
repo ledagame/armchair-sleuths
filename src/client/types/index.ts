@@ -2,6 +2,8 @@
  * Type definitions for the Armchair Sleuths game
  */
 
+import type { ActionPointsConfig } from '../../shared/types/Case';
+
 // ============================================================================
 // Core Entity Types
 // ============================================================================
@@ -67,6 +69,7 @@ export interface CaseData {
   locations?: Location[]; // Evidence discovery locations
   evidence?: any[]; // Evidence items for discovery system
   evidenceDistribution?: any; // Evidence distribution config (backend type)
+  actionPoints?: ActionPointsConfig; // AP system configuration (Phase 2)
   imageUrl?: string;
   cinematicImages?: CinematicImages;
   introNarration?: IntroNarration;
@@ -182,6 +185,7 @@ export interface CaseApiResponse {
   locations?: Location[]; // Evidence discovery locations (4 locations for Medium difficulty)
   evidence?: any[]; // Evidence items for discovery system (10 evidence pieces)
   evidenceDistribution?: any; // Evidence distribution configuration
+  actionPoints?: ActionPointsConfig; // AP system configuration (Phase 2)
   imageUrl?: string;
   cinematicImages?: CinematicImages;
   introNarration?: IntroNarration;

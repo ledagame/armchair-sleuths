@@ -1,0 +1,36 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Running pre-commit validation..."
+
+# Check if archetype-related files have changed
+ARCHETYPE_FILES=$(git diff --cached --name-only | grep -E "(archetypes/.*\.yaml|CaseElementLibrary\.ts|ArchetypePrompts\.ts)")
+
+if [ -n "$ARCHETYPE_FILES" ]; then
+  echo "📝 Archetype files changed, running validation..."
+
+  # Run validation script
+  npm run suspect:validate-consistency
+
+  if [ $? -ne 0 ]; then
+    echo "❌ Archetype validation failed. Please fix the errors before committing."
+    exit 1
+  fi
+
+  # Regenerate JSON
+  npm run prebuild:server
+
+  if [ $? -ne 0 ]; then
+    echo "❌ Failed to generate JSON from YAML. Please fix the errors before committing."
+    exit 1
+  fi
+
+  # Add regenerated JSON to commit
+  git add src/server/services/prompts/archetypes-data.json
+
+  echo "✅ Archetype validation passed!"
+else
+  echo "ℹ️  No archetype files changed, skipping validation."
+fi
+
+exit 0

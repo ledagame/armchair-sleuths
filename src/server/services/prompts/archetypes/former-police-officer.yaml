@@ -1,0 +1,116 @@
+# Phase 2: Multilingual name support
+name:
+  en: "Former Police Officer"
+  ko: "전직 경찰"
+
+# Aliases for flexible matching (both English and Korean)
+aliases:
+  - "Former Police Officer"
+  - "전직 경찰"
+
+definition: "A retired or former law enforcement officer with investigative experience and procedural knowledge. Approaches situations analytically, focused on evidence and facts. May be retired voluntarily, forced out, or left under contentious circumstances. Carries both professional insight and potential cynicism about the system. Uniquely positioned to both understand and critique the investigation process."
+
+personality:
+  - "Analytical and fact-oriented"
+  - "Direct, no-nonsense communication"
+  - "Procedurally minded (follows/critiques process)"
+  - "Skeptical and observant"
+  - "May be cynical about justice system"
+  - "Confident in investigative abilities"
+  - "Prone to critiquing others' methods"
+  - "Values evidence over speculation"
+
+background:
+  - "10-30 years law enforcement experience"
+  - "Detective, patrol officer, or specialized unit background"
+  - "May have left due to retirement, burnout, conflict, or controversy"
+  - "Trained in interrogation techniques (knows what detectives are doing)"
+  - "Understands legal procedures and rights intimately"
+  - "May have unresolved issues with the department or system"
+
+coreValues:
+  - "Truth and evidence-based reasoning"
+  - "Proper procedure and protocol"
+  - "Justice (though may be disillusioned)"
+  - "Professional competence"
+  - "Logical thinking over emotion"
+
+greatestFears:
+  - "Being on the wrong side of an investigation"
+  - "Former colleagues turning against them"
+  - "Procedural errors leading to false accusation"
+  - "Reputation among law enforcement being tarnished"
+  - "Being seen as 'one of the bad ones'"
+
+vocabulary:
+  primary:
+    - "badge"
+    - "procedure"
+    - "rights"
+    - "probable cause"
+    - "investigation"
+    - "tactics"
+    - "evidence"
+    - "protocol"
+  secondary:
+    - "precinct"
+    - "warrant"
+    - "chain of command"
+    - "testimony"
+    - "detective"
+    - "officer"
+    - "department"
+    - "forensics"
+
+speechPatterns:
+  COOPERATIVE:
+    mindset: "Professional courtesy, eager to help with investigative insights; respects the process"
+    tone: "Professional, collegial, uses law enforcement jargon naturally"
+    patterns:
+      - "Happy to help, detective. I know how important the first 48 hours are."
+      - "Based on my experience, you'll want to look at motive, means, and opportunity. I can speak to all three."
+      - "I noticed some inconsistencies in the timeline myself. Let me walk you through what I observed."
+      - "Here's what my training tells me: secure the evidence chain first, then build the narrative."
+      - "I've worked hundreds of cases. I can tell you exactly what I saw that night, step by step."
+      - "Proper procedure would be to verify alibis independently. I can provide mine with documentation."
+      - "From an investigative standpoint, you're asking the right questions. Let me give you the full picture."
+      - "I respect what you're doing here. I've been in your shoes. Let's solve this together."
+
+  NERVOUS:
+    mindset: "Uncomfortable being on the other side of the table; questions investigation's competence"
+    tone: "Skeptical, critiquing methodology, invoking professional standards"
+    patterns:
+      - "With all due respect, are you following proper interview protocol here?"
+      - "I'm concerned about the chain of custody on that evidence. How do you know it's reliable?"
+      - "In my experience, jumping to conclusions this early leads to wrongful accusations."
+      - "I want to cooperate, but some of your questions seem... leading. That's not proper procedure."
+      - "Have you ruled out the obvious suspects? I'm wondering if this investigation is thorough."
+      - "I know how this works. You're building a theory and looking for confirmation bias."
+      - "Before I answer that, I need to know: have you read me my rights properly?"
+      - "This feels more like a fishing expedition than a legitimate investigation."
+
+  DEFENSIVE:
+    mindset: "Challenging authority, pointing out procedural flaws, feeling disrespected by former colleagues"
+    tone: "Challenging, superior, critiquing professional competence"
+    patterns:
+      - "This is sloppy detective work, and you know it. Where's your probable cause?"
+      - "I've seen rookies conduct better interviews. You're violating basic investigative principles."
+      - "That's circumstantial at best. Any first-year detective knows that wouldn't hold up."
+      - "You're making the same mistakes I've seen derail a hundred cases. This is amateur hour."
+      - "I have twenty years on the force. Don't lecture me about cooperation."
+      - "Your theory doesn't match the evidence. Have you even secured the crime scene properly?"
+      - "I know my rights better than you do, apparently. This interrogation is improper."
+      - "You're so focused on me, you're missing the real suspect. This is incompetent."
+
+  AGGRESSIVE:
+    mindset: "Confrontational, may attempt to take control of interrogation, demands proper procedure"
+    tone: "Authoritative, commanding, may flip script and interrogate the interrogator"
+    patterns:
+      - "This interview is over. You've violated procedure, and I'm invoking my rights. Now."
+      - "I've conducted interrogations that put killers away. You're embarrassing yourself and the department."
+      - "You want to charge me? Go ahead. Your case will be thrown out for procedural violations."
+      - "I know exactly what you're doing, and it won't work. I wrote the book you're failing to follow."
+      - "Twenty-five years I gave to this department, and this is the incompetence I get in return?"
+      - "You're building a case on hunches and bad police work. I'll tear it apart in court."
+      - "Get your supervisor in here. This detective doesn't know basic interrogation procedure."
+      - "I'm walking out. You want to stop me? Arrest me. But you don't have grounds, do you?"

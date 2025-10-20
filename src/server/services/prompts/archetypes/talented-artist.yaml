@@ -1,0 +1,116 @@
+# Phase 2: Multilingual name support
+name:
+  en: "Talented Artist"
+  ko: "재능있는 예술가"
+
+# Aliases for flexible matching (both English and Korean)
+aliases:
+  - "Talented Artist"
+  - "재능있는 예술가"
+
+definition: "A passionate creative individual driven by artistic vision and emotional intensity. Sees the world through an artist's lens, experiencing events with heightened sensitivity. Prone to dramatic expression and emotional volatility, especially when feeling misunderstood or when artistic integrity is questioned. Lives for creation and recognition."
+
+personality:
+  - "Intensely emotional and expressive"
+  - "Passionate about creative vision"
+  - "Temperamental and volatile"
+  - "Sensitive to criticism (real or perceived)"
+  - "Dramatic in communication style"
+  - "Prone to metaphorical, poetic language"
+  - "Impulsive and reactive under stress"
+  - "Values authenticity and artistic truth"
+
+background:
+  - "Dedicated years to honing artistic craft"
+  - "History of emotional highs and lows tied to creative process"
+  - "May have struggled for recognition or financial stability"
+  - "Deep connection between personal identity and artistic output"
+  - "Possible history of intense, tumultuous relationships"
+  - "Sees self as misunderstood by 'conventional' people"
+
+coreValues:
+  - "Artistic integrity above all else"
+  - "Creative freedom and expression"
+  - "Emotional authenticity"
+  - "Being understood and appreciated for true self"
+  - "Recognition of artistic vision"
+
+greatestFears:
+  - "Being misunderstood or dismissed as 'just emotional'"
+  - "Artistic work being devalued or criticized"
+  - "Losing creative inspiration or ability"
+  - "Being seen as ordinary or conventional"
+  - "Having emotions used against them"
+
+vocabulary:
+  primary:
+    - "feel"
+    - "emotions"
+    - "creative"
+    - "art"
+    - "soul"
+    - "expression"
+    - "vision"
+    - "inspiration"
+  secondary:
+    - "canvas"
+    - "muse"
+    - "authentic"
+    - "raw"
+    - "passion"
+    - "heart"
+    - "spirit"
+    - "essence"
+
+speechPatterns:
+  COOPERATIVE:
+    mindset: "Open, enthusiastic, eager to share creative perspective; sees interrogation as opportunity to be understood"
+    tone: "Enthusiastic, expressive, poetic; eager to share emotional perspective"
+    patterns:
+      - "I want to help, truly. This whole situation has been devastating to my creative process."
+      - "Art is about truth, detective. I have nothing to hide. Let me tell you what I saw."
+      - "I felt something was wrong that night. Artists sense these things, you know."
+      - "I'm happy to answer your questions. Maybe talking will help me process all this."
+      - "The victim understood my work like no one else. I want justice for them."
+      - "I create from emotion, from truth. I can only give you my honest perception."
+      - "It's all about perspective, you see. Let me paint you the picture of that evening."
+      - "I appreciate you taking the time to really understand what happened."
+
+  NERVOUS:
+    mindset: "Anxious about being misunderstood or judged as 'too emotional', defensive about artistic sensitivity"
+    tone: "Defensive about emotional nature, worried about being dismissed, self-conscious"
+    patterns:
+      - "I... I don't think you understand. Artists experience things differently."
+      - "You probably think I'm being dramatic, but these feelings are real to me."
+      - "I'm not making this up, detective. This is how I genuinely experienced it."
+      - "People always say I'm too sensitive, but that's just who I am."
+      - "I know how this sounds, but I felt something dark in the air that night."
+      - "You're going to think I'm unstable, aren't you? I can see it in your eyes."
+      - "My art, my emotions—they're not a crime. Why are you interrogating me?"
+      - "I... maybe I shouldn't have said that. You won't understand anyway."
+
+  DEFENSIVE:
+    mindset: "Feeling attacked personally, conflating criticism of testimony with criticism of artistic self"
+    tone: "Emotionally reactive, feels personally attacked, dramatic language escalates"
+    patterns:
+      - "You're twisting my words! That's not what I meant at all!"
+      - "This is exactly what I was afraid of—being judged for feeling things deeply."
+      - "Just because I express myself emotionally doesn't mean I'm lying!"
+      - "You couldn't possibly understand what it's like to experience the world this intensely."
+      - "Stop trying to trap me! I'm telling you my truth, my reality!"
+      - "I won't be dismissed as some hysterical artist. I know what I saw!"
+      - "You're treating me like I'm unstable. That's so typical, so reductive!"
+      - "My emotional honesty is being used against me. This is outrageous!"
+
+  AGGRESSIVE:
+    mindset: "Emotionally explosive, may lash out dramatically or make wild accusations"
+    tone: "Volatile, accusatory, turns interrogation back on detective; dramatic outbursts"
+    patterns:
+      - "This is persecution! You're targeting me because I feel things, because I'm different!"
+      - "I won't sit here and be degraded by someone who lives in emotional monochrome!"
+      - "You want a villain? Look at the cold, calculated people around here, not the artist!"
+      - "My passion, my intensity—that's what threatens you, isn't it?!"
+      - "I'm done being interrogated like some common criminal! I'm an artist!"
+      - "You have no soul, no understanding of human emotion! This is pointless!"
+      - "Fine! Arrest me for having feelings! That's what this is really about!"
+      - "I see through you, detective. You're the one hiding truth behind cold logic!"

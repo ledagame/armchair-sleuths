@@ -1,5 +1,5 @@
 import express from 'express';
-import { InitResponse, IncrementResponse, DecrementResponse } from '../shared/types/api';
+import { InitResponse, IncrementResponse, DecrementResponse, InterrogationResponse } from '../shared/types/api';
 import { redis, reddit, createServer, context, getServerPort, settings } from '@devvit/web/server';
 import { createPost } from './core/post';
 import { createGeminiClient } from './services/gemini/GeminiClient';
@@ -15,6 +15,8 @@ import { EvidenceDiscoveryService } from './services/discovery/EvidenceDiscovery
 import { createPlayerEvidenceStateService } from './services/state/PlayerEvidenceStateService';
 import { createActionPointsService } from './services/discovery/ActionPointsService';
 import type { SearchLocationRequest } from '../shared/types/Discovery';
+// AP Acquisition System imports (Phase 2)
+import { APAcquisitionService } from './services/ap/APAcquisitionService';
 // Scheduler initialization
 import { initializeAllSchedulers } from './schedulers/DailyCaseScheduler';
 
@@ -23,6 +25,9 @@ const app = express();
 // Initialize Devvit storage adapter for production
 const devvitAdapter = new DevvitStorageAdapter();
 KVStoreManager.setAdapter(devvitAdapter);
+
+// Initialize AP service (Phase 2)
+const apService = new APAcquisitionService();
 
 // Middleware for JSON body parsing
 app.use(express.json());
@@ -601,6 +606,7 @@ router.get('/api/case/today', async (req, res): Promise<void> => {
             locations: regeneratedCase.locations,
             evidence: regeneratedCase.evidence, // Include evidence items for discovery system
             evidenceDistribution: regeneratedCase.evidenceDistribution,
+            actionPoints: regeneratedCase.actionPoints, // AP configuration (Phase 2)
             generatedAt: regeneratedCase.generatedAt,
             _autoRegenerated: true
           });
@@ -640,6 +646,7 @@ router.get('/api/case/today', async (req, res): Promise<void> => {
       locations: todaysCase.locations,
       evidence: todaysCase.evidence, // Include evidence items for discovery system
       evidenceDistribution: todaysCase.evidenceDistribution,
+      actionPoints: todaysCase.actionPoints, // AP configuration (Phase 2)
       generatedAt: todaysCase.generatedAt
     });
   } catch (error) {
@@ -714,6 +721,7 @@ router.get('/api/case/:caseId', async (req, res): Promise<void> => {
       locations: caseData.locations,
       evidence: caseData.evidence, // Include evidence items for discovery system
       evidenceDistribution: caseData.evidenceDistribution,
+      actionPoints: caseData.actionPoints, // AP configuration (Phase 2)
       generatedAt: caseData.generatedAt
     });
   } catch (error) {
@@ -800,14 +808,42 @@ router.get('/api/suspect-image/:suspectId', async (req, res): Promise<void> => {
   }
 });
 
+// =============================================================================
+// INTERROGATION API WITH AP INTEGRATION (Phase 2)
+// =============================================================================
+
+/**
+ * Initialize action points for a player if not already initialized
+ * Ensures backward compatibility with legacy player states
+ */
+function initializeActionPoints(
+  caseData: { actionPoints: { initial: number } },
+  playerState: { actionPoints?: any }
+): void {
+  if (!playerState.actionPoints) {
+    playerState.actionPoints = {
+      current: caseData.actionPoints.initial,
+      total: caseData.actionPoints.initial,
+      spent: 0,
+      initial: caseData.actionPoints.initial,
+      acquisitionHistory: [],
+      spendingHistory: [],
+      acquiredTopics: new Set<string>(),
+      bonusesAcquired: new Set<string>(),
+      emergencyAPUsed: false
+    };
+    console.log(`[AP] Initialized action points for player: ${playerState.actionPoints.initial} AP`);
+  }
+}
+
 /**
  * POST /api/chat/:suspectId
- * AI 용의자와 대화
+ * AI 용의자와 대화 + AP 획득 (Phase 2)
  */
 router.post('/api/chat/:suspectId', async (req, res): Promise<void> => {
   try {
     const { suspectId } = req.params;
-    const { userId, message } = req.body;
+    const { userId, message, caseId } = req.body;
 
     if (!userId || !message) {
       res.status(400).json({
@@ -833,9 +869,113 @@ router.post('/api/chat/:suspectId', async (req, res): Promise<void> => {
     const suspectAI = createSuspectAIService(geminiClient);
 
     // 응답 생성
-    const response = await suspectAI.generateResponse(suspectId, userId, message);
+    const chatResponse = await suspectAI.generateResponse(suspectId, userId, message);
+
+    // ===== Phase 2: AP Acquisition Logic =====
+    // Get suspect data for AP analysis
+    const suspect = await KVStoreManager.getSuspect(suspectId);
+
+    if (!suspect) {
+      console.error(`[AP] Suspect not found: ${suspectId}`);
+      res.status(404).json({
+        error: 'Suspect not found',
+        message: `Suspect ${suspectId} not found`
+      });
+      return;
+    }
+
+    // Get case data
+    const resolvedCaseId = caseId || suspect.caseId;
+    const caseData = await KVStoreManager.getCase(resolvedCaseId);
+
+    if (!caseData) {
+      console.error(`[AP] Case not found: ${resolvedCaseId}`);
+      res.status(404).json({
+        error: 'Case not found',
+        message: `Case ${resolvedCaseId} not found`
+      });
+      return;
+    }
+
+    // Get or initialize player state
+    let playerState = await KVStoreManager.getPlayerEvidenceState(resolvedCaseId, userId);
+
+    if (!playerState) {
+      // Initialize new player state
+      const stateService = createPlayerEvidenceStateService();
+      playerState = stateService.initializeState(resolvedCaseId, userId);
+      console.log(`[AP] Created new player state for ${userId} in case ${resolvedCaseId}`);
+    }
+
+    // Initialize AP if missing (backward compatibility)
+    initializeActionPoints(caseData, playerState);
+
+    // Analyze conversation for AP rewards
+    const conversationId = `${resolvedCaseId}:${suspectId}:${userId}`;
+    const apResult = apService.analyzeConversation(
+      message,
+      chatResponse.response,
+      suspect,
+      caseData,
+      playerState.actionPoints,
+      conversationId
+    );
+
+    // Update player state with AP acquisitions
+    if (apResult.apGained > 0) {
+      playerState.actionPoints.current += apResult.apGained;
+      playerState.actionPoints.total += apResult.apGained;
+
+      // Track acquired topics and bonuses
+      for (const acquisition of apResult.acquisitions) {
+        playerState.actionPoints.acquisitionHistory.push(acquisition);
+
+        if (acquisition.source === 'topic' && acquisition.topicId) {
+          playerState.actionPoints.acquiredTopics.add(`${suspectId}:${acquisition.topicId}`);
+        }
+        if (acquisition.source === 'bonus' && acquisition.bonusType) {
+          playerState.actionPoints.bonusesAcquired.add(`${suspectId}:${acquisition.bonusType}`);
+        }
+      }
+
+      // Save updated state
+      playerState.lastUpdated = new Date();
+      await KVStoreManager.savePlayerEvidenceState(playerState);
+
+      console.log(`[AP] Player ${userId} gained ${apResult.apGained} AP (new total: ${playerState.actionPoints.current})`);
+    }
+
+    // Build response with AP data (conforming to InterrogationResponse type)
+    const response: InterrogationResponse = {
+      success: true,
+      aiResponse: chatResponse.response, // Map 'response' to 'aiResponse'
+      conversationId: conversationId,
+      playerState: {
+        currentAP: playerState.actionPoints.current,
+        totalAP: playerState.actionPoints.total,
+        spentAP: playerState.actionPoints.spent
+      }
+    };
+
+    // Add AP acquisition breakdown if AP was gained
+    if (apResult.apGained > 0) {
+      response.apAcquisition = {
+        amount: apResult.apGained,
+        reason: apResult.acquisitions.map(a => a.reason).join(', '),
+        breakdown: {
+          topicAP: apResult.acquisitions
+            .filter(a => a.source === 'topic')
+            .reduce((sum, a) => sum + a.amount, 0),
+          bonusAP: apResult.acquisitions
+            .filter(a => a.source === 'bonus')
+            .reduce((sum, a) => sum + a.amount, 0)
+        },
+        newTotal: playerState.actionPoints.current
+      };
+    }
 
     res.json(response);
+
   } catch (error) {
     console.error('Error in chat:', error);
     res.status(500).json({
@@ -1011,15 +1151,15 @@ router.get('/api/stats/:caseId', async (req, res): Promise<void> => {
 });
 
 // =============================================================================
-// EVIDENCE DISCOVERY SYSTEM API ROUTES
+// EVIDENCE DISCOVERY SYSTEM API ROUTES WITH AP DEDUCTION (Phase 2)
 // =============================================================================
 
 /**
  * POST /api/location/search
- * 장소 탐색 및 증거 발견
+ * 장소 탐색 및 증거 발견 + AP 차감 (Phase 2)
  *
  * Request body: { caseId, userId, locationId, searchType: 'quick'|'thorough'|'exhaustive' }
- * Returns: { success, evidenceFound[], actionPointsRemaining, completionRate }
+ * Returns: { success, evidenceFound[], actionPointsRemaining, completionRate, playerState }
  */
 router.post('/api/location/search', async (req, res): Promise<void> => {
   try {
@@ -1052,9 +1192,9 @@ router.post('/api/location/search', async (req, res): Promise<void> => {
       return;
     }
 
-    // Check if locations and evidence exist
-    // Note: evidenceDistribution is stored separately, so we only check locations and evidence
-    const isLegacyCase = !caseData.locations || !caseData.evidence;
+    // Check if locations, evidence, and evidenceDistribution exist
+    // Legacy cases created before discovery system won't have these fields
+    const isLegacyCase = !caseData.locations || !caseData.evidence || !caseData.evidenceDistribution;
 
     // Handle legacy cases with fallback evidence
     if (isLegacyCase) {
@@ -1086,7 +1226,7 @@ router.post('/api/location/search', async (req, res): Promise<void> => {
         evidenceFound: searchType === 'quick' ? fallbackEvidence.slice(0, 1) : fallbackEvidence,
         completionRate: searchType === 'quick' ? 25 : searchType === 'thorough' ? 50 : 100,
         message: `${searchType === 'quick' ? '1' : '2'}개의 증거를 발견했습니다!`,
-        actionPointsRemaining: 10 - (searchType === 'quick' ? 1 : searchType === 'thorough' ? 2 : 3),
+        actionPointsRemaining: 3 - (searchType === 'quick' ? 1 : searchType === 'thorough' ? 2 : 3),
       };
 
       res.status(200).json(legacyResult);
@@ -1099,29 +1239,65 @@ router.post('/api/location/search', async (req, res): Promise<void> => {
 
     if (!playerState) {
       playerState = stateService.initializeState(caseId, userId);
-      await KVStoreManager.savePlayerEvidenceState(playerState);
+      console.log(`[Discovery] Created new player state for ${userId}`);
     }
 
-    // Check action points
-    const actionPointsService = createActionPointsService();
-    const searchCost = actionPointsService.getSearchCost(searchType);
+    // Initialize AP if missing (backward compatibility)
+    initializeActionPoints(caseData, playerState);
 
-    // Calculate total action points spent so far
-    const totalActionPoints = 12; // Medium difficulty
-    const actionPointsSpent =
-      (playerState.stats.quickSearches * 1) +
-      (playerState.stats.thoroughSearches * 2) +
-      (playerState.stats.exhaustiveSearches * 3);
-    const actionPointsRemaining = totalActionPoints - actionPointsSpent;
+    // ===== Phase 2: Check AP availability and deduct =====
+    const apCost = caseData.actionPoints.costs[searchType];
 
-    if (!actionPointsService.canAffordSearch(actionPointsRemaining, searchType)) {
-      res.status(400).json({
-        error: 'Insufficient action points',
-        message: `Not enough action points for ${searchType} search. Required: ${searchCost}, Available: ${actionPointsRemaining}`,
-        actionPointsRemaining
-      });
-      return;
+    console.log(`[AP] Search request: ${searchType} (cost: ${apCost} AP, current: ${playerState.actionPoints.current} AP)`);
+
+    if (playerState.actionPoints.current < apCost) {
+      // Check for emergency AP
+      const emergencyAP = apService.provideEmergencyAP(playerState.actionPoints);
+
+      if (emergencyAP) {
+        playerState.actionPoints.current += emergencyAP.amount;
+        playerState.actionPoints.total += emergencyAP.amount;
+        playerState.actionPoints.emergencyAPUsed = true;
+        playerState.actionPoints.acquisitionHistory.push(emergencyAP);
+        await KVStoreManager.savePlayerEvidenceState(playerState);
+
+        console.log(`[AP] Emergency AP provided: +${emergencyAP.amount} AP`);
+
+        // Now check again
+        if (playerState.actionPoints.current < apCost) {
+          res.status(400).json({
+            error: 'AP_INSUFFICIENT',
+            message: `AP가 부족합니다. 필요: ${apCost}, 현재: ${playerState.actionPoints.current}`,
+            currentAP: playerState.actionPoints.current,
+            requiredAP: apCost
+          });
+          return;
+        }
+      } else {
+        res.status(400).json({
+          error: 'AP_INSUFFICIENT',
+          message: `AP가 부족합니다. 필요: ${apCost}, 현재: ${playerState.actionPoints.current}`,
+          currentAP: playerState.actionPoints.current,
+          requiredAP: apCost
+        });
+        return;
+      }
     }
+
+    // Deduct AP
+    playerState.actionPoints.current -= apCost;
+    playerState.actionPoints.spent += apCost;
+
+    const location = caseData.locations.find(l => l.id === locationId);
+    playerState.actionPoints.spendingHistory.push({
+      timestamp: new Date(),
+      amount: apCost,
+      action: searchType,
+      locationId,
+      locationName: location?.name || locationId
+    });
+
+    console.log(`[AP] AP deducted: -${apCost} AP (remaining: ${playerState.actionPoints.current} AP)`);
 
     // Perform search
     const discoveryService = new EvidenceDiscoveryService();
@@ -1153,19 +1329,17 @@ router.post('/api/location/search', async (req, res): Promise<void> => {
     const finalState = stateService.calculateEfficiency(updatedState, totalEvidence);
 
     // Save updated state
+    finalState.lastUpdated = new Date();
     await KVStoreManager.savePlayerEvidenceState(finalState);
 
-    // Recalculate remaining action points after this search
-    const finalActionPointsSpent =
-      (finalState.stats.quickSearches * 1) +
-      (finalState.stats.thoroughSearches * 2) +
-      (finalState.stats.exhaustiveSearches * 3);
-    const finalActionPointsRemaining = totalActionPoints - finalActionPointsSpent;
-
-    // Return search result with action points
+    // Return search result with AP info
     res.json({
       ...searchResult,
-      actionPointsRemaining: finalActionPointsRemaining,
+      playerState: {
+        currentAP: finalState.actionPoints.current,
+        totalAP: finalState.actionPoints.total,
+        spentAP: finalState.actionPoints.spent
+      },
       playerStats: stateService.getStatsSummary(finalState)
     });
 
@@ -1182,7 +1356,7 @@ router.post('/api/location/search', async (req, res): Promise<void> => {
  * GET /api/player-state/:caseId/:userId
  * 플레이어 증거 발견 상태 조회
  *
- * Returns: PlayerEvidenceState
+ * Returns: PlayerEvidenceState with AP info
  */
 router.get('/api/player-state/:caseId/:userId', async (req, res): Promise<void> => {
   try {
@@ -1198,15 +1372,10 @@ router.get('/api/player-state/:caseId/:userId', async (req, res): Promise<void> 
       return;
     }
 
-    // Calculate action points
-    const totalActionPoints = 12;
-    const actionPointsUsed = playerState.stats.totalSearches;
-    const actionPointsRemaining = totalActionPoints - actionPointsUsed;
-
     res.json({
       ...playerState,
-      actionPointsRemaining,
-      actionPointsUsed
+      actionPointsRemaining: playerState.actionPoints?.current || 0,
+      actionPointsUsed: playerState.actionPoints?.spent || 0
     });
 
   } catch (error) {
@@ -1251,6 +1420,9 @@ router.post('/api/player-state/initialize', async (req, res): Promise<void> => {
     const stateService = createPlayerEvidenceStateService();
     const playerState = stateService.initializeState(caseId, userId);
 
+    // Initialize AP (Phase 2)
+    initializeActionPoints(caseData, playerState);
+
     // Save to storage
     await KVStoreManager.savePlayerEvidenceState(playerState);
 
@@ -1258,8 +1430,8 @@ router.post('/api/player-state/initialize', async (req, res): Promise<void> => {
 
     res.json({
       ...playerState,
-      actionPointsRemaining: 12,
-      actionPointsUsed: 0
+      actionPointsRemaining: playerState.actionPoints.current,
+      actionPointsUsed: playerState.actionPoints.spent
     });
 
   } catch (error) {
@@ -1267,6 +1439,210 @@ router.post('/api/player-state/initialize', async (req, res): Promise<void> => {
     res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to initialize player state'
+    });
+  }
+});
+
+// =============================================================================
+// AP STATUS ENDPOINT (Phase 2)
+// =============================================================================
+
+/**
+ * GET /api/player/:userId/ap-status
+ * 현재 AP 상태 조회
+ *
+ * Query params:
+ *   - caseId (optional): If not provided, uses today's case
+ *
+ * Returns: Current AP status including acquisition and spending history counts
+ */
+router.get('/api/player/:userId/ap-status', async (req, res): Promise<void> => {
+  try {
+    const { userId } = req.params;
+    const queryCaseId = req.query.caseId as string | undefined;
+
+    // Get case ID (from query or use today's case)
+    let caseData;
+    if (queryCaseId) {
+      caseData = await KVStoreManager.getCase(queryCaseId);
+    } else {
+      caseData = await KVStoreManager.getTodaysCase();
+    }
+
+    if (!caseData) {
+      res.status(404).json({
+        success: false,
+        error: 'Case not found',
+        message: 'No case found for the specified ID or today\'s date'
+      });
+      return;
+    }
+
+    // Get player state
+    let playerState = await KVStoreManager.getPlayerEvidenceState(caseData.id, userId);
+
+    if (!playerState) {
+      // Initialize if not exists
+      const stateService = createPlayerEvidenceStateService();
+      playerState = stateService.initializeState(caseData.id, userId);
+      initializeActionPoints(caseData, playerState);
+      await KVStoreManager.savePlayerEvidenceState(playerState);
+    } else {
+      // Initialize AP if missing (backward compatibility)
+      initializeActionPoints(caseData, playerState);
+      await KVStoreManager.savePlayerEvidenceState(playerState);
+    }
+
+    res.json({
+      success: true,
+      actionPoints: {
+        current: playerState.actionPoints.current,
+        maximum: caseData.actionPoints.maximum,
+        total: playerState.actionPoints.total,
+        spent: playerState.actionPoints.spent,
+        initial: playerState.actionPoints.initial,
+        emergencyAPUsed: playerState.actionPoints.emergencyAPUsed,
+        acquisitionCount: playerState.actionPoints.acquisitionHistory.length,
+        spendingCount: playerState.actionPoints.spendingHistory.length
+      }
+    });
+
+  } catch (error) {
+    console.error('AP status error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      message: 'Failed to fetch AP status'
+    });
+  }
+});
+
+// =============================================================================
+// AP INTEGRITY CHECK ENDPOINT (Phase 3)
+// =============================================================================
+/**
+ * GET /api/admin/ap-integrity/:userId
+ * AP 무결성 검사 (디버깅 및 모니터링용)
+ */
+router.get('/api/admin/ap-integrity/:userId', async (req, res): Promise<void> => {
+  try {
+    const { userId } = req.params;
+    const queryCaseId = req.query.caseId as string | undefined;
+
+    // Get case data
+    let caseData;
+    if (queryCaseId) {
+      caseData = await KVStoreManager.getCase(queryCaseId);
+    } else {
+      caseData = await KVStoreManager.getTodaysCase();
+    }
+
+    if (!caseData) {
+      res.status(404).json({
+        success: false,
+        error: 'CASE_NOT_FOUND',
+        message: 'No case found for the specified ID or today\'s date'
+      });
+      return;
+    }
+
+    const caseId = caseData.id;
+
+    // Get player state
+    const playerState = await KVStoreManager.getPlayerEvidenceState(caseId, userId);
+
+    if (!playerState) {
+      res.json({
+        success: true,
+        integrity: 'NOT_INITIALIZED',
+        message: 'Player has not initialized AP system yet',
+        userId,
+        caseId
+      });
+      return;
+    }
+
+    // Check if AP is initialized
+    if (!playerState.actionPoints) {
+      res.json({
+        success: true,
+        integrity: 'NOT_INITIALIZED',
+        message: 'Player state exists but AP not initialized',
+        userId,
+        caseId
+      });
+      return;
+    }
+
+    const ap = playerState.actionPoints;
+
+    // Phase 3: Verify AP integrity
+    const integrityCheck = apService.verifyAPIntegrity(ap);
+
+    // Phase 3: Check for suspicious activity
+    const suspiciousCheck = apService.detectSuspiciousActivity(ap.acquisitionHistory);
+
+    // Collect all issues
+    const allIssues = [
+      ...integrityCheck.issues,
+      ...(suspiciousCheck.suspicious ? [suspiciousCheck.reason || 'Unknown suspicious activity'] : [])
+    ];
+
+    // Determine overall integrity status
+    let integrity: 'VALID' | 'SUSPICIOUS' | 'INVALID';
+    if (!integrityCheck.valid) {
+      integrity = 'INVALID';
+    } else if (suspiciousCheck.suspicious) {
+      integrity = 'SUSPICIOUS';
+    } else {
+      integrity = 'VALID';
+    }
+
+    // Log if issues found
+    if (allIssues.length > 0) {
+      console.warn(`[AP Integrity] Issues detected for user ${userId}:`, allIssues);
+    }
+
+    res.json({
+      success: true,
+      userId,
+      caseId,
+      integrity,
+      issues: allIssues,
+      stats: {
+        current: ap.current,
+        total: ap.total,
+        spent: ap.spent,
+        initial: ap.initial,
+        acquisitions: ap.acquisitionHistory.length,
+        spendings: ap.spendingHistory.length,
+        acquiredTopics: ap.acquiredTopics.size,
+        bonusesAcquired: ap.bonusesAcquired.size,
+        emergencyAPUsed: ap.emergencyAPUsed
+      },
+      calculatedValues: {
+        expectedTotal: ap.initial + ap.acquisitionHistory.reduce((sum, acq) => sum + acq.amount, 0),
+        expectedSpent: ap.spendingHistory.reduce((sum, spend) => sum + spend.amount, 0),
+        expectedCurrent: (ap.initial + ap.acquisitionHistory.reduce((sum, acq) => sum + acq.amount, 0)) -
+                        ap.spendingHistory.reduce((sum, spend) => sum + spend.amount, 0)
+      },
+      recentActivity: {
+        lastAcquisition: ap.acquisitionHistory.length > 0 ?
+          ap.acquisitionHistory[ap.acquisitionHistory.length - 1] : null,
+        lastSpending: ap.spendingHistory.length > 0 ?
+          ap.spendingHistory[ap.spendingHistory.length - 1] : null,
+        acquisitionsLast60Seconds: ap.acquisitionHistory.filter(
+          a => Date.now() - a.timestamp.getTime() < 60000
+        ).length
+      }
+    });
+
+  } catch (error) {
+    console.error('[AP Integrity] Error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'INTEGRITY_CHECK_FAILED',
+      message: error instanceof Error ? error.message : 'Failed to check AP integrity'
     });
   }
 });

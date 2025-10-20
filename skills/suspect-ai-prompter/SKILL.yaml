@@ -1,0 +1,110 @@
+name: suspect-ai-prompter
+version: 2.0.0
+description: |
+  Professional prompt engineering skill for creating and improving suspect character
+  prompts in murder mystery games. Specializes in character consistency, emotional
+  progression, and quality evaluation.
+
+author: Armchair Sleuths Team
+license: MIT
+
+# Trigger keywords for auto-activation
+triggers:
+  - improve prompt
+  - generate archetype
+  - create examples
+  - validate quality
+  - suspect prompt
+  - archetype yaml
+  - few-shot examples
+  - prompt engineering
+  - character consistency
+  - emotional progression
+  - quality validation
+
+# Dependencies
+dependencies:
+  skills:
+    - mystery-case-generator  # Provides suspect data for testing
+  apis:
+    - gemini-ai              # Powers AI generation
+  packages:
+    - yaml                   # For YAML parsing
+    - inquirer               # For interactive CLI
+    - "@google/generative-ai"  # For AI-powered generation
+
+# Capabilities
+capabilities:
+  - name: prompt-improvement
+    description: Analyze and improve PROMPT.md files for suspect characters
+    script: scripts/improve-prompt.ts
+    usage: npm run suspect:improve-prompt
+
+  - name: archetype-generation
+    description: Generate new archetype YAML files interactively
+    script: scripts/generate-archetype.ts
+    usage: npm run suspect:add-archetype
+
+  - name: example-creation
+    description: Create few-shot dialogue examples for archetypes
+    script: scripts/generate-examples.ts
+    usage: npm run suspect:generate-examples --archetype <name> --state <state>
+
+  - name: quality-validation
+    description: Score suspect responses against quality criteria
+    script: scripts/validate-quality.ts
+    usage: npm run suspect:validate --response "<text>"
+
+# Configuration
+config:
+  target_prompt_file: ../suspect-personality-core/PROMPT.md
+  archetypes_dir: ../suspect-personality-core/archetypes
+  quality_threshold: 65
+  ai_model: gemini-pro
+
+# npm scripts to add to package.json
+npm_scripts:
+  suspect:add-archetype: "tsx skills/suspect-ai-prompter/scripts/generate-archetype.ts"
+  suspect:improve-prompt: "tsx skills/suspect-ai-prompter/scripts/improve-prompt.ts"
+  suspect:generate-examples: "tsx skills/suspect-ai-prompter/scripts/generate-examples.ts"
+  suspect:validate: "tsx skills/suspect-ai-prompter/scripts/validate-quality.ts"
+
+# Documentation
+documentation:
+  readme: README.md
+  references:
+    - references/archetypes/
+    - references/emotional-system.md
+    - references/quality-criteria.md
+    - references/prompt-engineering-guide.md
+
+# Integration points
+integration:
+  reads_from:
+    - skills/suspect-personality-core/PROMPT.md
+    - skills/suspect-personality-core/archetypes/*.yaml
+  writes_to:
+    - skills/suspect-personality-core/archetypes/*.yaml  # Can generate new archetypes
+  influences:
+    - src/server/services/suspect/SuspectAIService.ts  # Improves prompts used by this service
+
+# Version history
+changelog:
+  - version: 2.0.0
+    date: 2025-01-20
+    changes:
+      - Migrated to Claude Skills pattern
+      - Added SKILL.yaml metadata
+      - Created comprehensive PROMPT.md for Claude
+      - Added executable automation scripts
+      - Restructured archetypes by file
+      - Added prompt-engineering-guide.md
+      - Implemented 4 core capabilities
+  - version: 1.0.0
+    date: 2025-01-15
+    changes:
+      - Initial documentation-only version
+      - 3,349 lines of reference material
+      - 5 detailed archetypes
+      - Emotional system documentation
+      - Quality criteria framework

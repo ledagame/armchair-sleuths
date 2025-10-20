@@ -142,11 +142,19 @@ export class EvidenceDiscoveryService {
       return [];
     }
 
+    // Default discovery probabilities for legacy/partial migration cases
+    const DEFAULT_PROBABILITIES = {
+      quick: 0.3,
+      thorough: 0.6,
+      exhaustive: 0.9,
+    };
+
     const discovered: EvidenceItem[] = [];
 
     for (const item of evidence) {
       // Get probability for this search type
-      const probability = item.discoveryProbability[searchType];
+      // Use default if discoveryProbability is missing (legacy cases)
+      const probability = item.discoveryProbability?.[searchType] ?? DEFAULT_PROBABILITIES[searchType];
 
       // Roll for discovery
       if (Math.random() < probability) {
