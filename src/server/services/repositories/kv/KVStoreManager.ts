@@ -7,8 +7,8 @@
 
 import { IStorageAdapter } from '../adapters/IStorageAdapter';
 import type { IntroNarration, CinematicImages, ImageGenerationStatus, ImageGenerationMeta } from '../../../shared/types/index';
-import type { Location } from '../../../shared/types/Case';
-import type { EvidenceItem } from '../../../shared/types/Evidence';
+import type { Location, EvidenceDistribution } from '../../../shared/types/Discovery';
+import type { EvidenceItem, PlayerEvidenceState } from '../../../shared/types/Evidence';
 
 export interface CaseData {
   id: string;
@@ -47,9 +47,10 @@ export interface CaseData {
   // Image generation status (백그라운드 생성 추적)
   imageGenerationStatus?: ImageGenerationStatus; // 이미지 생성 상태
   imageGenerationMeta?: ImageGenerationMeta; // 이미지 생성 메타데이터
-  // Discovery system data (NEW)
+  // Discovery system data
   locations?: Location[]; // 탐색 가능한 장소 목록 (4개, Medium 난이도)
   evidence?: EvidenceItem[]; // 증거 목록 (10개, Medium 난이도)
+  evidenceDistribution?: EvidenceDistribution; // 증거 분배 정보
 }
 
 export interface SuspectData {
@@ -383,6 +384,87 @@ export class KVStoreManager {
     return submissions.slice(0, limit);
   }
 
+  // =============================================================================
+  // Evidence Discovery System
+  // =============================================================================
+
+  /**
+   * 플레이어 증거 상태 저장
+   */
+  static async savePlayerEvidenceState(state: PlayerEvidenceState): Promise<void> {
+    if (!this.adapter) {
+      throw new Error('Storage adapter not initialized. Call KVStoreManager.setAdapter() first.');
+    }
+
+    const key = `player-state:${state.caseId}:${state.userId}`;
+    await this.adapter.set(key, JSON.stringify(state));
+  }
+
+  /**
+   * 플레이어 증거 상태 조회
+   */
+  static async getPlayerEvidenceState(
+    caseId: string,
+    userId: string
+  ): Promise<PlayerEvidenceState | null> {
+    if (!this.adapter) {
+      throw new Error('Storage adapter not initialized. Call KVStoreManager.setAdapter() first.');
+    }
+
+    const key = `player-state:${caseId}:${userId}`;
+    const data = await this.adapter.get(key);
+
+    if (!data) {
+      return null;
+    }
+
+    const parsed = JSON.parse(data);
+
+    // Convert date strings back to Date objects
+    return {
+      ...parsed,
+      discoveredEvidence: parsed.discoveredEvidence.map((d: any) => ({
+        ...d,
+        discoveredAt: new Date(d.discoveredAt)
+      })),
+      searchHistory: parsed.searchHistory.map((s: any) => ({
+        ...s,
+        timestamp: new Date(s.timestamp)
+      })),
+      lastUpdated: new Date(parsed.lastUpdated)
+    } as PlayerEvidenceState;
+  }
+
+  /**
+   * 증거 분배 정보 저장
+   */
+  static async saveEvidenceDistribution(distribution: EvidenceDistribution): Promise<void> {
+    if (!this.adapter) {
+      throw new Error('Storage adapter not initialized. Call KVStoreManager.setAdapter() first.');
+    }
+
+    const key = `evidence-distribution:${distribution.caseId}`;
+    await this.adapter.set(key, JSON.stringify(distribution));
+  }
+
+  /**
+   * 증거 분배 정보 조회
+   */
+  static async getEvidenceDistribution(caseId: string): Promise<EvidenceDistribution | null> {
+    if (!this.adapter) {
+      throw new Error('Storage adapter not initialized. Call KVStoreManager.setAdapter() first.');
+    }
+
+    const key = `evidence-distribution:${caseId}`;
+    const data = await this.adapter.get(key);
+
+    if (!data) {
+      return null;
+    }
+
+    return JSON.parse(data) as EvidenceDistribution;
+  }
+
   /**
    * 캐시 초기화 (개발/테스트용)
    */
@@ -424,5 +506,9 @@ export class KVStoreManager {
     // 제출 인덱스 삭제 (제출 데이터는 보존)
     const submissionsKey = `case:${caseId}:submissions`;
     await this.adapter.del(submissionsKey);
+
+    // Evidence distribution 삭제
+    const distributionKey = `evidence-distribution:${caseId}`;
+    await this.adapter.del(distributionKey);
   }
 }

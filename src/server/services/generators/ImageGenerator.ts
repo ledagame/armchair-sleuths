@@ -1,3 +1,5 @@
+import { promises as fs } from 'fs';
+import path from 'path';
 import { GeminiClient } from '../gemini/GeminiClient';
 
 /**
@@ -204,24 +206,30 @@ export class ImageGenerator {
 
   /**
    * 용의자 이미지 생성 요청 생성
+   * Enhanced with film noir style guide (suspect-portrait-prompter template ready for future use)
    */
   generateSuspectImageRequest(suspect: any): ImageGenerationRequest {
+    // TODO: Load from skills/suspect-portrait-prompter/PROMPT.md for full style consistency
+    // Current: Simplified prompt with enhanced film noir guidance
     return {
       id: suspect.id,
       type: 'suspect',
-      prompt: `Portrait of ${suspect.name}, ${suspect.background}. ${suspect.personality}. Professional headshot style, realistic, high quality.`,
+      prompt: `Professional portrait photograph of ${suspect.name}, ${suspect.background}. ${suspect.personality}. Film noir style, 1940s-1950s aesthetic, Rembrandt lighting, dramatic shadows, high contrast black and white photography, serious contemplative expression, 512x512 portrait, photorealistic quality.`,
       description: `${suspect.name} - ${suspect.background}`
     };
   }
 
   /**
    * 장소 이미지 생성 요청 생성
+   * Enhanced with film noir atmosphere guide (scene-atmosphere-prompter template ready for future use)
    */
   generateLocationImageRequest(location: any): ImageGenerationRequest {
+    // TODO: Load from skills/scene-atmosphere-prompter/PROMPT.md for full atmospheric consistency
+    // Current: Simplified prompt with enhanced noir cinematography guidance
     return {
       id: location.id,
       type: 'location',
-      prompt: `${location.name}: ${location.description}. Atmospheric, mysterious, crime scene investigation style, high quality.`,
+      prompt: `Atmospheric environmental photography of ${location.name}: ${location.description}. Film noir aesthetic, 1940s-1950s period, dramatic noir lighting, strong shadows, moody atmosphere, dark mysterious setting, empty location without people, cinematic composition, high quality environmental photography, 512x512 format.`,
       description: `${location.name} - ${location.description}`
     };
   }

@@ -70,6 +70,10 @@ export interface GeneratedCase {
     stakes: string;
   };
   generatedAt: number;
+  // Discovery system data
+  locations?: DiscoveryLocation[]; // 탐색 가능한 장소 목록
+  evidence?: EvidenceItem[]; // 증거 목록
+  evidenceDistribution?: any; // 증거 분배 정보
 }
 
 /**
@@ -238,8 +242,16 @@ export class CaseGeneratorService {
       evidence
     );
 
-    // 6.6. 분배 데이터를 KV Store에 저장
+    // 6.6. 분배 데이터를 KV Store에 저장 (별도 키와 caseData 양쪽에 저장)
     await DiscoveryStateManager.saveDistribution(distribution);
+
+    // 6.7. caseData에도 evidenceDistribution 추가하고 재저장
+    savedCase.evidenceDistribution = distribution;
+    // 🔧 FIX: Explicitly preserve locations and evidence fields before re-saving
+    // This ensures the second save doesn't lose data from the transaction
+    savedCase.locations = locations;
+    savedCase.evidence = evidence;
+    await KVStoreManager.saveCase(savedCase);
 
     console.log(`✅ Evidence distribution saved: ${distribution.totalEvidence} evidence across ${distribution.locations.length} locations`);
 
@@ -264,7 +276,10 @@ export class CaseGeneratorService {
       imageUrl: savedCase.imageUrl,
       cinematicImages: undefined, // Will be generated in background
       introNarration: savedCase.introNarration,
-      generatedAt: savedCase.generatedAt
+      generatedAt: savedCase.generatedAt,
+      locations: savedCase.locations,
+      evidence: savedCase.evidence,
+      evidenceDistribution: savedCase.evidenceDistribution
     };
   }
 
@@ -1019,7 +1034,10 @@ Mood: Mystery, intrigue, subtle emotional expression.`;
         solution: existingCase.solution,
         imageUrl: existingCase.imageUrl,
         introNarration: existingCase.introNarration,
-        generatedAt: existingCase.generatedAt
+        generatedAt: existingCase.generatedAt,
+        locations: existingCase.locations,
+        evidence: existingCase.evidence,
+        evidenceDistribution: existingCase.evidenceDistribution
       };
     }
 
@@ -1066,7 +1084,10 @@ Mood: Mystery, intrigue, subtle emotional expression.`;
         solution: existingCase.solution,
         imageUrl: existingCase.imageUrl,
         introNarration: existingCase.introNarration,
-        generatedAt: existingCase.generatedAt
+        generatedAt: existingCase.generatedAt,
+        locations: existingCase.locations,
+        evidence: existingCase.evidence,
+        evidenceDistribution: existingCase.evidenceDistribution
       };
     }
 

@@ -101,6 +101,8 @@ export function useCase(): UseCaseReturn {
               throw new Error('Case generated but failed to fetch');
             }
             const retryData: CaseApiResponse = await retryResponse.json();
+
+            // 🔧 FIX: Include locations, evidence, and evidenceDistribution in transformation
             const transformedCase: CaseData = {
               id: retryData.id,
               date: retryData.date,
@@ -108,10 +110,17 @@ export function useCase(): UseCaseReturn {
               weapon: retryData.weapon,
               location: retryData.location,
               suspects: retryData.suspects || [],
+              locations: retryData.locations, // Include discovery locations
+              evidence: retryData.evidence, // Include evidence items
+              evidenceDistribution: retryData.evidenceDistribution, // Include evidence distribution
               imageUrl: retryData.imageUrl,
               introNarration: retryData.introNarration,
               generatedAt: retryData.generatedAt,
             };
+
+            // Log discovery data status
+            console.log(`✅ Case loaded with ${retryData.locations?.length || 0} locations and evidence distribution`);
+
             setCaseData(transformedCase);
             return;
           }
@@ -130,7 +139,14 @@ export function useCase(): UseCaseReturn {
         console.log(`✅ Case loaded: ${data.id} with ${data.suspects.length} suspects`);
       }
 
-      // Transform API response to CaseData with suspects
+      // Validate discovery data
+      if (!data.locations || data.locations.length === 0) {
+        console.warn('⚠️ Case fetched but no locations found - discovery system will use fallback');
+      } else {
+        console.log(`✅ Discovery data loaded: ${data.locations.length} locations`);
+      }
+
+      // 🔧 FIX: Transform API response to CaseData INCLUDING locations, evidence, and evidenceDistribution
       const transformedCase: CaseData = {
         id: data.id,
         date: data.date,
@@ -138,6 +154,9 @@ export function useCase(): UseCaseReturn {
         weapon: data.weapon,
         location: data.location,
         suspects: data.suspects || [],
+        locations: data.locations, // Include discovery locations
+        evidence: data.evidence, // Include evidence items
+        evidenceDistribution: data.evidenceDistribution, // Include evidence distribution
         imageUrl: data.imageUrl,
         introNarration: data.introNarration,
         generatedAt: data.generatedAt,
@@ -151,7 +170,7 @@ export function useCase(): UseCaseReturn {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [generateCase]);
 
   // Fetch on mount
   useEffect(() => {

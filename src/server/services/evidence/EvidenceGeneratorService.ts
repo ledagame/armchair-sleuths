@@ -16,8 +16,11 @@ import type {
 } from '../../../shared/types/i18n';
 import type {
   MultilingualEvidence,
-  GenerateEvidenceOptions
+  GenerateEvidenceOptions,
+  EvidenceItem,
+  DiscoveryDifficulty
 } from '../../../shared/types/Evidence';
+import { getDiscoveryProbability } from '../../../shared/types/Evidence';
 
 /**
  * EvidenceGeneratorService
@@ -83,14 +86,25 @@ export class EvidenceGeneratorService {
     // Parse JSON response
     const parsed = this.geminiClient.parseJsonResponse(response.text);
 
+    // Enhance evidence items with discovery system fields
+    const enhancedKo = this.enhanceEvidenceItems(
+      parsed.translations.ko.items,
+      location.id,
+      difficulty
+    );
+    const enhancedEn = this.enhanceEvidenceItems(
+      parsed.translations.en.items,
+      location.id,
+      difficulty
+    );
+
     // Calculate metadata
-    const koItems = parsed.translations.ko.items;
-    const totalItems = koItems.length;
-    const criticalCount = koItems.filter(
-      (item: any) => item.relevance === 'critical'
+    const totalItems = enhancedKo.length;
+    const criticalCount = enhancedKo.filter(
+      (item: EvidenceItem) => item.relevance === 'critical'
     ).length;
-    const evidencePointingToGuilty = koItems.filter(
-      (item: any) => item.pointsToSuspect === guiltyIndex
+    const evidencePointingToGuilty = enhancedKo.filter(
+      (item: EvidenceItem) => item.pointsToSuspect === guiltyIndex
     ).length;
     const threeClueRuleCompliant =
       criticalCount >= minCriticalEvidence &&
@@ -100,7 +114,16 @@ export class EvidenceGeneratorService {
     const evidence: MultilingualEvidence = {
       caseId,
       locationId: location.id,
-      translations: parsed.translations,
+      translations: {
+        ko: {
+          items: enhancedKo,
+          summary: parsed.translations.ko.summary
+        },
+        en: {
+          items: enhancedEn,
+          summary: parsed.translations.en.summary
+        }
+      },
       metadata: {
         totalItems,
         criticalCount,
@@ -122,6 +145,68 @@ export class EvidenceGeneratorService {
     }
 
     return evidence;
+  }
+
+  /**
+   * Enhance evidence items with discovery system fields
+   *
+   * Assigns:
+   * - discoveryDifficulty based on relevance and case difficulty
+   * - discoveryProbability using presets
+   * - foundAtLocationId
+   */
+  private enhanceEvidenceItems(
+    items: any[],
+    locationId: string,
+    caseDifficulty: 'easy' | 'medium' | 'hard'
+  ): EvidenceItem[] {
+    return items.map((item: any) => {
+      const discoveryDifficulty = this.assignDiscoveryDifficulty(
+        item.relevance,
+        caseDifficulty
+      );
+      const discoveryProbability = getDiscoveryProbability(
+        discoveryDifficulty,
+        item.relevance
+      );
+
+      return {
+        ...item,
+        discoveryDifficulty,
+        discoveryProbability,
+        foundAtLocationId: locationId,
+        // imageUrl and imageGeneratedAt will be added by image generation service later
+      };
+    });
+  }
+
+  /**
+   * Assign discovery difficulty based on evidence relevance and case difficulty
+   *
+   * Logic:
+   * - Easy cases: Critical = obvious, Important = obvious, Minor = medium
+   * - Medium cases: Critical = medium, Important = medium, Minor = hidden
+   * - Hard cases: Critical = medium, Important = hidden, Minor = hidden
+   *
+   * Ensures Fair Play: Critical evidence always at least "medium" difficulty
+   */
+  private assignDiscoveryDifficulty(
+    relevance: 'critical' | 'important' | 'minor',
+    caseDifficulty: 'easy' | 'medium' | 'hard'
+  ): DiscoveryDifficulty {
+    if (caseDifficulty === 'easy') {
+      return relevance === 'minor' ? 'medium' : 'obvious';
+    }
+
+    if (caseDifficulty === 'medium') {
+      return relevance === 'minor' ? 'hidden' : 'medium';
+    }
+
+    // Hard difficulty
+    if (relevance === 'critical') {
+      return 'medium';  // Critical evidence must be findable
+    }
+    return 'hidden';
   }
 
   /**

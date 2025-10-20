@@ -1,15 +1,25 @@
 /**
  * Discovery.ts
  *
- * 증거 발견 시스템 타입 정의 (MVP - Medium 난이도)
+ * 증거 발견 시스템 타입 정의
+ * 3-tier search system: Quick, Thorough, Exhaustive
  */
 
-import type { EvidenceItem } from './Evidence';
+import type { EvidenceItem, SearchType, PlayerEvidenceState } from './Evidence';
+
+// Re-export SearchType for convenience
+export type { SearchType };
 
 /**
- * 탐색 타입 (MVP는 Quick만 지원)
+ * Location for evidence discovery
  */
-export type SearchType = 'quick' | 'thorough' | 'exhaustive';
+export interface Location {
+  id: string;
+  name: string;
+  description: string;
+  emoji: string;
+  imageUrl?: string;
+}
 
 /**
  * 증거 분배 전략
@@ -42,12 +52,23 @@ export interface EvidenceDistribution {
 }
 
 /**
+ * Search action point costs
+ */
+export const SEARCH_ACTION_COSTS = {
+  quick: 1,
+  thorough: 2,
+  exhaustive: 3,
+} as const;
+
+/**
  * 탐색 요청
  */
 export interface SearchLocationRequest {
   caseId: string;
+  userId: string;
   locationId: string;
-  searchType: SearchType;  // MVP: 항상 "quick"
+  searchType: SearchType;
+  areaId?: string;  // Optional: search specific area
 }
 
 /**
@@ -58,30 +79,44 @@ export interface SearchLocationResult {
   location: {
     id: string;
     name: string;
+    imageUrl?: string;
   };
-  evidenceFound: EvidenceItem[];  // 발견된 증거 목록
-  totalSearched: number;           // 총 탐색한 장소 수
-  remainingLocations: number;      // 남은 장소 수
-  alreadySearched: boolean;        // 이미 탐색한 장소인지
+  searchType: SearchType;
+  evidenceFound: EvidenceItem[];       // 발견된 증거 목록
+  evidenceMissed?: number;              // 남은 미발견 증거 (exhaustive에만 표시)
+  totalSearched: number;                // 총 탐색한 장소 수
+  remainingLocations: number;           // 남은 장소 수
+  alreadySearched: boolean;             // 이미 탐색한 장소인지
+  actionPointsRemaining: number;        // 남은 액션 포인트
+  actionCost: number;                   // 사용된 액션 포인트
+  completionRate: number;               // 장소 완료율 (0-100)
+  timestamp: Date;
 }
 
 /**
  * 플레이어 탐색 상태
+ * Location-focused discovery tracking (complements PlayerEvidenceState)
  */
 export interface PlayerDiscoveryState {
   caseId: string;
-  totalEvidenceFound: number;
-  locationsSearched: string[];
-  evidenceByLocation: Record<string, string[]>;  // locationId -> evidenceIds
-  lastUpdated: number;
+  userId: string;
+  actionPoints: number;
+  actionPointsUsed: number;
+  locationsSearched: Map<string, LocationSearchRecord>;  // locationId -> record
+  lastUpdated: Date;
 }
 
 /**
  * 개별 장소 탐색 기록
  */
 export interface LocationSearchRecord {
-  searched: boolean;
-  evidenceFound: string[];
-  searchType: SearchType;
-  timestamp: number;
+  locationId: string;
+  searches: Array<{
+    searchType: SearchType;
+    evidenceFound: string[];  // Evidence IDs found in this search
+    timestamp: Date;
+  }>;
+  completionRate: number;  // 0-100
+  totalEvidenceFound: number;
+  lastSearched: Date;
 }

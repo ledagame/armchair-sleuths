@@ -10,7 +10,12 @@ import { createW4HValidator } from './services/scoring/W4HValidator';
 import { createScoringEngine } from './services/scoring/ScoringEngine';
 import { KVStoreManager } from './services/repositories/kv/KVStoreManager';
 import { DevvitStorageAdapter } from './services/repositories/adapters/DevvitStorageAdapter';
-// ✅ Import scheduler initialization
+// Evidence Discovery System imports
+import { EvidenceDiscoveryService } from './services/discovery/EvidenceDiscoveryService';
+import { createPlayerEvidenceStateService } from './services/state/PlayerEvidenceStateService';
+import { createActionPointsService } from './services/discovery/ActionPointsService';
+import type { SearchLocationRequest } from '../shared/types/Discovery';
+// Scheduler initialization
 import { initializeAllSchedulers } from './schedulers/DailyCaseScheduler';
 
 const app = express();
@@ -114,7 +119,7 @@ router.post('/internal/on-app-install', async (_req, res): Promise<void> => {
       throw new Error('Gemini API key not configured');
     }
 
-    // ✅ Initialize schedulers (pre-generate daily cases) - fire and forget
+    // Initialize schedulers (pre-generate daily cases) - fire and forget
     console.log('🔧 App installed - initializing schedulers...');
     initializeAllSchedulers(apiKey as string).catch(error => {
       console.error('❌ Background scheduler initialization failed:', error);
@@ -167,7 +172,7 @@ router.post('/internal/menu/post-create', async (_req, res): Promise<void> => {
       date: now,
       includeImage: true,
       includeSuspectImages: true,
-      includeCinematicImages: true, // ✅ Include cinematic intro images
+      includeCinematicImages: true,
       temperature: 0.8,
       customCaseId: customCaseId
     });
@@ -232,8 +237,8 @@ router.post('/api/case/generate', async (_req, res): Promise<void> => {
     const caseData = await caseGenerator.generateCase({
       date: new Date(),
       includeImage: false, // Skip case image for faster generation
-      includeSuspectImages: true, // ✅ Include suspect profile images
-      includeCinematicImages: true // ✅ Include cinematic intro images (5 scenes)
+      includeSuspectImages: true,
+      includeCinematicImages: true
     });
 
     console.log(`✅ Case generated: ${caseData.id}`);
@@ -243,7 +248,9 @@ router.post('/api/case/generate', async (_req, res): Promise<void> => {
       success: true,
       message: 'Case generated successfully',
       caseId: caseData.id,
-      date: caseData.date
+      date: caseData.date,
+      locations: caseData.locations,
+      evidenceCount: caseData.evidence?.length
     });
   } catch (error) {
     console.error('Error generating case:', error);
@@ -330,7 +337,7 @@ router.post('/api/case/regenerate', async (req, res): Promise<void> => {
       date: caseDate,
       includeImage: true,
       includeSuspectImages: true,
-      includeCinematicImages: true, // ✅ Include cinematic intro images
+      includeCinematicImages: true,
       temperature: 0.8
     });
 
@@ -396,7 +403,7 @@ router.post('/api/create-game-post', async (req, res): Promise<void> => {
       date: now,
       includeImage: true,
       includeSuspectImages: true,
-      includeCinematicImages: true, // ✅ Include cinematic intro images
+      includeCinematicImages: true,
       temperature: 0.8,
       customCaseId: customCaseId
     });
@@ -490,7 +497,7 @@ router.delete('/api/case/:caseId', async (req, res): Promise<void> => {
 /**
  * GET /api/case/today?language=ko|en
  * 오늘의 케이스 조회 (다국어 지원)
- * ✅ 자동 이미지 감지 및 재생성 포함
+ * 자동 이미지 감지 및 재생성 포함
  *
  * Query Parameters:
  *   - language: 'ko' | 'en' (default: 'ko')
@@ -533,7 +540,7 @@ router.get('/api/case/today', async (req, res): Promise<void> => {
       console.warn(`   Case suspects array from storage:`, todaysCase.suspects);
     }
 
-    // ✅ SEAMLESS AUTO-REGENERATION: Check if ALL images are missing
+    // SEAMLESS AUTO-REGENERATION: Check if ALL images are missing
     const suspectsWithImages = fullSuspects.filter(s => s.profileImageUrl);
 
     // Only regenerate if NO images exist (not partial failure)
@@ -559,7 +566,7 @@ router.get('/api/case/today', async (req, res): Promise<void> => {
             date: caseDate,
             includeImage: true,
             includeSuspectImages: true,
-            includeCinematicImages: true, // ✅ Include cinematic intro images
+            includeCinematicImages: true,
             temperature: 0.8
           });
 
@@ -590,9 +597,12 @@ router.get('/api/case/today', async (req, res): Promise<void> => {
             location: regeneratedCase.location,
             suspects: suspectsData,
             imageUrl: regeneratedCase.imageUrl,
-            introNarration: regeneratedCase.introNarration, // ✅ Include intro narration
+            introNarration: regeneratedCase.introNarration,
+            locations: regeneratedCase.locations,
+            evidence: regeneratedCase.evidence, // Include evidence items for discovery system
+            evidenceDistribution: regeneratedCase.evidenceDistribution,
             generatedAt: regeneratedCase.generatedAt,
-            _autoRegenerated: true // Flag to indicate auto-regeneration occurred
+            _autoRegenerated: true
           });
           return;
         }
@@ -603,7 +613,7 @@ router.get('/api/case/today', async (req, res): Promise<void> => {
     }
 
     // Map to client format (exclude isGuilty for security)
-    // ✅ Phase 1 Fix: Don't include large base64 images in initial response
+    // Phase 1 Fix: Don't include large base64 images in initial response
     // Client will fetch images separately via /api/suspect-image/:suspectId
     const suspectsData = fullSuspects.map(s => ({
       id: s.id,
@@ -613,23 +623,23 @@ router.get('/api/case/today', async (req, res): Promise<void> => {
       background: s.background,
       personality: s.personality,
       emotionalState: s.emotionalState,
-      hasProfileImage: !!s.profileImageUrl // Flag to indicate image availability
-      // profileImageUrl will be fetched separately to avoid 500 error from large payload
-      // isGuilty는 제외!
+      hasProfileImage: !!s.profileImageUrl
     }));
 
     // 클라이언트에게 전달 (solution 제외)
-    // TODO: When MultilingualCase is stored, return language-specific content
     res.json({
       id: todaysCase.id,
       date: todaysCase.date,
-      language: language, // Include selected language in response
+      language: language,
       victim: todaysCase.victim,
       weapon: todaysCase.weapon,
       location: todaysCase.location,
       suspects: suspectsData,
       imageUrl: todaysCase.imageUrl,
-      introNarration: todaysCase.introNarration, // ✅ Include intro narration
+      introNarration: todaysCase.introNarration,
+      locations: todaysCase.locations,
+      evidence: todaysCase.evidence, // Include evidence items for discovery system
+      evidenceDistribution: todaysCase.evidenceDistribution,
       generatedAt: todaysCase.generatedAt
     });
   } catch (error) {
@@ -700,7 +710,10 @@ router.get('/api/case/:caseId', async (req, res): Promise<void> => {
       location: caseData.location,
       suspects: suspectsData,
       imageUrl: caseData.imageUrl,
-      introNarration: caseData.introNarration, // ✅ Include intro narration
+      introNarration: caseData.introNarration,
+      locations: caseData.locations,
+      evidence: caseData.evidence, // Include evidence items for discovery system
+      evidenceDistribution: caseData.evidenceDistribution,
       generatedAt: caseData.generatedAt
     });
   } catch (error) {
@@ -731,8 +744,7 @@ router.get('/api/suspects/:caseId', async (req, res): Promise<void> => {
       background: s.background,
       personality: s.personality,
       emotionalState: s.emotionalState,
-      profileImageUrl: s.profileImageUrl // ✅ Profile image for UI display
-      // isGuilty는 제외!
+      profileImageUrl: s.profileImageUrl
     }));
 
     res.json({ suspects: suspectData });
@@ -994,6 +1006,267 @@ router.get('/api/stats/:caseId', async (req, res): Promise<void> => {
     res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to fetch statistics'
+    });
+  }
+});
+
+// =============================================================================
+// EVIDENCE DISCOVERY SYSTEM API ROUTES
+// =============================================================================
+
+/**
+ * POST /api/location/search
+ * 장소 탐색 및 증거 발견
+ *
+ * Request body: { caseId, userId, locationId, searchType: 'quick'|'thorough'|'exhaustive' }
+ * Returns: { success, evidenceFound[], actionPointsRemaining, completionRate }
+ */
+router.post('/api/location/search', async (req, res): Promise<void> => {
+  try {
+    const { caseId, userId, locationId, searchType } = req.body as SearchLocationRequest;
+
+    // Validate input
+    if (!caseId || !userId || !locationId || !searchType) {
+      res.status(400).json({
+        error: 'Bad request',
+        message: 'caseId, userId, locationId, and searchType are required'
+      });
+      return;
+    }
+
+    if (!['quick', 'thorough', 'exhaustive'].includes(searchType)) {
+      res.status(400).json({
+        error: 'Bad request',
+        message: 'searchType must be one of: quick, thorough, exhaustive'
+      });
+      return;
+    }
+
+    // Get case data
+    const caseData = await CaseRepository.getCaseById(caseId);
+    if (!caseData) {
+      res.status(404).json({
+        error: 'Case not found',
+        message: `Case ${caseId} not found`
+      });
+      return;
+    }
+
+    // Check if locations and evidence exist
+    // Note: evidenceDistribution is stored separately, so we only check locations and evidence
+    const isLegacyCase = !caseData.locations || !caseData.evidence;
+
+    // Handle legacy cases with fallback evidence
+    if (isLegacyCase) {
+      console.warn(`⚠️ Legacy case detected: ${caseId} - using fallback evidence`);
+
+      // Fallback evidence for legacy cases
+      const fallbackEvidence: import('../shared/types/Evidence').EvidenceItem[] = [
+        {
+          id: `fallback-ev-${Date.now()}-1`,
+          type: 'physical',
+          name: '의심스러운 흔적',
+          description: '현장에서 발견된 단서입니다',
+          importance: 2,
+          discoveredAt: Date.now(),
+        },
+        {
+          id: `fallback-ev-${Date.now()}-2`,
+          type: 'digital',
+          name: '디지털 기록',
+          description: '관련 정보가 담긴 기록입니다',
+          importance: 1,
+          discoveredAt: Date.now(),
+        },
+      ];
+
+      // Simple search result for legacy cases
+      const legacyResult = {
+        success: true,
+        evidenceFound: searchType === 'quick' ? fallbackEvidence.slice(0, 1) : fallbackEvidence,
+        completionRate: searchType === 'quick' ? 25 : searchType === 'thorough' ? 50 : 100,
+        message: `${searchType === 'quick' ? '1' : '2'}개의 증거를 발견했습니다!`,
+        actionPointsRemaining: 10 - (searchType === 'quick' ? 1 : searchType === 'thorough' ? 2 : 3),
+      };
+
+      res.status(200).json(legacyResult);
+      return;
+    }
+
+    // Get or initialize player evidence state
+    const stateService = createPlayerEvidenceStateService();
+    let playerState = await KVStoreManager.getPlayerEvidenceState(caseId, userId);
+
+    if (!playerState) {
+      playerState = stateService.initializeState(caseId, userId);
+      await KVStoreManager.savePlayerEvidenceState(playerState);
+    }
+
+    // Check action points
+    const actionPointsService = createActionPointsService();
+    const searchCost = actionPointsService.getSearchCost(searchType);
+
+    // Calculate total action points spent so far
+    const totalActionPoints = 12; // Medium difficulty
+    const actionPointsSpent =
+      (playerState.stats.quickSearches * 1) +
+      (playerState.stats.thoroughSearches * 2) +
+      (playerState.stats.exhaustiveSearches * 3);
+    const actionPointsRemaining = totalActionPoints - actionPointsSpent;
+
+    if (!actionPointsService.canAffordSearch(actionPointsRemaining, searchType)) {
+      res.status(400).json({
+        error: 'Insufficient action points',
+        message: `Not enough action points for ${searchType} search. Required: ${searchCost}, Available: ${actionPointsRemaining}`,
+        actionPointsRemaining
+      });
+      return;
+    }
+
+    // Perform search
+    const discoveryService = new EvidenceDiscoveryService();
+    const searchRequest: SearchLocationRequest = {
+      caseId,
+      userId,
+      locationId,
+      searchType
+    };
+
+    const searchResult = await discoveryService.searchLocation(
+      searchRequest,
+      caseData.evidenceDistribution,
+      caseData.evidence,
+      caseData.locations,
+      playerState
+    );
+
+    // Update player state with discovered evidence
+    const updatedState = stateService.recordDiscovery(
+      playerState,
+      searchResult.evidenceFound,
+      searchType,
+      locationId
+    );
+
+    // Calculate efficiency
+    const totalEvidence = caseData.evidence.length;
+    const finalState = stateService.calculateEfficiency(updatedState, totalEvidence);
+
+    // Save updated state
+    await KVStoreManager.savePlayerEvidenceState(finalState);
+
+    // Recalculate remaining action points after this search
+    const finalActionPointsSpent =
+      (finalState.stats.quickSearches * 1) +
+      (finalState.stats.thoroughSearches * 2) +
+      (finalState.stats.exhaustiveSearches * 3);
+    const finalActionPointsRemaining = totalActionPoints - finalActionPointsSpent;
+
+    // Return search result with action points
+    res.json({
+      ...searchResult,
+      actionPointsRemaining: finalActionPointsRemaining,
+      playerStats: stateService.getStatsSummary(finalState)
+    });
+
+  } catch (error) {
+    console.error('Error searching location:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: error instanceof Error ? error.message : 'Failed to search location'
+    });
+  }
+});
+
+/**
+ * GET /api/player-state/:caseId/:userId
+ * 플레이어 증거 발견 상태 조회
+ *
+ * Returns: PlayerEvidenceState
+ */
+router.get('/api/player-state/:caseId/:userId', async (req, res): Promise<void> => {
+  try {
+    const { caseId, userId } = req.params;
+
+    const playerState = await KVStoreManager.getPlayerEvidenceState(caseId, userId);
+
+    if (!playerState) {
+      res.status(404).json({
+        error: 'Player state not found',
+        message: 'No evidence discovery state found for this player and case'
+      });
+      return;
+    }
+
+    // Calculate action points
+    const totalActionPoints = 12;
+    const actionPointsUsed = playerState.stats.totalSearches;
+    const actionPointsRemaining = totalActionPoints - actionPointsUsed;
+
+    res.json({
+      ...playerState,
+      actionPointsRemaining,
+      actionPointsUsed
+    });
+
+  } catch (error) {
+    console.error('Error fetching player state:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Failed to fetch player state'
+    });
+  }
+});
+
+/**
+ * POST /api/player-state/initialize
+ * 플레이어 증거 발견 상태 초기화
+ *
+ * Request body: { caseId, userId }
+ * Returns: PlayerEvidenceState
+ */
+router.post('/api/player-state/initialize', async (req, res): Promise<void> => {
+  try {
+    const { caseId, userId } = req.body;
+
+    if (!caseId || !userId) {
+      res.status(400).json({
+        error: 'Bad request',
+        message: 'caseId and userId are required'
+      });
+      return;
+    }
+
+    // Check if case exists
+    const caseData = await CaseRepository.getCaseById(caseId);
+    if (!caseData) {
+      res.status(404).json({
+        error: 'Case not found',
+        message: `Case ${caseId} not found`
+      });
+      return;
+    }
+
+    // Initialize state
+    const stateService = createPlayerEvidenceStateService();
+    const playerState = stateService.initializeState(caseId, userId);
+
+    // Save to storage
+    await KVStoreManager.savePlayerEvidenceState(playerState);
+
+    console.log(`✅ Initialized player state for user ${userId} in case ${caseId}`);
+
+    res.json({
+      ...playerState,
+      actionPointsRemaining: 12,
+      actionPointsUsed: 0
+    });
+
+  } catch (error) {
+    console.error('Error initializing player state:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Failed to initialize player state'
     });
   }
 });

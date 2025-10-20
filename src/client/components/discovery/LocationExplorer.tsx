@@ -9,7 +9,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { LocationCard } from './LocationCard';
 import { EvidenceRevealCard } from './EvidenceRevealCard';
-import type { EvidenceItem } from '@/shared/types/Evidence';
+import type { EvidenceItem, SearchType } from '@/shared/types/Evidence';
 import type { SearchLocationResult } from '@/shared/types/Discovery';
 
 export interface LocationExplorerProps {
@@ -19,8 +19,10 @@ export interface LocationExplorerProps {
     name: string;
     description: string;
     emoji: string;
+    imageUrl?: string;
   }>;
-  onSearchLocation: (locationId: string) => Promise<SearchLocationResult>;
+  actionPoints?: number;
+  onSearchLocation: (locationId: string, searchType: SearchType) => Promise<SearchLocationResult>;
 }
 
 /**
@@ -35,10 +37,13 @@ export interface LocationExplorerProps {
 export function LocationExplorer({
   caseId,
   locations,
+  actionPoints,
   onSearchLocation,
 }: LocationExplorerProps) {
-  // Track searched locations
-  const [searchedLocationIds, setSearchedLocationIds] = useState<Set<string>>(new Set());
+  // Track searched locations with completion rates
+  const [searchedLocations, setSearchedLocations] = useState<
+    Map<string, { completionRate: number }>
+  >(new Map());
 
   // Loading state for current search
   const [searchingLocationId, setSearchingLocationId] = useState<string | null>(null);
@@ -46,16 +51,18 @@ export function LocationExplorer({
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [currentDiscovery, setCurrentDiscovery] = useState<{
-    location: { id: string; name: string };
+    location: { id: string; name: string; imageUrl?: string };
     evidenceFound: EvidenceItem[];
+    searchType: SearchType;
+    completionRate: number;
   } | null>(null);
 
   /**
-   * Handle location search
+   * Handle location search with search type
    */
-  const handleSearchLocation = async (locationId: string) => {
-    // Prevent duplicate searches
-    if (searchedLocationIds.has(locationId) || searchingLocationId) {
+  const handleSearchLocation = async (locationId: string, searchType: SearchType) => {
+    // Prevent searches while another is in progress
+    if (searchingLocationId) {
       return;
     }
 
@@ -64,16 +71,22 @@ export function LocationExplorer({
       setSearchingLocationId(locationId);
 
       // Perform search
-      const result = await onSearchLocation(locationId);
+      const result = await onSearchLocation(locationId, searchType);
 
       if (result.success) {
-        // Update searched locations
-        setSearchedLocationIds((prev) => new Set([...prev, locationId]));
+        // Update searched locations with completion rate
+        setSearchedLocations((prev) => {
+          const updated = new Map(prev);
+          updated.set(locationId, { completionRate: result.completionRate });
+          return updated;
+        });
 
         // Prepare discovery data for modal
         setCurrentDiscovery({
           location: result.location,
           evidenceFound: result.evidenceFound,
+          searchType: result.searchType,
+          completionRate: result.completionRate,
         });
 
         // Show modal
@@ -99,7 +112,7 @@ export function LocationExplorer({
 
   // Calculate search progress
   const totalLocations = locations.length;
-  const searchedCount = searchedLocationIds.size;
+  const searchedCount = searchedLocations.size;
   const progressPercentage = totalLocations > 0
     ? Math.round((searchedCount / totalLocations) * 100)
     : 0;
@@ -167,21 +180,29 @@ export function LocationExplorer({
 
       {/* Location grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {locations.map((location, index) => (
-          <motion.div
-            key={location.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 * index, duration: 0.3 }}
-          >
-            <LocationCard
-              location={location}
-              isSearched={searchedLocationIds.has(location.id)}
-              isSearching={searchingLocationId === location.id}
-              onSearch={handleSearchLocation}
-            />
-          </motion.div>
-        ))}
+        {locations.map((location, index) => {
+          const locationState = searchedLocations.get(location.id);
+          const isSearched = locationState !== undefined;
+          const completionRate = locationState?.completionRate ?? 0;
+
+          return (
+            <motion.div
+              key={location.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 * index, duration: 0.3 }}
+            >
+              <LocationCard
+                location={location}
+                isSearched={isSearched}
+                isSearching={searchingLocationId === location.id}
+                completionRate={completionRate}
+                actionPoints={actionPoints}
+                onSearch={handleSearchLocation}
+              />
+            </motion.div>
+          );
+        })}
       </div>
 
       {/* No locations message */}

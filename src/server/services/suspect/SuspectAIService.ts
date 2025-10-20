@@ -3,8 +3,11 @@
  *
  * AI 용의자 대화 생성 서비스
  * Gemini + EmotionalStateManager 통합
+ * Enhanced with Claude Skills pattern (prompt templates)
  */
 
+import { promises as fs } from 'fs';
+import path from 'path';
 import { GeminiClient, type GeminiTextOptions } from '../gemini/GeminiClient';
 import { EmotionalStateManager, type EmotionalTone } from './EmotionalStateManager';
 import { KVStoreManager, type SuspectData } from '../repositories/kv/KVStoreManager';
@@ -38,6 +41,9 @@ export interface ChatResponse {
  */
 export class SuspectAIService {
   private geminiClient: GeminiClient;
+
+  // Claude Skills pattern: Prompt template cache
+  private static promptTemplate: string | null = null;
 
   constructor(geminiClient: GeminiClient) {
     this.geminiClient = geminiClient;
@@ -122,7 +128,7 @@ export class SuspectAIService {
     conversationHistory: ChatMessage[],
     currentTone: EmotionalTone
   ): Promise<string> {
-    const prompt = this.buildSuspectPrompt(
+    const prompt = await this.buildSuspectPrompt(
       suspect,
       userQuestion,
       conversationHistory,
@@ -140,15 +146,31 @@ export class SuspectAIService {
   }
 
   /**
-   * 용의자 AI 프롬프트 생성 (Enhanced with suspect-ai-prompter skill)
+   * 용의자 AI 프롬프트 생성 (Enhanced with Claude Skills pattern)
+   * Uses template from skills/suspect-personality-core/PROMPT.md
    */
-  private buildSuspectPrompt(
+  private async buildSuspectPrompt(
     suspect: SuspectData,
     userQuestion: string,
     conversationHistory: ChatMessage[],
     currentTone: EmotionalTone
-  ): string {
-    // Get emotional state from suspicion level (0-100 → COOPERATIVE/NERVOUS/DEFENSIVE/AGGRESSIVE)
+  ): Promise<string> {
+    // Load prompt template from skills/ directory (cached)
+    if (!SuspectAIService.promptTemplate) {
+      try {
+        const templatePath = path.join(
+          __dirname,
+          '../../../skills/suspect-personality-core/PROMPT.md'
+        );
+        SuspectAIService.promptTemplate = await fs.readFile(templatePath, 'utf-8');
+        console.log('✅ Loaded suspect conversation prompt template');
+      } catch (error) {
+        console.error('❌ Failed to load prompt template, using fallback:', error);
+        return this.buildFallbackPrompt(suspect, userQuestion, conversationHistory, currentTone);
+      }
+    }
+
+    // Get emotional state from suspicion level
     const suspicionLevel =
       currentTone === 'cooperative'
         ? 20
@@ -164,7 +186,6 @@ export class SuspectAIService {
     const archetypeData = getArchetypeData(suspect.archetype as ArchetypeName);
 
     if (!archetypeData) {
-      // Fallback to simple prompt if archetype not found
       console.warn(`Archetype not found: ${suspect.archetype}, using fallback prompt`);
       return this.buildFallbackPrompt(suspect, userQuestion, conversationHistory, currentTone);
     }
@@ -177,44 +198,16 @@ export class SuspectAIService {
 
     // Format conversation history
     const historyText = conversationHistory
-      .slice(-5) // Last 5 messages
+      .slice(-5)
       .map(msg => {
         const role = msg.role === 'user' ? 'Detective' : suspect.name;
         return `${role}: ${msg.content}`;
       })
       .join('\n');
 
-    // Build enhanced prompt based on prompt-templates.md structure
-    return `# CHARACTER IDENTITY & BACKGROUND
-
-You are ${suspect.name}, a ${suspect.archetype}.
-
-${suspect.background}
-
-Your current situation: You are being questioned about a murder. The victim is ${suspect.victim || 'the victim'}. You are one of the suspects.
-
-# CORE PERSONALITY & VALUES
-
-**Personality Traits:**
-${archetypeData.personality.join('\n')}
-
-**Character Definition:**
-${archetypeData.definition}
-
-# CURRENT EMOTIONAL STATE
-
-**Suspicion Level:** ${suspicionLevel}/100
-**Emotional State:** ${emotionalState}
-
-**Current Mindset:** ${archetypeData.speechPatterns[emotionalState].mindset}
-
-**Tone Guidance:** ${archetypeData.speechPatterns[emotionalState].tone}
-
-# GUILTY/INNOCENT STATUS
-
-${
-  suspect.isGuilty
-    ? `You are GUILTY of this crime. You committed the murder.
+    // Build guilty/innocent strategy block
+    const guiltyOrInnocentBlock = suspect.isGuilty
+      ? `**Status:** You are GUILTY of this crime. You committed the murder.
 
 **Response Strategy:**
 - Deny involvement but don't be too defensive
@@ -223,7 +216,7 @@ ${
 - Show appropriate emotional responses for an innocent person
 - Avoid direct contradictions that can be easily proven false
 - Under high pressure, you may slip and reveal inconsistencies`
-    : `You are INNOCENT of this crime. You did not commit the murder.
+      : `**Status:** You are INNOCENT of this crime. You did not commit the murder.
 
 **Response Strategy:**
 - Tell the truth about what you know
@@ -231,38 +224,24 @@ ${
 - Provide honest details that can be verified
 - Express appropriate concern about the investigation
 - Don't have knowledge of incriminating details only the killer would know
-- Your emotional responses reflect genuine innocence`
-}
+- Your emotional responses reflect genuine innocence`;
 
-# SPEECH PATTERNS & STYLE
-
-**Your Natural Speaking Style (${suspect.archetype}):**
-${speechPatterns.slice(0, 3).join('\n')}
-
-**Common Vocabulary:**
-${archetypeData.vocabulary.primary.join(', ')}
-
-# CONVERSATION HISTORY
-
-${historyText || '(Beginning of conversation)'}
-
-# RESPONSE GUIDELINES
-
-1. **Stay in Character**: Maintain ${suspect.archetype} personality at all times
-2. **Match Emotional State**: Your tone must reflect ${emotionalState} consistently
-3. **Speech Pattern Consistency**: Use the speech patterns shown above as examples
-4. **Appropriate Information Disclosure**: Reveal information according to your ${suspect.isGuilty ? 'GUILTY' : 'INNOCENT'} status
-5. **Natural English**: Speak in natural, conversational English (will be translated to Korean)
-6. **Length Control**: Keep responses 2-4 sentences (15-80 words typically)
-7. **Show Don't Tell**: Demonstrate character through word choice, not explicit statements
-
----
-
-Now respond to the detective's question in character as ${suspect.name}:
-
-Detective: ${userQuestion}
-
-${suspect.name}:`;
+    // Replace template variables
+    return SuspectAIService.promptTemplate
+      .replace('{{SUSPECT_NAME}}', suspect.name)
+      .replace(/{{ARCHETYPE}}/g, suspect.archetype)
+      .replace('{{BACKGROUND}}', suspect.background)
+      .replace('{{PERSONALITY_TRAITS}}', archetypeData.personality.map(p => `- ${p}`).join('\n'))
+      .replace('{{CHARACTER_DEFINITION}}', archetypeData.definition)
+      .replace(/{{SUSPICION_LEVEL}}/g, suspicionLevel.toString())
+      .replace(/{{EMOTIONAL_STATE}}/g, emotionalState)
+      .replace('{{MINDSET}}', archetypeData.speechPatterns[emotionalState].mindset)
+      .replace('{{TONE_GUIDANCE}}', archetypeData.speechPatterns[emotionalState].tone)
+      .replace('{{GUILTY_OR_INNOCENT_BLOCK}}', guiltyOrInnocentBlock)
+      .replace('{{SPEECH_PATTERNS}}', speechPatterns.slice(0, 3).map(p => `- ${p}`).join('\n'))
+      .replace('{{VOCABULARY}}', archetypeData.vocabulary.primary.join(', '))
+      .replace('{{CONVERSATION_HISTORY}}', historyText || '(Beginning of conversation)')
+      .replace('{{USER_QUESTION}}', userQuestion);
   }
 
   /**

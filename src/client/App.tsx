@@ -7,15 +7,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { CaseOverview } from './components/case/CaseOverview';
-import { SuspectPanel } from './components/suspect/SuspectPanel';
-import { ChatInterface } from './components/chat/ChatInterface';
 import { SubmissionForm } from './components/submission/SubmissionForm';
 import { ResultView } from './components/results/ResultView';
 import { CinematicIntro } from './components/intro/cinematic/CinematicIntro';
-import { LocationExplorer } from './components/discovery/LocationExplorer';
+import { InvestigationScreen } from './components/InvestigationScreen';
 import { useCase } from './hooks/useCase';
 import { useSuspect } from './hooks/useSuspect';
-import { useChat } from './hooks/useChat';
 import { useSubmission } from './hooks/useSubmission';
 import type { GameScreen, W4HAnswer, ScoringResult } from './types';
 
@@ -62,20 +59,9 @@ export const App = () => {
   }, [caseLoading, caseError, caseData, currentScreen]);
 
   // Suspect management (only initialize when caseData is available)
-  const { suspects, selectedSuspect, selectSuspect, clearSelection } = useSuspect(
+  const { suspects, clearSelection } = useSuspect(
     caseData?.suspects || []
   );
-
-  // Chat management (only initialize when suspect is selected)
-  const {
-    messages,
-    sendMessage,
-    loading: chatLoading,
-  } = useChat({
-    suspectId: selectedSuspect?.id || '',
-    userId,
-    enabled: !!selectedSuspect,
-  });
 
   // Submission management
   const { submitAnswer, submitting } = useSubmission({
@@ -89,6 +75,7 @@ export const App = () => {
   }, []);
 
   const handleStartInvestigation = useCallback(() => {
+    // Always go to unified investigation screen (locations + suspects)
     setCurrentScreen('investigation');
   }, []);
 
@@ -191,106 +178,16 @@ export const App = () => {
       );
     }
 
-    // Investigation screen
+    // Investigation screen (Unified: Locations + Suspects)
     if (currentScreen === 'investigation' && caseData) {
-      // Defensive check: Ensure suspects exist
-      if (!suspects || suspects.length === 0) {
-        return (
-          <div className="min-h-screen bg-gray-950 text-white p-6">
-            <div className="flex flex-col items-center justify-center min-h-[60vh]">
-              <div className="text-6xl mb-4">⚠️</div>
-              <h2 className="text-2xl font-bold mb-2">용의자 데이터를 불러올 수 없습니다</h2>
-              <p className="text-gray-400 mb-2">사건 데이터에 용의자 정보가 없습니다.</p>
-              <p className="text-sm text-gray-500 mb-6">케이스 ID: {caseData.id}</p>
-              <div className="flex gap-4">
-                <button
-                  onClick={async () => {
-                    try {
-                      console.log('🎲 케이스 재생성 시작...');
-                      const response = await fetch('/api/case/generate', { method: 'POST' });
-                      if (response.ok) {
-                        console.log('✅ 생성 성공! 2초 후 새로고침...');
-                        setTimeout(() => window.location.reload(), 2000);
-                      } else {
-                        console.error('❌ 생성 실패');
-                      }
-                    } catch (e) {
-                      console.error('Generation failed:', e);
-                    }
-                  }}
-                  className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-bold"
-                >
-                  🎲 케이스 재생성
-                </button>
-                <button
-                  onClick={() => window.location.reload()}
-                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-bold"
-                >
-                  다시 시도
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-      }
-
       return (
-        <div className="min-h-screen bg-gray-950 text-white p-6">
-          {/* Header with navigation */}
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold">🔍 수사 진행 중</h1>
-              <p className="text-gray-400">{caseData.date} 사건</p>
-            </div>
-            <button
-              onClick={handleGoToSubmission}
-              className="
-                px-6 py-3 bg-green-600 hover:bg-green-700 active:bg-green-800
-                rounded-lg font-bold transition-all
-              "
-            >
-              📝 답안 제출하기
-            </button>
-          </div>
-
-          {/* Location Explorer - 장소 탐색 */}
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold mb-4">🗺️ 장소 탐색</h2>
-            <LocationExplorer
-              caseId={caseData.id}
-              locations={caseData.locations || []}
-              onSearchLocation={async (locationId: string) => {
-                const response = await fetch(`/api/cases/${caseData.id}/search-location`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ locationId, searchType: 'quick' })
-                });
-                return response.json();
-              }}
-            />
-          </div>
-
-          {/* Suspect selection */}
-          <SuspectPanel
-            suspects={suspects}
-            selectedSuspectId={selectedSuspect?.id || null}
-            onSelectSuspect={selectSuspect}
-          />
-
-          {/* Chat interface (shown when suspect is selected) */}
-          {selectedSuspect && (
-            <div className="mt-6">
-              <ChatInterface
-                suspectName={selectedSuspect.name}
-                suspectId={selectedSuspect.id}
-                userId={userId}
-                messages={messages}
-                onSendMessage={sendMessage}
-                loading={chatLoading}
-              />
-            </div>
-          )}
-        </div>
+        <InvestigationScreen
+          caseId={caseData.id}
+          userId={userId}
+          caseData={caseData}
+          suspects={suspects}
+          onGoToSubmission={handleGoToSubmission}
+        />
       );
     }
 
