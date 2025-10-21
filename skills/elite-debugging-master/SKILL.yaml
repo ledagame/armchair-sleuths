@@ -1,0 +1,155 @@
+# Developer Metadata File
+# This SKILL.yaml contains project management metadata (npm scripts, dependencies, version control).
+# Claude reads SKILL.md for instructions and triggering.
+# - SKILL.md: Claude's reference (instructions, usage, examples)
+# - SKILL.yaml: Developer's reference (scripts, dependencies, integration)
+
+name: elite-debugging-master
+version: 2.0.0
+description: |
+  World-class integrated debugging specialist for root cause analysis, architectural
+  review, and design flaw detection. Optimized for non-developer vibe coding
+  environments. Performs deep codebase analysis to identify fundamental issues that
+  surface-level debugging misses. Provides comprehensive solutions, not temporary fixes.
+
+author: Armchair Sleuths Team
+license: MIT
+
+# Trigger keywords for auto-activation
+triggers:
+  - debug
+  - debugging
+  - error
+  - bug
+  - issue
+  - problem
+  - fix
+  - broken
+  - not working
+  - fails
+  - crash
+  - architecture
+  - design flaw
+  - root cause
+  - refactor
+  - improve code
+
+# Specialized modes
+analysis_modes:
+  architecture_review:
+    focus: Layer boundaries, service responsibilities, dependencies
+    output: Architecture Analysis Report
+  type_system_audit:
+    focus: Import paths, type boundaries, duplicate definitions
+    output: Type System Audit Report
+  performance_profiling:
+    focus: Bundle size, re-renders, memory leaks, queries
+    output: Performance Profile Report
+  integration_debugging:
+    focus: API contracts, error handling, timeouts, state sync
+    output: Integration Issue Report
+
+# Capabilities
+capabilities:
+  - name: root-cause-identification
+    description: Find fundamental issues, not just symptoms
+    method: 5 Whys analysis, dependency tracing, git history
+    usage: Deep investigation with Sequential Thinking
+
+  - name: architectural-review
+    description: Detect structural and design flaws
+    areas: Layers, services, dependencies, types, organization
+    usage: Comprehensive codebase analysis
+
+  - name: comprehensive-solutions
+    description: Immediate + root + preventive fixes
+    priorities: P0 (immediate), P1 (root), P2 (prevent)
+    usage: Prioritized action plan
+
+  - name: anti-pattern-detection
+    description: Identify common code smells
+    patterns: Type violations, god services, prop drilling, etc.
+    count: 13 documented anti-patterns
+
+# Configuration
+config:
+  workflow_phases:
+    - phase: deep_investigation
+      tools: [Grep, Glob, Read, Bash]
+      output: Evidence-based understanding
+    - phase: root_cause_identification
+      tools: [Sequential Thinking]
+      output: Clear root cause statement
+    - phase: solution_design
+      priorities: [P0_immediate, P1_root, P2_preventive]
+      output: Prioritized action plan
+    - phase: validation
+      checklist: Post-Fix Verification Checklist
+      output: Verified solution
+
+  quality_targets:
+    debugging_time_reduction: 0.7  # 70%
+    recurring_bug_reduction: 0.9   # 90%
+    code_quality_improvement: true
+
+# npm scripts
+npm_scripts:
+  debug:analyze: "tsx scripts/debug-analyzer.ts"
+  debug:validate: "tsx scripts/validate-fix.ts"
+
+# Documentation
+documentation:
+  readme: SKILL.md
+  references:
+    - references/anti-patterns.md          # 13 patterns with detection
+    - references/report-templates.md       # 5 comprehensive templates
+    - references/tool-usage-guide.md       # Complete tool coordination
+    - references/workflow-checklists.md    # 9 systematic checklists
+
+# Integration points
+integration:
+  reads_from:
+    - Entire codebase (analysis)
+  writes_to:
+    - Analysis reports
+    - Fix recommendations
+  influences:
+    - code-reviewer          # Validate fix quality
+    - architect-reviewer     # Architecture fixes
+    - test-writer-fixer      # Add bug tests
+    - refactoring-expert     # Cleanup after fixes
+
+# Anti-patterns detected
+anti_patterns:
+  type_system:
+    - client_importing_server_types
+    - duplicate_type_definitions
+    - missing_type_exports
+    - large_single_file_definitions
+  service_layer:
+    - god_services
+    - circular_dependencies
+    - direct_storage_access
+    - missing_error_handling
+  component_layer:
+    - missing_useeffect_cleanup
+    - prop_drilling
+    - scattered_state_management
+  api_layer:
+    - missing_input_validation
+    - inconsistent_error_responses
+    - synchronous_blocking_operations
+
+# Version history
+changelog:
+  - version: 2.0.0
+    date: 2025-10-21
+    changes:
+      - Refactored with progressive disclosure pattern
+      - Added 4 specialized analysis modes
+      - Comprehensive reference documentation
+      - 13 anti-pattern detection patterns
+      - 5 report templates
+      - 9 workflow checklists
+      - Tool coordination patterns
+      - Non-developer optimization

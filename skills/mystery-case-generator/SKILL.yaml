@@ -1,0 +1,119 @@
+# Developer Metadata File
+# This SKILL.yaml contains project management metadata (npm scripts, dependencies, version control).
+# Claude reads SKILL.md for instructions and triggering.
+# - SKILL.md: Claude's reference (instructions, usage, examples)
+# - SKILL.yaml: Developer's reference (scripts, dependencies, integration)
+
+name: mystery-case-generator
+version: 1.0.0
+description: |
+  Automate the complete murder mystery case generation pipeline from element
+  selection to deployment. Handles story generation, suspect creation, image
+  generation, validation, and Reddit post creation.
+
+author: Armchair Sleuths Team
+license: MIT
+
+# Trigger keywords for auto-activation
+triggers:
+  - generate case
+  - create case
+  - new case
+  - daily case
+  - case generation
+  - deploy case
+  - validate case
+  - case with images
+
+# Dependencies
+dependencies:
+  skills:
+    - gemini-image-generator   # Suspect and scene images
+    - suspect-ai-prompter      # Suspect dialogue
+    - ai-prompt-engineer       # Optimized prompts
+    - evidence-system-architect  # Evidence and locations
+  apis:
+    - gemini-ai               # Story and suspect generation
+  packages:
+    - "@google/generative-ai"  # Gemini SDK
+
+# Capabilities
+capabilities:
+  - name: case-story-generation
+    description: Generate victim, suspects, and 5W1H solution
+    usage: CaseElementLibrary + Gemini AI
+
+  - name: suspect-creation
+    description: Generate 3 suspects (1 guilty, 2 innocent)
+    usage: Archetype-based generation with AI
+
+  - name: image-generation
+    description: Generate all images for case
+    usage: Integrates with gemini-image-generator
+
+  - name: case-validation
+    description: Validate case integrity and Fair Play
+    usage: Check guilty suspect, 5W1H, data consistency
+
+  - name: reddit-deployment
+    description: Deploy case to Reddit with Devvit
+    usage: Create post after validation
+
+# Configuration
+config:
+  element_library: src/server/data/CaseElementLibrary.ts
+  generator_service: src/server/services/case/CaseGeneratorService.ts
+  validation_service: src/server/services/case/CaseValidation.ts
+  kv_store: src/server/services/repositories/kv/KVStoreManager.ts
+  ai_model: gemini-1.5-pro
+
+  case_structure:
+    suspects: 3
+    guilty_suspects: 1
+    minimum_clues: 5
+    w5h1_required: true
+
+# npm scripts
+npm_scripts:
+  case:generate: "tsx scripts/generate-case.ts"
+  case:generate:images: "tsx scripts/generate-case.ts --with-images"
+  case:validate: "tsx scripts/validate-case.ts"
+  case:deploy: "tsx scripts/deploy-case.ts"
+
+# Documentation
+documentation:
+  readme: SKILL.md
+  references:
+    - references/scripts-guide.md
+    - references/workflow-details.md
+    - references/troubleshooting.md
+    - references/best-practices.md
+    - references/examples.md
+    - references/case-generation-workflow.md
+    - references/validation-rules.md
+
+# Integration points
+integration:
+  reads_from:
+    - src/server/data/CaseElementLibrary.ts
+  writes_to:
+    - src/server/services/case/CaseGeneratorService.ts
+    - src/shared/types/Case.ts
+    - KV Store (Devvit)
+  influences:
+    - devvit-community-builder  # Daily case posts
+    - viral-detective-challenge # Challenge cases
+
+# Version history
+changelog:
+  - version: 1.0.0
+    date: 2025-01-20
+    changes:
+      - Initial release
+      - Complete case generation pipeline
+      - Element library integration
+      - Suspect generation
+      - Image generation integration
+      - Case validation
+      - Reddit deployment
+      - Error handling and retry logic

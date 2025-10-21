@@ -4,7 +4,12 @@
       "mcp__sequential-thinking__sequentialthinking",
       "WebSearch",
       "WebFetch(domain:developers.reddit.com)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:armchair-sleuths-silk.vercel.app)",
+      "WebFetch(domain:vercel-dusky-mu-36.vercel.app)",
+      "Skill(example-skills:skill-creator)",
+      "Read(//c/Users/hpcra/.claude/plugins/marketplaces/anthropic-agent-skills/skill-creator/references/**)",
+      "Read(//c/Users/hpcra/.claude/plugins/marketplaces/anthropic-agent-skills/skill-creator/**)"
     ],
     "deny": [],
     "ask": []

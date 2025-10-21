@@ -1,3 +1,9 @@
 {
-  "version": 2
+  "version": 2,
+  "buildCommand": "echo 'Skipping build'",
+  "functions": {
+    "api/**/*.ts": {
+      "maxDuration": 300
+    }
+  }
 }

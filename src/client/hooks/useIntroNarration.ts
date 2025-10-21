@@ -8,7 +8,81 @@
  */
 
 import { useMemo, useState, useCallback } from 'react';
-import type { IntroNarration, NarrationPhase } from '../../shared/types';
+import type { IntroNarration, NarrationPhase, MysteryStyle } from '../../shared/types';
+
+/**
+ * Style별 전체 프로파일
+ */
+interface StyleProfile {
+  /** 기본 속도 */
+  baseSpeed: number;
+  /** Pause 배수 (1.0 = 기본) */
+  pauseMultiplier: number;
+  /** Jitter 강도 */
+  jitterIntensity: 'none' | 'low' | 'medium' | 'high';
+  /** 색상 스킴 */
+  colorScheme: {
+    atmosphere: string;
+    incident: string;
+    stakes: string;
+  };
+}
+
+/**
+ * Mystery Style별 프로파일
+ */
+const STYLE_PROFILES: Record<MysteryStyle, StyleProfile> = {
+  classic: {
+    baseSpeed: 50,
+    pauseMultiplier: 1.2,
+    jitterIntensity: 'low',
+    colorScheme: {
+      atmosphere: '#d0d0d0',
+      incident: '#ffffff',
+      stakes: '#ff6b6b'
+    }
+  },
+  noir: {
+    baseSpeed: 45,
+    pauseMultiplier: 0.8,
+    jitterIntensity: 'medium',
+    colorScheme: {
+      atmosphere: '#888888',
+      incident: '#ff4444',
+      stakes: '#ffaa00'
+    }
+  },
+  cozy: {
+    baseSpeed: 55,
+    pauseMultiplier: 1.5,
+    jitterIntensity: 'none',
+    colorScheme: {
+      atmosphere: '#e8d4b8',
+      incident: '#d46a6a',
+      stakes: '#8b7355'
+    }
+  },
+  nordic: {
+    baseSpeed: 52,
+    pauseMultiplier: 1.8,
+    jitterIntensity: 'low',
+    colorScheme: {
+      atmosphere: '#6a7a8a',
+      incident: '#4a5a6a',
+      stakes: '#5a6a7a'
+    }
+  },
+  honkaku: {
+    baseSpeed: 48,
+    pauseMultiplier: 1.0,
+    jitterIntensity: 'none',
+    colorScheme: {
+      atmosphere: '#e0e0e0',
+      incident: '#ffffff',
+      stakes: '#c0c0c0'
+    }
+  }
+};
 
 /**
  * Phase별 페이싱 프로파일
@@ -27,34 +101,48 @@ interface PacingProfile {
   pauseAfterPhase: number;
   /** 분위기 태그 */
   mood: string;
+  /** 색상 (Style-aware) */
+  color: string;
+  /** Jitter 강도 (Style-aware) */
+  jitterIntensity: 'none' | 'low' | 'medium' | 'high';
 }
 
 /**
- * Phase별 최적 속도 프로파일
+ * Style에 따른 Phase별 페이싱 프로파일 생성
  */
-const PACING_PROFILES: Record<NarrationPhase, PacingProfile> = {
-  // Atmosphere: 느리게, 분위기 조성
-  atmosphere: {
-    speed: 65,
-    pauseAfterSentence: 800,
-    pauseAfterPhase: 1200,
-    mood: 'calm-ominous'
-  },
-  // Incident: 빠르게, 긴장감
-  incident: {
-    speed: 45,
-    pauseAfterSentence: 500,
-    pauseAfterPhase: 1000,
-    mood: 'urgent-panic'
-  },
-  // Stakes: 중간, 중요성 강조
-  stakes: {
-    speed: 55,
-    pauseAfterSentence: 900,
-    pauseAfterPhase: 1500,
-    mood: 'heavy-dramatic'
-  }
-};
+function generatePacingProfiles(style: MysteryStyle = 'classic'): Record<NarrationPhase, PacingProfile> {
+  const styleProfile = STYLE_PROFILES[style];
+
+  return {
+    // Atmosphere: 느리게, 분위기 조성
+    atmosphere: {
+      speed: styleProfile.baseSpeed,
+      pauseAfterSentence: Math.round(1000 * styleProfile.pauseMultiplier),
+      pauseAfterPhase: Math.round(1500 * styleProfile.pauseMultiplier),
+      mood: 'calm-ominous',
+      color: styleProfile.colorScheme.atmosphere,
+      jitterIntensity: styleProfile.jitterIntensity
+    },
+    // Incident: 빠르게, 긴장감
+    incident: {
+      speed: styleProfile.baseSpeed,
+      pauseAfterSentence: Math.round(400 * styleProfile.pauseMultiplier),
+      pauseAfterPhase: Math.round(800 * styleProfile.pauseMultiplier),
+      mood: 'urgent-panic',
+      color: styleProfile.colorScheme.incident,
+      jitterIntensity: styleProfile.jitterIntensity
+    },
+    // Stakes: 중간, 중요성 강조
+    stakes: {
+      speed: styleProfile.baseSpeed,
+      pauseAfterSentence: Math.round(700 * styleProfile.pauseMultiplier),
+      pauseAfterPhase: Math.round(1200 * styleProfile.pauseMultiplier),
+      mood: 'heavy-dramatic',
+      color: styleProfile.colorScheme.stakes,
+      jitterIntensity: styleProfile.jitterIntensity
+    }
+  };
+}
 
 /**
  * TypeAnimation sequence 타입
@@ -116,6 +204,7 @@ function calculateDynamicPause(
  */
 function generateNarrationSequence(
   narration: IntroNarration,
+  pacingProfiles: Record<NarrationPhase, PacingProfile>,
   onPhaseChange: (phase: NarrationPhase) => void,
   onComplete: () => void
 ): SequenceArray {
@@ -126,7 +215,7 @@ function generateNarrationSequence(
 
   phases.forEach((phase, phaseIndex) => {
     const text = narration[phase];
-    const profile = PACING_PROFILES[phase];
+    const profile = pacingProfiles[phase];
 
     // Phase 시작 콜백
     if (phaseIndex > 0) {
@@ -219,6 +308,15 @@ export function useIntroNarration(
   }, []);
 
   // ============================================================================
+  // Style-aware Pacing Profiles
+  // ============================================================================
+
+  const pacingProfiles = useMemo(() => {
+    const style = narration.mysteryStyle || 'classic';
+    return generatePacingProfiles(style);
+  }, [narration.mysteryStyle]);
+
+  // ============================================================================
   // Sequence 생성 (useMemo로 최적화)
   // ============================================================================
 
@@ -230,16 +328,17 @@ export function useIntroNarration(
 
     return generateNarrationSequence(
       narration,
+      pacingProfiles,
       handlePhaseChange,
       handleComplete
     );
-  }, [narration, skipRequested, handlePhaseChange, handleComplete]);
+  }, [narration, pacingProfiles, skipRequested, handlePhaseChange, handleComplete]);
 
   // ============================================================================
   // 현재 Phase 프로파일
   // ============================================================================
 
-  const currentPacingProfile = PACING_PROFILES[currentPhase];
+  const currentPacingProfile = pacingProfiles[currentPhase];
 
   // ============================================================================
   // Return

@@ -1,0 +1,211 @@
+# Developer Metadata File
+# This SKILL.yaml contains project management metadata (npm scripts, dependencies, version control).
+# Claude reads SKILL.md for instructions and triggering.
+# - SKILL.md: Claude's reference (instructions, usage, examples)
+# - SKILL.yaml: Developer's reference (scripts, dependencies, integration)
+
+name: implementation-guardian
+version: 1.0.0
+description: |
+  Proactive end-to-end implementation oversight for complex full-stack projects.
+  Automatically activates during implementation, design, or validation tasks to
+  prevent missing integrations between frontend/backend/API, ensure proper modular
+  design, and maintain project documentation sync. Auto-enables MCP tools.
+
+author: Armchair Sleuths Team
+license: MIT
+
+# Automatic activation triggers
+triggers:
+  implementation:
+    - 구현
+    - implement
+    - build
+    - create
+    - add feature
+    - develop
+    - code
+    - 만들어
+  design:
+    - 설계
+    - design
+    - plan
+    - architect
+    - 요구사항
+    - requirements
+    - spec
+  validation:
+    - 검증
+    - validate
+    - check
+    - verify
+    - review
+    - 테스트
+    - test
+  documentation:
+    - 문서
+    - documentation
+    - docs
+    - update docs
+    - 동기화
+    - sync
+
+# MCP Integration (Auto-Enabled)
+mcp_tools:
+  sequential_thinking:
+    flag: --seq
+    purpose: Deep structured analysis of complex tasks
+    use_for: Breaking down requirements, analyzing dependencies
+  reference_lookup:
+    flag: --ref
+    purpose: Access project documentation and references
+    use_for: Loading design docs, API specs, architectural decisions
+  context7:
+    flag: --c7
+    purpose: Search and understand existing codebase patterns
+    use_for: Finding conventions, similar implementations
+
+# Quality standard (Auto-Included)
+quality_standard: |
+  Think as long as needed to get this right. I am not in a hurry.
+  What matters is that you follow precisely what I ask and execute it perfectly.
+
+# Operation Modes
+modes:
+  implementation_guide:
+    activates_when: Feature implementation request
+    workflow:
+      - Load project documents
+      - Analyze request against current state
+      - Guide end-to-end implementation
+      - Verify all integration points
+    references: [project-documents.md, validation-checklist.md]
+
+  design_modular:
+    activates_when: '"개발 설계" or modular design'
+    template: references/design-template-modular.md
+    output: Markdown design (no code)
+    structure: [개요, 세부 유스케이스, 주요 모듈 및 역할]
+
+  design_flow:
+    activates_when: '"최소한의 모듈화 설계"'
+    template: references/design-template-flow.md
+    workflow:
+      - Analyze requirements → flows
+      - Explore codebase → conventions
+      - Determine modules → placement
+
+  validation:
+    activates_when: Validation or review request
+    checklist: references/validation-checklist.md
+    checks: [Frontend, Backend, API, Integration, Documentation]
+
+  documentation_sync:
+    activates_when: Doc update or after major implementation
+    documents:
+      - 게임전체프로세스.md
+      - 완벽게임구현상태.md
+
+# Dependencies
+dependencies:
+  project_documents:
+    - C:\Users\hpcra\armchair-sleuths\doc.md\게임전체프로세스.md
+    - C:\Users\hpcra\armchair-sleuths\doc.md\완벽게임구현상태.md
+  skills:
+    - elite-debugging-master  # Debug integration issues
+  packages:
+    - none  # Pure oversight skill
+
+# Capabilities
+capabilities:
+  - name: end-to-end-oversight
+    description: Prevent missing integrations between all layers
+    layers: [Frontend, Backend, API, Database]
+    ensures: All integration points connected
+
+  - name: modular-design
+    description: Apply structured design templates
+    templates: [Modular Design, Flow-Based Design]
+    principles: [Single Responsibility, Minimal Coupling, No Over-Engineering]
+
+  - name: validation-checklist
+    description: Verify implementation completeness
+    checks: [Components, Services, API, Integration, Error Handling, Documentation]
+
+  - name: documentation-sync
+    description: Keep project docs in sync with implementation
+    maintains: [게임전체프로세스.md, 완벽게임구현상태.md]
+
+# Configuration
+config:
+  auto_enable_mcp: true
+  auto_include_quality_standard: true
+
+  modularization_principles:
+    - business_logic_grouping
+    - single_responsibility
+    - minimal_coupling
+    - avoid_over_engineering
+    - simplest_solution
+
+  validation_layers:
+    frontend:
+      - components_created
+      - state_management
+      - api_calls
+      - error_states
+      - loading_states
+    backend:
+      - services_implemented
+      - business_logic
+      - error_handling
+      - validation
+      - database_operations
+    api:
+      - endpoints_created
+      - types_defined
+      - auth_checked
+      - error_responses
+    integration:
+      - frontend_to_api
+      - api_to_backend
+      - backend_to_db
+      - error_propagation
+
+# Documentation
+documentation:
+  readme: SKILL.md
+  references:
+    - references/project-documents.md
+    - references/design-template-modular.md
+    - references/design-template-flow.md
+    - references/mcp-integration.md
+    - references/validation-checklist.md
+
+# Integration points
+integration:
+  reads_from:
+    - doc.md/게임전체프로세스.md
+    - doc.md/완벽게임구현상태.md
+    - Entire codebase (for conventions)
+  writes_to:
+    - Documentation updates
+    - Design documents
+  influences:
+    - All implementation tasks
+    - All design tasks
+    - All validation tasks
+
+# Version history
+changelog:
+  - version: 1.0.0
+    date: 2025-10-21
+    changes:
+      - Initial release
+      - 4 operation modes
+      - Auto-enable MCP tools
+      - Quality standard integration
+      - 2 design templates
+      - Validation checklist
+      - Documentation sync
+      - End-to-end oversight

@@ -1,0 +1,104 @@
+# Developer Metadata File
+# This SKILL.yaml contains project management metadata (npm scripts, dependencies, version control).
+# Claude reads SKILL.md for instructions and triggering.
+# - SKILL.md: Claude's reference (instructions, usage, examples)
+# - SKILL.yaml: Developer's reference (scripts, dependencies, integration)
+
+name: ai-prompt-engineer
+version: 1.0.0
+description: |
+  Optimize Gemini API prompts for consistent, high-quality case generation.
+  Specializes in few-shot learning, chain-of-thought reasoning, hallucination
+  prevention, and iterative refinement for murder mystery case generation.
+
+author: Armchair Sleuths Team
+license: MIT
+
+# Trigger keywords for auto-activation
+triggers:
+  - improve case quality
+  - case generation
+  - gemini prompt
+  - optimize prompt
+  - hallucination
+  - inconsistent output
+  - prompt engineering
+  - few-shot learning
+  - chain-of-thought
+  - case validation
+  - difficulty scaling
+
+# Dependencies
+dependencies:
+  skills:
+    - mystery-case-generator  # Uses optimized prompts
+    - suspect-ai-prompter     # Similar prompting techniques
+  apis:
+    - gemini-1.5-pro          # Primary AI model
+  packages:
+    - "@google/generative-ai" # Gemini SDK
+
+# Capabilities
+capabilities:
+  - name: few-shot-learning
+    description: Use concrete examples to guide Gemini toward desired output
+    usage: Provide 2-3 difficulty-specific examples in prompts
+
+  - name: chain-of-thought
+    description: Guide Gemini through logical reasoning steps
+    usage: Multi-step prompts for case generation workflow
+
+  - name: hallucination-prevention
+    description: Reduce AI hallucinations with explicit constraints
+    usage: Grounding with case element libraries and validation
+
+  - name: iterative-refinement
+    description: Generate and refine cases with validation feedback
+    usage: Max 3 attempts with error-specific refinement prompts
+
+# Configuration
+config:
+  target_service: src/server/services/case/CaseGeneratorService.ts
+  validation_rules: src/server/services/case/CaseValidation.ts
+  element_library: src/server/data/CaseElementLibrary.ts
+  max_retry_attempts: 3
+  ai_model: gemini-1.5-pro
+
+# npm scripts
+npm_scripts:
+  prompt:validate: "tsx scripts/validate-prompt-quality.ts"
+  prompt:compare: "tsx scripts/compare-prompts.ts"
+  prompt:batch-test: "tsx scripts/batch-test-prompts.ts"
+
+# Documentation
+documentation:
+  readme: SKILL.md
+  references:
+    - references/prompt-templates.md
+    - references/few-shot-examples.md
+    - references/validation-rules.md
+    - references/gemini-api-guide.md
+
+# Integration points
+integration:
+  reads_from:
+    - src/server/data/CaseElementLibrary.ts
+    - src/server/services/case/CaseGeneratorService.ts
+  writes_to:
+    - src/server/services/case/CaseGeneratorService.ts  # Updates prompts
+  influences:
+    - mystery-case-generator  # Provides optimized prompts
+    - suspect-ai-prompter     # Shares prompt techniques
+
+# Version history
+changelog:
+  - version: 1.0.0
+    date: 2025-01-20
+    changes:
+      - Initial release
+      - Few-shot learning patterns
+      - Chain-of-thought prompting
+      - Hallucination prevention techniques
+      - Iterative refinement workflow
+      - Difficulty-adaptive prompting
+      - Complete validation system

@@ -1,6 +1,6 @@
 ---
 name: viral-detective-challenge
-description: Create themed challenges, limited-time events, and competitive tournaments that drive viral engagement and player retention. This skill should be used PROACTIVELY when planning special events, seasonal content, or competitive features.
+description: Themed challenge and tournament creation including speed challenges, seasonal events, collaborative mysteries, and competitive brackets. Use when planning special events, creating seasonal content, designing tournament systems, or implementing limited-time exclusive cases. Drives viral sharing and player retention.
 ---
 
 # Viral Detective Challenge Creator

@@ -12,6 +12,7 @@ import { EvidenceDiscoveryModal } from '../EvidenceDiscoveryModal';
 import { ActionPointsDisplay } from '../ActionPointsDisplay';
 import { useActionPoints } from '../../hooks/useActionPoints';
 import { useEvidenceDiscovery } from '../../hooks/useEvidenceDiscovery';
+import { useLocationImages } from '../../hooks/useLocationImages';
 import type { Location } from '../../types';
 import type { SearchType, EvidenceItem } from '../../../shared/types/Evidence';
 
@@ -103,6 +104,14 @@ export function LocationExplorerSection({
     caseId,
     userId,
   });
+
+  // Location images management
+  const {
+    status: locationImageStatus,
+    images: locationImages,
+    progress: locationImageProgress,
+    isLoading: locationImagesLoading,
+  } = useLocationImages(caseId);
 
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
@@ -302,8 +311,15 @@ export function LocationExplorerSection({
                       name: location.name,
                       description: location.description,
                       emoji: location.emoji || '📍',
-                      imageUrl: location.imageUrl,
+                      imageUrl: locationImages[location.id],
                     }}
+                    imageStatus={
+                      locationImagesLoading
+                        ? 'loading'
+                        : locationImages[location.id]
+                          ? 'loaded'
+                          : 'error'
+                    }
                     isSearched={isSearched}
                     isSearching={searchingLocationId === location.id}
                     completionRate={completionRate}
@@ -332,6 +348,7 @@ export function LocationExplorerSection({
         {currentDiscovery && (
           <EvidenceDiscoveryModal
             isOpen={modalOpen}
+            caseId={caseId}
             evidenceFound={currentDiscovery.evidenceFound}
             locationName={currentDiscovery.locationName}
             completionRate={currentDiscovery.completionRate}

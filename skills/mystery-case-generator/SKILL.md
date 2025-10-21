@@ -1,6 +1,6 @@
 ---
 name: mystery-case-generator
-description: Automate the complete murder mystery case generation pipeline from element selection to deployment. This skill should be used when creating new daily cases, generating case content with images, or deploying cases to Reddit. Handles story generation, suspect creation, image generation, validation, and Reddit post creation.
+description: Complete murder mystery case generation pipeline automating story creation, suspect generation, image creation, validation, and Reddit deployment. Use when creating new daily cases, generating cases with images, deploying to Reddit, or validating case integrity. Includes CaseElementLibrary integration and KV store management.
 ---
 
 # Mystery Case Generator

@@ -1,0 +1,120 @@
+# Developer Metadata File
+# This SKILL.yaml contains project management metadata (npm scripts, dependencies, version control).
+# Claude reads SKILL.md for instructions and triggering.
+# - SKILL.md: Claude's reference (instructions, usage, examples)
+# - SKILL.yaml: Developer's reference (scripts, dependencies, integration)
+
+name: devvit-community-builder
+version: 1.0.0
+description: |
+  Build viral Reddit communities using Devvit platform features - daily posts,
+  leaderboards, social mechanics, and engagement loops. Specializes in creating
+  sustainable viral growth with K > 1.0 coefficient.
+
+author: Armchair Sleuths Team
+license: MIT
+
+# Trigger keywords for auto-activation
+triggers:
+  - community features
+  - reddit integration
+  - devvit
+  - daily posts
+  - leaderboard
+  - viral mechanics
+  - social engagement
+  - tournament
+  - flair system
+  - community growth
+
+# Dependencies
+dependencies:
+  skills:
+    - viral-detective-challenge  # Challenge and tournament mechanics
+    - mystery-case-generator     # Daily case generation
+  apis:
+    - reddit-api                 # Reddit integration
+    - devvit-api                # Devvit platform
+  packages:
+    - "@devvit/public-api"      # Devvit SDK
+    - snoowrap                  # Reddit API wrapper
+
+# Capabilities
+capabilities:
+  - name: daily-post-automation
+    description: Automatically create and pin daily mystery posts
+    usage: Scheduled posts with case data and game widget
+    schedule: "0 9 * * *"  # Every day at 9 AM
+
+  - name: leaderboard-system
+    description: Real-time leaderboards using Redis sorted sets
+    usage: Track scores, times, and rankings
+
+  - name: user-flair-system
+    description: Award flairs based on achievements
+    usage: Automatically grant badges for milestones
+
+  - name: viral-sharing
+    description: Encourage sharing with incentives
+    usage: XP bonuses and pre-filled share templates
+
+# Configuration
+config:
+  subreddit: ArmchairSleuths
+  daily_post_time: "09:00"  # 9 AM UTC
+  redis_ttl: 86400          # 24 hours
+  viral_coefficient_target: 1.0
+
+  flair_templates:
+    speed_demon:
+      text: "⚡ 스피드 탐정"
+      condition: "3분 이내 해결"
+    perfect_score:
+      text: "🎯 완벽한 추리"
+      condition: "100점 달성"
+    streak_master:
+      text: "🔥 연속 해결 7일"
+      condition: "7일 연속 플레이"
+
+# npm scripts
+npm_scripts:
+  devvit:setup: "tsx scripts/setup-daily-posts.ts"
+  devvit:deploy: "devvit upload"
+  devvit:test: "tsx scripts/test-viral-loop.ts"
+  leaderboard:init: "tsx scripts/init-leaderboard.ts"
+
+# Documentation
+documentation:
+  readme: SKILL.md
+  references:
+    - references/devvit-api-guide.md
+    - references/reddit-growth-strategies.md
+    - references/viral-mechanics.md
+    - references/community-moderation.md
+    - references/analytics-dashboard.md
+
+# Integration points
+integration:
+  reads_from:
+    - src/server/services/case/CaseGeneratorService.ts
+    - src/server/services/leaderboard/LeaderboardService.ts
+  writes_to:
+    - devvit.yaml                # Devvit configuration
+    - src/devvit/posts/          # Custom post types
+  influences:
+    - viral-detective-challenge  # Community challenges
+    - mystery-case-generator     # Daily case scheduling
+
+# Version history
+changelog:
+  - version: 1.0.0
+    date: 2025-01-20
+    changes:
+      - Initial release
+      - Daily post automation
+      - Leaderboard system
+      - User flair system
+      - Viral sharing mechanics
+      - Discussion thread creation
+      - Weekly tournament support
+      - Community metrics tracking

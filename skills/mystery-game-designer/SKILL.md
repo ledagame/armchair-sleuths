@@ -1,6 +1,6 @@
 ---
 name: mystery-game-designer
-description: Design engaging murder mystery game systems with balanced difficulty, fair-play rules, and replayability. This skill should be used PROACTIVELY when designing case mechanics, balancing difficulty, creating character archetypes, or implementing progression systems.
+description: Murder mystery game system design combining balanced difficulty, Fair Play rules, character archetypes, and progression systems. Use when designing case mechanics, balancing difficulty curves, creating red herrings, implementing character archetypes, or designing replayability features. Ensures challenging but solvable mysteries.
 ---
 
 # Murder Mystery Game Designer

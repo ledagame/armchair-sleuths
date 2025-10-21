@@ -1,0 +1,138 @@
+# Developer Metadata File
+# This SKILL.yaml contains project management metadata (npm scripts, dependencies, version control).
+# Claude reads SKILL.md for instructions and triggering.
+# - SKILL.md: Claude's reference (instructions, usage, examples)
+# - SKILL.yaml: Developer's reference (scripts, dependencies, integration)
+
+name: viral-detective-challenge
+version: 1.0.0
+description: |
+  Create themed challenges, limited-time events, and competitive tournaments that
+  drive viral engagement and player retention. Combines time-limited content with
+  competitive mechanics to create urgency and sharing.
+
+author: Armchair Sleuths Team
+license: MIT
+
+# Trigger keywords for auto-activation
+triggers:
+  - challenge
+  - tournament
+  - themed event
+  - limited time
+  - competition
+  - seasonal content
+  - speed challenge
+  - collaborative challenge
+  - exclusive case
+  - viral mechanics
+
+# Dependencies
+dependencies:
+  skills:
+    - mystery-case-generator     # Challenge cases
+    - devvit-community-builder   # Community features
+    - mystery-game-designer      # Challenge design
+  apis:
+    - reddit-api                # Community integration
+  packages:
+    - node-cron                 # Challenge scheduling
+
+# Capabilities
+capabilities:
+  - name: speed-challenges
+    description: Time-limited solving (60s, 3min, etc.)
+    features: Real-time timer, leaderboard, speed bonuses
+    usage: Daily at 21:00
+
+  - name: themed-events
+    description: Seasonal mysteries (Halloween, Christmas, etc.)
+    duration: "Week to month-long events"
+    features: Special aesthetics, exclusive rewards
+
+  - name: collaborative-challenges
+    description: Community vote on suspect
+    phases: Discovery (6h), Discussion (12h), Voting (6h), Revelation
+    features: Real-time vote tracking, community discussion
+
+  - name: tournament-brackets
+    description: Single/Double elimination tournaments
+    formats: Weekly knockout, monthly league
+    features: Bracket system, prizes, rankings
+
+  - name: exclusive-cases
+    description: Limited-time legendary cases
+    availability: "24 hours only"
+    types: Celebrity, Historical, Crossover
+
+# Configuration
+config:
+  speed_challenge:
+    time_limit_seconds: 60
+    difficulty: easy
+    daily_schedule: "0 21 * * *"  # 9 PM daily
+
+  themed_events:
+    halloween:
+      month: 10
+      duration_days: 31
+      theme: "공포 미스터리"
+    christmas:
+      month: 12
+      duration_days: 25
+      theme: "눈 내린 저택의 살인"
+
+  tournament:
+    weekly_knockout:
+      participants: 64
+      format: "single_elimination"
+      duration_days: 6
+    monthly_league:
+      format: "round_robin"
+      tiers: ["Bronze", "Silver", "Gold", "Platinum"]
+
+  viral_coefficient_target: 1.0
+
+# npm scripts
+npm_scripts:
+  challenge:speed: "tsx scripts/create-speed-challenge.ts"
+  challenge:themed: "tsx scripts/launch-themed-event.ts"
+  challenge:tournament: "tsx scripts/start-tournament.ts"
+  challenge:schedule: "tsx scripts/schedule-challenges.ts"
+
+# Documentation
+documentation:
+  readme: SKILL.md
+  references:
+    - references/challenge-library.md
+    - references/themed-events.md
+    - references/tournament-systems.md
+    - references/viral-mechanics.md
+    - references/reward-systems.md
+
+# Integration points
+integration:
+  reads_from:
+    - src/server/services/case/CaseGeneratorService.ts
+    - src/server/services/leaderboard/LeaderboardService.ts
+  writes_to:
+    - src/server/services/challenge/ChallengeService.ts
+    - src/server/services/tournament/TournamentService.ts
+  influences:
+    - devvit-community-builder  # Community engagement
+    - mystery-case-generator    # Challenge case generation
+
+# Version history
+changelog:
+  - version: 1.0.0
+    date: 2025-01-20
+    changes:
+      - Initial release
+      - Speed challenge system
+      - Themed event system
+      - Collaborative challenges
+      - Tournament brackets
+      - Exclusive case mechanics
+      - Viral sharing templates
+      - Challenge scheduling
+      - Analytics and metrics

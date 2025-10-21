@@ -27,7 +27,7 @@
         "type": "string",
         "label": "Vercel Image Generation Function URL",
         "isSecret": false,
-        "defaultValue": "https://armchair-sleuths-silk.vercel.app/api/generate-image"
+        "defaultValue": "https://armchair-sleuths-kda8tjd9k-ledagame-554bceba.vercel.app/api/generate-image"
       }
     }
   },
@@ -39,8 +39,18 @@
         "location": "subreddit",
         "forUserType": "moderator",
         "endpoint": "/internal/menu/post-create"
+      },
+      {
+        "label": "🧪 Test Media Upload API",
+        "description": "Run validation tests for context.media.upload()",
+        "location": "subreddit",
+        "forUserType": "moderator",
+        "endpoint": "/internal/menu/test-media-upload"
       }
     ]
+  },
+  "permissions": {
+    "media": true
   },
   "triggers": {
     "onAppInstall": "/internal/on-app-install"

@@ -7,9 +7,12 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import type { EvidenceItem } from '../../shared/types/Evidence';
+import { useEvidenceImages } from '../hooks/useEvidenceImages';
+import { EvidenceImageCard } from './discovery/EvidenceImageCard';
 
 export interface EvidenceDiscoveryModalProps {
   isOpen: boolean;
+  caseId: string;
   evidenceFound: EvidenceItem[];
   locationName: string;
   completionRate: number;
@@ -29,6 +32,7 @@ export interface EvidenceDiscoveryModalProps {
  */
 export function EvidenceDiscoveryModal({
   isOpen,
+  caseId,
   evidenceFound,
   locationName,
   completionRate,
@@ -36,6 +40,9 @@ export function EvidenceDiscoveryModal({
   onClose,
   onContinue,
 }: EvidenceDiscoveryModalProps) {
+  // Fetch evidence images
+  const { images: evidenceImages, isLoading: evidenceImagesLoading } = useEvidenceImages(caseId);
+
   const handleContinue = () => {
     if (onContinue) {
       onContinue();
@@ -102,7 +109,18 @@ export function EvidenceDiscoveryModal({
               aria-modal="true"
             >
               {/* Header */}
-              <div className="p-6 border-b border-detective-gold/30">
+              <div className="p-6 border-b border-detective-gold/30 relative">
+                {/* Close button */}
+                <button
+                  onClick={onClose}
+                  className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors p-2"
+                  aria-label="닫기"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+
                 <div className="text-center">
                   <motion.div
                     className="text-6xl mb-4"
@@ -137,10 +155,10 @@ export function EvidenceDiscoveryModal({
                   </div>
                 </motion.div>
 
-                {/* Evidence list preview */}
+                {/* Evidence list preview with images */}
                 {evidenceFound.length > 0 && (
                   <motion.div
-                    className="mt-4 space-y-2"
+                    className="mt-4 grid grid-cols-2 gap-3"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.4 }}
@@ -148,14 +166,23 @@ export function EvidenceDiscoveryModal({
                     {evidenceFound.map((evidence, index) => (
                       <motion.div
                         key={evidence.id}
-                        className="flex items-center gap-3 p-3 bg-gray-800 rounded-lg"
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.4 + index * 0.1 }}
                       >
-                        <span className="text-2xl">{getEvidenceEmoji(evidence.type)}</span>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-bold text-white truncate">{evidence.name}</div>
+                        <EvidenceImageCard
+                          evidence={evidence}
+                          imageUrl={evidenceImages[evidence.id]}
+                          imageStatus={
+                            evidenceImagesLoading
+                              ? 'loading'
+                              : evidenceImages[evidence.id]
+                                ? 'loaded'
+                                : 'error'
+                          }
+                        />
+                        <div className="mt-2 text-center">
+                          <div className="text-sm font-bold text-white">{evidence.name}</div>
                           <div className={`text-xs ${getRelevanceColor(evidence.relevance)}`}>
                             {evidence.relevance === 'critical' && '핵심 증거'}
                             {evidence.relevance === 'important' && '중요 증거'}

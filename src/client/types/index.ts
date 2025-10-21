@@ -3,6 +3,7 @@
  */
 
 import type { ActionPointsConfig } from '../../shared/types/Case';
+import type { ImageGenerationStatus } from '../../shared/types';
 
 // ============================================================================
 // Core Entity Types
@@ -74,6 +75,22 @@ export interface CaseData {
   cinematicImages?: CinematicImages;
   introNarration?: IntroNarration;
   generatedAt: number;
+
+  // Phase 2: Evidence System Image Generation Status
+  evidenceImageStatus?: {
+    status: ImageGenerationStatus;
+    totalCount: number;
+    completedCount: number;
+    currentBatch?: number;
+    lastUpdated: string;
+  };
+
+  locationImageStatus?: {
+    status: ImageGenerationStatus;
+    totalCount: number;
+    completedCount: number;
+    lastUpdated: string;
+  };
 }
 
 // ============================================================================

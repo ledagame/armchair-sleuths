@@ -1,0 +1,168 @@
+# Developer Metadata File
+# This SKILL.yaml contains project management metadata (npm scripts, dependencies, version control).
+# Claude reads SKILL.md for instructions and triggering.
+# - SKILL.md: Claude's reference (instructions, usage, examples)
+# - SKILL.yaml: Developer's reference (scripts, dependencies, integration)
+
+name: frontend-architect
+version: 2.0.0
+description: |
+  Elite frontend development team (UX Designer + React Architect + Performance Engineer)
+  specialized in Armchair Sleuths detective game. Handles all 6 game screens, noir
+  aesthetics, AP system UI, evidence discovery, interrogation interfaces, and
+  mobile-first responsive design.
+
+author: Armchair Sleuths Team
+license: MIT
+
+# Trigger keywords for auto-activation
+triggers:
+  - frontend
+  - ui
+  - ux
+  - component
+  - screen
+  - responsive
+  - mobile
+  - design
+  - animation
+  - accessibility
+  - performance
+  - noir aesthetic
+  - game screen
+
+# Team composition (3 personas)
+team:
+  luna:
+    role: UX/UI Design Lead
+    focus: User experience, visual hierarchy, interaction patterns
+    expertise: Detective game UI, noir aesthetics, accessibility (WCAG 2.1 AA)
+  marcus:
+    role: Frontend Architect
+    focus: System architecture, performance, state management
+    expertise: React 19 Server Components, Next.js 15 App Router, optimization
+  aria:
+    role: React Implementation Engineer
+    focus: Production-ready code, TypeScript safety, testing
+    expertise: React hooks, Framer Motion, Tailwind CSS, shadcn/ui
+
+# Dependencies
+dependencies:
+  frameworks:
+    - react: "^19.0.0"
+    - next: "^15.0.0"
+  styling:
+    - tailwindcss: "^3.4.0"
+    - framer-motion: "^11.0.0"
+  ui_library:
+    - "@radix-ui/*"  # shadcn/ui base
+  packages:
+    - lucide-react   # Icons
+    - clsx           # Class names
+    - tailwind-merge # Tailwind utilities
+
+# Capabilities
+capabilities:
+  - name: game-screen-implementation
+    description: Complete implementation of 6 game screens
+    screens: Loading, Intro, Overview, Investigation, Submission, Results
+    tech_stack: React 19, Next.js 15, TypeScript, Tailwind, Framer Motion
+
+  - name: noir-aesthetic
+    description: Detective game visual design system
+    colors: Deep blacks, golds, evidence reds
+    typography: Playfair Display, Inter, JetBrains Mono
+    animations: 250ms default, easing curves
+
+  - name: responsive-design
+    description: Mobile-first responsive implementation
+    breakpoints: 320px (mobile), 768px (tablet), 1024px (desktop)
+    touch_targets: Minimum 44x44px
+
+  - name: accessibility
+    description: WCAG 2.1 AA compliance
+    features: ARIA labels, keyboard navigation, screen reader support
+    color_contrast: 4.5:1 (text), 3:1 (UI)
+
+  - name: performance-optimization
+    description: Bundle size and performance optimization
+    targets: FCP <1s, TTI <2s, Bundle <50KB per screen
+    techniques: Code splitting, lazy loading, memoization
+
+# Configuration
+config:
+  tech_stack:
+    react_version: "19.0.0"
+    nextjs_version: "15.0.0"
+    typescript_strict: true
+
+  design_system:
+    color_palette: noir
+    typography: [Playfair Display, Inter, JetBrains Mono]
+    spacing_base: 4px
+    animation_duration: 250ms
+
+  performance_budgets:
+    screen_bundle_size_kb: 50
+    first_contentful_paint_ms: 1000
+    time_to_interactive_ms: 2000
+    lighthouse_score: 90
+
+  accessibility:
+    wcag_level: AA
+    min_contrast_text: 4.5
+    min_contrast_ui: 3.0
+    min_touch_target_px: 44
+
+# npm scripts
+npm_scripts:
+  dev: "next dev"
+  build: "next build"
+  type-check: "tsc --noEmit"
+  lint: "eslint src/client"
+
+# Documentation
+documentation:
+  readme: skill.md
+  references:
+    - references/game-screens-reference.md
+    - references/design-system.md
+    - references/component-patterns.md
+    - references/animation-library.md
+    - references/accessibility-guide.md
+    - references/responsive-breakpoints.md
+  templates:
+    - assets/templates/GameScreen.template.tsx
+    - assets/templates/AnimatedCard.template.tsx
+    - assets/templates/ResponsiveLayout.template.tsx
+    - assets/templates/ModalOverlay.template.tsx
+    - assets/templates/LoadingSkeleton.template.tsx
+  design_tokens:
+    - assets/design-tokens/tailwind.config.js
+    - assets/design-tokens/tokens.ts
+    - assets/design-tokens/globals.css
+
+# Integration points
+integration:
+  reads_from:
+    - src/shared/types/  # Type definitions
+    - src/client/hooks/  # Custom hooks
+  writes_to:
+    - src/client/components/  # All UI components
+    - src/client/screens/     # Game screens
+    - src/client/styles/      # Global styles
+  influences:
+    - All game features requiring UI
+
+# Version history
+changelog:
+  - version: 2.0.0
+    date: 2025-10-21
+    changes:
+      - Integrated 3-persona team (Luna, Marcus, Aria)
+      - Complete 6 game screens coverage
+      - Noir detective design system
+      - WCAG 2.1 AA accessibility standards
+      - React 19 & Next.js 15 optimizations
+      - Mobile-first responsive approach
+      - Performance budgets established

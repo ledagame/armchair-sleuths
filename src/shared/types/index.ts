@@ -16,6 +16,40 @@
 export type NarrationPhase = 'atmosphere' | 'incident' | 'stakes';
 
 /**
+ * 미스터리 스타일 타입
+ * - classic: 고전 추리 (Christie/Queen) - 논리적, 정중한, 지적
+ * - noir: 하드보일드 느와르 (Chandler) - 냉소적, 거친, 도시적
+ * - cozy: 코지 미스터리 - 따뜻한, 유머러스, 일상적
+ * - nordic: 노르딕 느와르 - 어둡고, 심리적, 사회비판적
+ * - honkaku: 일본 본격 추리 - 트릭 중심, 퍼즐적, 논리적
+ */
+export type MysteryStyle = 'classic' | 'noir' | 'cozy' | 'nordic' | 'honkaku';
+
+/**
+ * 강조 키워드 분류
+ */
+export interface NarrationKeywords {
+  /** 핵심 키워드 (높은 강조 - 빨강/금색) */
+  critical: string[];
+  /** 분위기 키워드 (중간 강조 - 청록/청록) */
+  atmospheric: string[];
+  /** 감각 키워드 (낮은 강조 - 미묘한 강조) */
+  sensory: string[];
+}
+
+/**
+ * 감정 곡선 힌트
+ */
+export interface EmotionalArcHints {
+  /** 감정 강도 곡선 (주요 위치에서 0-1) */
+  intensityCurve: Array<{ position: number; intensity: number }>;
+  /** 권장 클라이맥스 위치 (0-1, 정규화) */
+  climaxPosition: number;
+  /** 전체 페이싱 제안 */
+  pacing: 'slow-burn' | 'quick-tension' | 'steady';
+}
+
+/**
  * 인트로 나레이션 데이터
  * Gemini API로 생성되며 케이스별로 맞춤화됨
  */
@@ -26,6 +60,12 @@ export interface IntroNarration {
   incident: string;
   /** 플레이어 역할과 임무 (50-90 단어) */
   stakes: string;
+  /** 미스터리 스타일 (선택 사항) */
+  mysteryStyle?: MysteryStyle;
+  /** 강조 키워드 (선택 사항) */
+  keywords?: NarrationKeywords;
+  /** 감정 곡선 힌트 (선택 사항) */
+  emotionalArc?: EmotionalArcHints;
 }
 
 // ============================================================================
@@ -89,3 +129,17 @@ export interface ImageGenerationMeta {
     action?: 'pending' | 'generating' | 'completed' | 'failed';
   };
 }
+
+// ============================================================================
+// Evidence & Location Image Types (from Image.ts)
+// ============================================================================
+
+/**
+ * Re-export image types for evidence and location image generation
+ * These types are used by both client (UI state) and server (generation tracking)
+ */
+export type {
+  EvidenceImageStatusResponse,
+  LocationImageStatusResponse,
+  ImageGenerationOptions
+} from './Image';

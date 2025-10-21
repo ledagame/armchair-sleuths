@@ -321,19 +321,19 @@ export function IntroNarration({ narration, onComplete }: IntroNarrationProps) {
 
         /* Jitter 강도별 클래스 */
         .jitter-low {
-          animation: subtleNervousJitter 0.2s infinite;
+          animation: subtleNervousJitter 2s ease-in-out infinite;
           will-change: transform;
           backface-visibility: hidden;
         }
 
         .jitter-medium {
-          animation: mediumJitter 0.15s infinite;
+          animation: mediumJitter 1.5s ease-in-out infinite;
           will-change: transform;
           backface-visibility: hidden;
         }
 
         .jitter-high {
-          animation: highJitter 0.12s infinite;
+          animation: highJitter 1s ease-in-out infinite;
           will-change: transform;
           backface-visibility: hidden;
         }

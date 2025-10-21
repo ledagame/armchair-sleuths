@@ -1,6 +1,6 @@
 ---
 name: gemini-image-generator
-description: Generate consistent, high-quality images using Gemini API with optimized prompts for suspects, locations, and evidence. This skill should be used when generating case images, suspect profiles, or batch image operations. Handles prompt templates, style consistency, and automatic retry logic.
+description: AI image generation using Gemini API with optimized prompts for suspect profiles, crime scenes, and evidence items. Use when generating case images, creating suspect portraits, producing batch images, or regenerating missing images. Includes style consistency, retry logic, and 512x512 resolution optimization.
 ---
 
 # Gemini Image Generator

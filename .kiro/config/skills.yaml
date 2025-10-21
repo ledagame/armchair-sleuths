@@ -1,0 +1,109 @@
+# Claude Skills System Configuration
+# This file configures the behavior of the skill discovery, activation, and execution system
+
+skills:
+  # Enable/disable the entire skill system
+  enabled: true
+  
+  # Automatically discover skills in the skills/ directory
+  autoDiscovery: true
+  
+  # Watch for file changes and auto-reload skills
+  watchForChanges: true
+  
+  # Path to skills directory (relative to workspace root)
+  skillsDirectory: 'skills'
+  
+  # Cache directory for skill registry and metadata
+  cacheDirectory: '.kiro/cache'
+
+security:
+  # Run scripts in sandboxed environment
+  sandbox: true
+  
+  # Require user approval before executing scripts
+  requireApproval: true
+  
+  # Trusted skill sources (skills from these sources don't require approval)
+  trustedSources:
+    - 'official'
+    - 'verified'
+  
+  # Maximum script execution time (milliseconds)
+  maxExecutionTime: 30000
+  
+  # Allowed file system paths for script access
+  allowedPaths:
+    - 'src'
+    - 'scripts'
+    - '.kiro/skills-system'
+  
+  # Blocked file system paths
+  blockedPaths:
+    - 'node_modules'
+    - '.git'
+    - '.env'
+
+performance:
+  # Maximum number of skills that can be active simultaneously
+  maxActiveSkills: 10
+  
+  # Maximum context tokens (for Claude API)
+  maxContextTokens: 150000
+  
+  # LRU cache size for skill contexts
+  cacheSize: 100
+  
+  # Token count cache TTL (milliseconds)
+  tokenCacheTTL: 300000
+
+discovery:
+  # File patterns to look for when discovering skills
+  metadataFiles:
+    - 'SKILL.yaml'
+    - 'SKILL.md'
+  
+  # Minimum required fields in skill metadata
+  requiredFields:
+    - 'name'
+    - 'version'
+    - 'description'
+  
+  # Validate skills on discovery
+  validateOnDiscovery: true
+
+activation:
+  # Fuzzy matching threshold for keyword triggers (0-1)
+  fuzzyMatchThreshold: 0.8
+  
+  # Maximum number of skills to suggest when multiple match
+  maxSuggestions: 5
+  
+  # Auto-activate skills when keywords match exactly
+  autoActivateOnExactMatch: false
+
+marketplace:
+  # Enable marketplace features
+  enabled: false
+  
+  # Marketplace API URL
+  url: 'https://skills.kiro.dev'
+  
+  # Automatically check for skill updates
+  autoUpdate: false
+  
+  # Update check interval (milliseconds)
+  updateCheckInterval: 86400000
+
+logging:
+  # Log level: 'debug' | 'info' | 'warn' | 'error'
+  level: 'info'
+  
+  # Log skill discovery events
+  logDiscovery: true
+  
+  # Log skill activation events
+  logActivation: true
+  
+  # Log script execution events
+  logExecution: true

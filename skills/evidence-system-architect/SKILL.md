@@ -1,6 +1,6 @@
 ---
 name: evidence-system-architect
-description: Design comprehensive evidence discovery and location exploration systems for murder mystery games. Combines Fair Play principles, difficulty balancing, AI image generation, and game loop integration. Use PROACTIVELY when designing evidence mechanics, location exploration, clue discovery, or evidence-based deduction systems.
+description: Evidence discovery and location exploration system design combining Fair Play principles, difficulty balancing, and AI image generation. Use when designing evidence mechanics, implementing location exploration, balancing clue discovery difficulty, or creating evidence-based deduction systems. Ensures fair gameplay with discoverable clues.
 ---
 
 # Evidence System Architect

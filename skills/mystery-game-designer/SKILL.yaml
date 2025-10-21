@@ -1,0 +1,128 @@
+# Developer Metadata File
+# This SKILL.yaml contains project management metadata (npm scripts, dependencies, version control).
+# Claude reads SKILL.md for instructions and triggering.
+# - SKILL.md: Claude's reference (instructions, usage, examples)
+# - SKILL.yaml: Developer's reference (scripts, dependencies, integration)
+
+name: mystery-game-designer
+version: 1.0.0
+description: |
+  Design engaging murder mystery game systems with balanced difficulty, fair-play
+  rules, and replayability. Combines classic mystery writing principles with modern
+  game design to create challenging but solvable cases.
+
+author: Armchair Sleuths Team
+license: MIT
+
+# Trigger keywords for auto-activation
+triggers:
+  - game design
+  - difficulty balance
+  - fair play
+  - mystery rules
+  - red herring
+  - clue distribution
+  - progression system
+  - replayability
+  - character archetype
+  - plot structure
+
+# Dependencies
+dependencies:
+  skills:
+    - ai-prompt-engineer         # Difficulty-tuned prompts
+    - evidence-system-architect  # Fair Play evidence
+    - viral-detective-challenge  # Replayability features
+  packages:
+    - none  # Pure design skill
+
+# Capabilities
+capabilities:
+  - name: fair-play-rules
+    description: Ensure all mysteries follow Fair Play principles
+    principles: Accessibility, Determinability, Realism, Transparency
+
+  - name: difficulty-balancing
+    description: Calculate and tune case difficulty
+    formula: "obviousness + red_herrings + distinction + timeline"
+    levels: easy (70% obvious), medium (50%), hard (30%)
+
+  - name: character-archetypes
+    description: Pre-designed character templates with motivations
+    archetypes: Scorned Lover, Greedy Heir, Business Rival, etc.
+
+  - name: red-herring-design
+    description: Create believable but false leads
+    techniques: Plausible Motive, Weak Alibi, Suspicious Behavior
+
+  - name: progression-system
+    description: XP, levels, unlocks, and achievements
+    tiers: Beginner, Intermediate, Advanced, Expert
+
+# Configuration
+config:
+  difficulty_presets:
+    easy:
+      obvious_clue_ratio: 0.7
+      red_herring_strength: 0.2
+      suspect_distinction: 0.8
+      timeline_complexity: 0.2
+    medium:
+      obvious_clue_ratio: 0.5
+      red_herring_strength: 0.5
+      suspect_distinction: 0.5
+      timeline_complexity: 0.4
+    hard:
+      obvious_clue_ratio: 0.3
+      red_herring_strength: 0.7
+      suspect_distinction: 0.2
+      timeline_complexity: 0.7
+
+  archetype_weights:
+    scorned_lover: 0.25
+    greedy_heir: 0.30
+    business_rival: 0.20
+    vengeful_friend: 0.15
+    jealous_colleague: 0.10
+
+# npm scripts
+npm_scripts:
+  design:validate: "tsx scripts/validate-fairplay.ts"
+  design:difficulty: "tsx scripts/test-difficulty.ts"
+  design:clues: "tsx scripts/analyze-clues.ts"
+
+# Documentation
+documentation:
+  readme: SKILL.md
+  references:
+    - references/fair-play-rules.md
+    - references/difficulty-tuning.md
+    - references/archetype-library.md
+    - references/plot-structures.md
+    - references/replayability-guide.md
+
+# Integration points
+integration:
+  reads_from:
+    - src/server/data/CaseElementLibrary.ts
+  writes_to:
+    - src/server/services/case/CaseGeneratorService.ts
+    - src/server/services/progression/ProgressionService.ts
+  influences:
+    - mystery-case-generator     # Case design
+    - evidence-system-architect  # Fair Play evidence
+    - viral-detective-challenge  # Replayability mechanics
+
+# Version history
+changelog:
+  - version: 1.0.0
+    date: 2025-01-20
+    changes:
+      - Initial release
+      - Fair Play mystery rules
+      - Difficulty balancing system
+      - Character archetype library
+      - Red herring strategies
+      - Three-act plot structure
+      - Progression and unlock systems
+      - Replayability features

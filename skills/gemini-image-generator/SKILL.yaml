@@ -1,0 +1,123 @@
+# Developer Metadata File
+# This SKILL.yaml contains project management metadata (npm scripts, dependencies, version control).
+# Claude reads SKILL.md for instructions and triggering.
+# - SKILL.md: Claude's reference (instructions, usage, examples)
+# - SKILL.yaml: Developer's reference (scripts, dependencies, integration)
+
+name: gemini-image-generator
+version: 1.0.0
+description: |
+  Generate consistent, high-quality images using Gemini API with optimized prompts
+  for suspects, locations, and evidence. Handles prompt templates, style consistency,
+  and automatic retry logic with batch operations.
+
+author: Armchair Sleuths Team
+license: MIT
+
+# Trigger keywords for auto-activation
+triggers:
+  - generate image
+  - suspect image
+  - case scene
+  - evidence image
+  - batch generate
+  - regenerate image
+  - profile image
+  - gemini image
+
+# Dependencies
+dependencies:
+  skills:
+    - mystery-case-generator  # Provides case data for images
+    - evidence-system-architect  # Evidence and location images
+  apis:
+    - gemini-ai              # Image generation
+  packages:
+    - "@google/generative-ai"  # Gemini SDK
+    - sharp                    # Image processing
+
+# Capabilities
+capabilities:
+  - name: suspect-profile-images
+    description: Generate professional portrait photography (512x512)
+    style: Cinematic lighting, shallow depth of field, photorealistic
+    usage: tsx scripts/generate-suspect-image.ts
+
+  - name: case-scene-images
+    description: Generate crime scene illustrations (512x512)
+    style: Dark moody atmosphere, detective game art style
+    usage: tsx scripts/generate-scene-image.ts
+
+  - name: evidence-images
+    description: Generate forensic photography (512x512)
+    style: Close-up, dramatic lighting, high detail
+    usage: tsx scripts/generate-evidence-image.ts
+
+  - name: batch-generation
+    description: Sequential generation with rate limit handling
+    features: Retry logic (max 3), progress tracking, exponential backoff
+    usage: tsx scripts/batch-generate-images.ts
+
+# Configuration
+config:
+  image_sizes:
+    suspect_profile: 512x512
+    case_scene: 512x512
+    evidence: 512x512
+    location: 1024x768
+
+  style_guide:
+    suspect: "professional portrait, cinematic lighting, dark background"
+    scene: "crime scene, moody atmosphere, limited color palette"
+    evidence: "forensic photography, dramatic lighting, high contrast"
+
+  retry_config:
+    max_attempts: 3
+    backoff_multiplier: 2
+    initial_delay_ms: 1000
+
+  ai_model: gemini-1.5-pro
+
+# npm scripts
+npm_scripts:
+  image:suspect: "tsx scripts/generate-suspect-image.ts"
+  image:scene: "tsx scripts/generate-scene-image.ts"
+  image:batch: "tsx scripts/batch-generate-images.ts"
+  image:fix: "tsx scripts/regenerate-missing-images.ts"
+
+# Documentation
+documentation:
+  readme: SKILL.md
+  references:
+    - references/prompt-templates.md
+    - references/style-guide.md
+    - references/batch-operations.md
+    - references/image-prompt-library.md
+
+# Integration points
+integration:
+  reads_from:
+    - src/server/services/case/CaseGeneratorService.ts
+    - src/shared/types/Case.ts
+    - src/shared/types/Suspect.ts
+  writes_to:
+    - public/images/suspects/
+    - public/images/scenes/
+    - public/images/evidence/
+  influences:
+    - mystery-case-generator     # Case images
+    - evidence-system-architect  # Evidence images
+
+# Version history
+changelog:
+  - version: 1.0.0
+    date: 2025-01-20
+    changes:
+      - Initial release
+      - Suspect profile image generation
+      - Case scene image generation
+      - Evidence image generation
+      - Batch generation workflow
+      - Retry logic and error handling
+      - Style consistency system
+      - Missing image regeneration

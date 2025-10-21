@@ -1,0 +1,220 @@
+# Developer Metadata File
+# This SKILL.yaml contains project management metadata (npm scripts, dependencies, version control).
+# Claude reads SKILL.md for instructions and triggering.
+# - SKILL.md: Claude's reference (instructions, usage, examples)
+# - SKILL.yaml: Developer's reference (scripts, dependencies, integration)
+
+name: immersive-narration-master
+version: 1.0.0
+description: |
+  World-class murder mystery narration specialist. Creates deeply immersive,
+  atmospheric narration for detective games using techniques from Christie, Doyle,
+  Chandler, Queen, and Sayers. Specializes in AI Dungeon-quality storytelling with
+  Fair Play principles and multi-sensory immersion.
+
+author: Armchair Sleuths Team
+license: MIT
+
+# Trigger keywords for auto-activation
+triggers:
+  - narration
+  - immersive
+  - storytelling
+  - opening intro
+  - scene entry
+  - evidence discovery
+  - revelation
+  - epilogue
+  - atmospheric
+  - cinematic
+  - mystery writing
+
+# Mystery Styles
+styles:
+  classic_whodunit:
+    authors: [Christie, Queen]
+    tone: Elegant, cerebral, precise
+    atmosphere: Civilized surface hiding darkness
+    use_for: Country house, locked rooms, gathered suspects
+
+  hard_boiled_noir:
+    authors: [Chandler]
+    tone: Cynical, atmospheric, morally grey
+    atmosphere: Urban decay, corruption, darkness
+    use_for: Urban mysteries, corrupt systems
+
+  cozy_mystery:
+    tone: Warm yet mysterious, community-focused
+    atmosphere: Small town, familiar faces, surprising secrets
+    use_for: Small-town mysteries, amateur sleuths
+
+  nordic_noir:
+    tone: Bleak, socially conscious, psychological
+    atmosphere: Cold, isolated, systemically failed
+    use_for: Social critique, flawed detectives
+
+  honkaku:
+    authors: [Japanese logic puzzle masters]
+    tone: Precise, intellectual, puzzle-focused
+    atmosphere: Diagram-clear, mathematically structured
+    use_for: Locked rooms, impossible crimes, pure logic
+
+# Word Count Guidelines (STRICT)
+word_counts:
+  opening_intro: [150, 250]
+  scene_entry_new: [50, 100]
+  scene_entry_return: [20, 40]
+  evidence_discovery: [30, 60]
+  character_encounter: [40, 80]
+  revelation_sequence: [300, 450]
+  mid_game_beat: [60, 120]
+  epilogue: [150, 250]
+
+# Dependencies
+dependencies:
+  skills:
+    - mystery-game-designer  # Fair Play principles
+  packages:
+    - none  # Pure writing skill
+
+# Capabilities
+capabilities:
+  - name: three-beat-intro
+    description: Opening narration structure
+    beats: [Atmosphere (50-80w), Inciting Incident (50-80w), Player Stakes (50-90w)]
+    total: 150-250 words
+    senses_minimum: 2
+
+  - name: fair-play-narration
+    description: Present clues clearly without withholding
+    principles: [Accessibility, No vague hiding, No narrator lies, Flagpole Method]
+    violation_check: Mandatory
+
+  - name: multi-sensory-immersion
+    description: Engage minimum 2 senses (ideally 3+)
+    senses: [Visual, Auditory, Olfactory, Tactile, Taste]
+    anti_pattern: Pure visual description
+
+  - name: style-blending
+    description: Mix mystery styles as needed
+    examples: ["70% Classic + 30% Nordic", "60% Noir + 40% Honkaku"]
+
+  - name: revelation-sequence
+    description: Christie layered revelation structure
+    phases: [Gathering, First Layer, Complication, True Revelation, Emotional Resolution]
+    total: 300-450 words
+
+# Configuration
+config:
+  quality_standards:
+    word_count_compliance: strict
+    sensory_richness_minimum: 7/10
+    immersion_level_minimum: 8/10
+    fair_play_compliance: mandatory
+    tone_consistency: required
+    show_vs_tell: required
+
+  three_act_structure:
+    act_1_setup:
+      percentage: "0-25%"
+      tone: Ominous, mysterious, establishing
+    act_2_investigation:
+      percentage: "25-75%"
+      tone: Driven, analytical, tense
+    act_3_resolution:
+      percentage: "75-100%"
+      tone: Revelatory, climactic, emotional
+
+  validation_rubric:
+    - word_count: Pass/Fail
+    - sensory_richness: 1-10 (target 7+)
+    - immersion_level: 1-10 (target 8+)
+    - fair_play: Pass/Fail (must pass)
+    - tone_consistency: Pass/Fail
+    - show_vs_tell: Pass/Fail
+
+# Anti-Patterns to Avoid
+anti_patterns:
+  - information_dumping
+  - purple_prose_overload
+  - telling_instead_of_showing
+  - generic_sensory_details
+  - fair_play_violations
+  - single_sense_descriptions
+
+# Documentation
+documentation:
+  readme: SKILL.md
+  templates:
+    - Three-Beat Opening Intro
+    - Evidence Discovery
+    - Revelation Sequence
+    - Scene Entry
+  examples:
+    - Classic Whodunit Intro
+    - Noir Evidence Discovery
+    - Honkaku Locked Room
+    - Nordic Mid-Game Beat
+    - Cozy Mystery Evidence
+    - Christie Revelation Sequence
+
+# Integration points
+integration:
+  reads_from:
+    - src/shared/types/Case.ts
+    - src/server/services/narration/NarrationService.ts
+  writes_to:
+    - Game narration text (intro, scenes, discoveries, revelations)
+  influences:
+    - mystery-case-generator    # Opening narration
+    - evidence-system-architect # Evidence discovery narration
+
+# Technical Specs
+input_schema:
+  type: [intro, scene_entry, evidence, revelation, epilogue, character_encounter]
+  style:
+    primary: [classic, noir, cozy, nordic, honkaku]
+    blend: { style: string, percentage: number }
+  story_position:
+    percentage: 0-100
+    act: 1|2|3
+  context:
+    location: { name, description, atmosphere_tags }
+    evidence: { name, description, significance }
+    characters: [{ name, role, emotional_state }]
+    mystery_facts: string[]
+  requirements:
+    fair_play_clues: string[]
+    emotional_tone: string
+    streaming: boolean
+
+output_schema:
+  narration:
+    full_text: string
+    beats: [{ label, text, word_count }]
+  streaming:
+    chunks: [{ text, delay_ms, chunk_index }]
+  metadata:
+    word_count: number
+    target_range: [min, max]
+    senses_used: string[]
+    style_applied: string
+    fair_play_compliance: boolean
+    immersion_score: 1-10
+    validation_status: PASS|FAIL
+
+# Version history
+changelog:
+  - version: 1.0.0
+    date: 2025-10-21
+    changes:
+      - Initial Elite version
+      - 5 mystery styles with blending
+      - Strict word count guidelines
+      - Three-beat intro structure
+      - Fair Play integration
+      - Multi-sensory framework
+      - Story position awareness
+      - Complete validation rubric
+      - AI Dungeon-quality standards
+      - Streaming-ready specs

@@ -16,9 +16,15 @@ import type { SuspectData, CaseData, ImageGenerationStatus } from '../repositori
 import { CinematicImageService, type CinematicImages } from '../image/CinematicImageService';
 import { LocationDiscoveryService } from '../discovery/LocationDiscoveryService';
 import { DiscoveryStateManager } from '../discovery/DiscoveryStateManager';
-import type { EvidenceItem } from '@/shared/types/Evidence';
+import type { EvidenceItem, DiscoveryDifficulty, MultilingualEvidence, EvidenceContent } from '@/shared/types/Evidence';
+import { getDiscoveryProbability } from '@/shared/types/Evidence';
 import type { Location as DiscoveryLocation, APTopic, ActionPointsConfig } from '@/shared/types/Case';
 import { generateDefaultAPTopics, validateAPTopics } from '../ap/APTopicGenerator';
+import { ImageGenerator } from '../generators/ImageGenerator';
+import { ImageStorageService } from '../image/ImageStorageService';
+import { EvidenceImageGeneratorService } from '../image/EvidenceImageGeneratorService';
+import { LocationImageGeneratorService } from '../image/LocationImageGeneratorService';
+import { NarrationValidationService } from './NarrationValidationService';
 
 export interface GenerateCaseOptions {
   date?: Date;
@@ -27,6 +33,7 @@ export interface GenerateCaseOptions {
   includeCinematicImages?: boolean; // Generate cinematic intro images (5 scenes)
   temperature?: number;
   customCaseId?: string; // Custom case ID for unique identification (timestamp-based)
+  narrationStyle?: 'classic' | 'noir' | 'cozy' | 'nordic' | 'honkaku'; // Mystery narration style
 }
 
 export interface GeneratedCase {
@@ -89,11 +96,42 @@ export class CaseGeneratorService {
   private geminiClient: GeminiClient;
   private workflowExecutor: WorkflowExecutor;
   private cinematicImageService: CinematicImageService;
+  private imageGenerator: ImageGenerator;
+  private imageStorageService: ImageStorageService;
+  private evidenceImageService: EvidenceImageGeneratorService;
+  private locationImageService: LocationImageGeneratorService;
+  private narrationValidationService: NarrationValidationService;
 
   constructor(geminiClient: GeminiClient) {
     this.geminiClient = geminiClient;
     this.workflowExecutor = new WorkflowExecutor();
     this.cinematicImageService = new CinematicImageService(geminiClient);
+
+    // Initialize image generation services
+    this.imageGenerator = new ImageGenerator(geminiClient);
+
+    // Get adapter with error logging
+    let adapter;
+    try {
+      adapter = KVStoreManager.getAdapter();
+      console.log('✅ CaseGeneratorService: KV Adapter retrieved successfully:', adapter ? 'EXISTS' : 'UNDEFINED');
+    } catch (error) {
+      console.error('❌ CaseGeneratorService: Failed to get KV adapter:', error);
+      throw error;
+    }
+
+    this.imageStorageService = new ImageStorageService(adapter);
+    this.evidenceImageService = new EvidenceImageGeneratorService(
+      this.imageGenerator,
+      this.imageStorageService
+    );
+    this.locationImageService = new LocationImageGeneratorService(
+      this.imageGenerator,
+      this.imageStorageService
+    );
+
+    // Initialize narration validation service
+    this.narrationValidationService = new NarrationValidationService();
   }
 
   /**
@@ -114,7 +152,8 @@ export class CaseGeneratorService {
       includeSuspectImages = false,
       includeCinematicImages = false,
       temperature = 0.8,
-      customCaseId
+      customCaseId,
+      narrationStyle = 'classic'
     } = options;
 
     console.log(`🔄 Generating case for ${date.toISOString().split('T')[0]}...`);
@@ -166,12 +205,14 @@ export class CaseGeneratorService {
         caseStory,
         elements.weapon,
         elements.location,
-        temperature
+        temperature,
+        narrationStyle
       ),
       () => this.generateFallbackNarration(
         caseStory,
         elements.weapon,
-        elements.location
+        elements.location,
+        narrationStyle
       ),
       'Generate Intro Narration'
     );
@@ -255,6 +296,24 @@ export class CaseGeneratorService {
     await KVStoreManager.saveCase(savedCase);
 
     console.log(`✅ Evidence distribution saved: ${distribution.totalEvidence} evidence across ${distribution.locations.length} locations`);
+
+    // 6.8. 백그라운드 이미지 생성 시작 (증거 + 장소)
+    const guiltyIndex = savedCase.suspects.findIndex(s => s.isGuilty);
+
+    // IMPORTANT: Start image generation but don't await
+    // We need to trigger it here, but it will complete asynchronously
+    // The Promise reference must be kept alive by the runtime
+    const imageGenerationPromise = this.startBackgroundImageGeneration(
+      savedCase.id,
+      evidence,
+      locations,
+      guiltyIndex
+    );
+
+    // Store the promise reference so it doesn't get garbage collected
+    // This ensures the background task continues even after function returns
+    (globalThis as any).__imageGenerationPromises = (globalThis as any).__imageGenerationPromises || new Map();
+    (globalThis as any).__imageGenerationPromises.set(savedCase.id, imageGenerationPromise);
 
     // 7. GeneratedCase 형식으로 반환
     return {
@@ -403,20 +462,113 @@ export class CaseGeneratorService {
     },
     weapon: Weapon,
     location: Location,
-    temperature: number
-  ): Promise<{ atmosphere: string; incident: string; stakes: string }> {
-    const prompt = this.buildIntroNarrationPrompt(
-      caseStory,
-      weapon,
-      location
-    );
+    temperature: number,
+    style: 'classic' | 'noir' | 'cozy' | 'nordic' | 'honkaku' = 'classic'
+  ): Promise<IntroNarration> {
+    const MAX_RETRIES = 3;
 
-    const response = await this.geminiClient.generateText(prompt, {
-      temperature,
-      maxTokens: 1024
-    });
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      const prompt = this.buildIntroNarrationPrompt(
+        caseStory,
+        weapon,
+        location,
+        style
+      );
 
-    return this.geminiClient.parseJsonResponse(response.text);
+      const response = await this.geminiClient.generateText(prompt, {
+        temperature,
+        maxTokens: 1024
+      });
+
+      const narration = this.geminiClient.parseJsonResponse(response.text);
+
+      // Validate the generated narration
+      const validation = this.narrationValidationService.validate(narration);
+
+      if (validation.isValid) {
+        console.log(`✅ Narration validation passed on attempt ${attempt}`);
+
+        try {
+          // Extract keywords and generate emotional arc
+          console.log('🔍 Extracting keywords from narration...');
+          const keywords = this.narrationValidationService.extractKeywords(narration);
+          console.log(`✅ Keywords extracted: ${keywords.critical.length} critical, ${keywords.atmospheric.length} atmospheric, ${keywords.sensory.length} sensory`);
+
+          console.log('🎭 Generating emotional arc...');
+          const emotionalArc = this.narrationValidationService.generateEmotionalArc(narration, style);
+          console.log(`✅ Emotional arc generated with ${emotionalArc.intensityCurve.length} curve points`);
+
+          return {
+            ...narration,
+            mysteryStyle: style,
+            keywords,
+            emotionalArc
+          };
+        } catch (error) {
+          console.error('❌ Error during keyword extraction or emotional arc generation:', error);
+          // Return narration without enhancement if extraction fails
+          return {
+            ...narration,
+            mysteryStyle: style
+          };
+        }
+      }
+
+      // Log validation issues
+      console.warn(
+        `⚠️ Narration validation failed on attempt ${attempt}/${MAX_RETRIES}:`,
+        validation.issues
+      );
+
+      // If this was the last attempt, use fallback
+      if (attempt === MAX_RETRIES) {
+        console.error(
+          '❌ All narration generation attempts failed. Using fallback narration.'
+        );
+        try {
+          const fallbackNarration = this.narrationValidationService.getDefaultNarration();
+          const keywords = this.narrationValidationService.extractKeywords(fallbackNarration);
+          const emotionalArc = this.narrationValidationService.generateEmotionalArc(fallbackNarration, style);
+
+          return {
+            ...fallbackNarration,
+            mysteryStyle: style,
+            keywords,
+            emotionalArc
+          };
+        } catch (error) {
+          console.error('❌ Error in fallback narration (attempt limit):', error);
+          return {
+            ...this.narrationValidationService.getDefaultNarration(),
+            mysteryStyle: style
+          };
+        }
+      }
+
+      // Otherwise, retry with slightly different temperature
+      temperature = Math.min(temperature + 0.1, 1.0);
+    }
+
+    // This should never be reached, but TypeScript requires it
+    console.error('⚠️ Unexpected: Reached end of retry loop without returning');
+    try {
+      const fallbackNarration = this.narrationValidationService.getDefaultNarration();
+      const keywords = this.narrationValidationService.extractKeywords(fallbackNarration);
+      const emotionalArc = this.narrationValidationService.generateEmotionalArc(fallbackNarration, style);
+
+      return {
+        ...fallbackNarration,
+        mysteryStyle: style,
+        keywords,
+        emotionalArc
+      };
+    } catch (error) {
+      console.error('❌ Error in final fallback narration:', error);
+      return {
+        ...this.narrationValidationService.getDefaultNarration(),
+        mysteryStyle: style
+      };
+    }
   }
 
   /**
@@ -433,8 +585,53 @@ export class CaseGeneratorService {
       suspects: Array<{ name: string }>;
     },
     weapon: Weapon,
-    location: Location
+    location: Location,
+    style: 'classic' | 'noir' | 'cozy' | 'nordic' | 'honkaku' = 'classic'
   ): string {
+    // Style-specific guides
+    const styleGuides = {
+      classic: `
+**Classic Whodunit Style (Christie/Queen)**:
+- Tone: Elegant, cerebral, precise
+- Atmosphere: Civilized surface hiding darkness
+- Language: Polished, slightly formal Korean
+- Focus: Logical puzzle, fair play clues
+- Example mood: "고요한 저택에 드리운 불안한 그림자"
+`,
+      noir: `
+**Hard-Boiled Noir Style (Chandler)**:
+- Tone: Cynical, atmospheric, morally grey
+- Atmosphere: Urban decay, corruption, rain-soaked streets
+- Language: Sharp metaphors, street-wise Korean
+- Focus: Moral ambiguity, atmosphere as character
+- Example mood: "네온 불빛 아래 드리운 어두운 진실"
+`,
+      cozy: `
+**Cozy Mystery Style**:
+- Tone: Warm yet mysterious, community-focused
+- Atmosphere: Small town, familiar faces with secrets
+- Language: Accessible, conversational Korean
+- Focus: Character relationships, gentle suspense
+- Example mood: "평화로운 마을에 숨겨진 작은 비밀"
+`,
+      nordic: `
+**Nordic Noir Style**:
+- Tone: Bleak, socially conscious, psychological
+- Atmosphere: Cold, isolated, systemic failure
+- Language: Sparse, atmospheric Korean
+- Focus: Social critique, psychological depth
+- Example mood: "겨울 어둠 속에 갇힌 고립된 진실"
+`,
+      honkaku: `
+**Honkaku Style (Japanese Logic Puzzle)**:
+- Tone: Precise, intellectual, puzzle-focused
+- Atmosphere: Diagram-clear, structured environment
+- Language: Exact measurements, technical Korean
+- Focus: Trick mechanics, logical impossibility
+- Example mood: "밀실의 정확한 구조와 숨겨진 트릭"
+`
+    };
+
     return `# ROLE & EXPERTISE
 
 You are a master detective fiction writer specializing in atmospheric murder mystery narratives. Your work is known for:
@@ -444,6 +641,12 @@ You are a master detective fiction writer specializing in atmospheric murder mys
 - Genre-specific vocabulary that evokes classic noir, gothic, or psychological thriller moods
 
 Your influences include Raymond Chandler's hard-boiled prose, Agatha Christie's locked-room mysteries, and Gillian Flynn's psychological depth.
+
+# MYSTERY STYLE
+
+${styleGuides[style]}
+
+**Apply this style consistently across all three phases.** The style should influence word choice, metaphors, pacing cues, and overall atmosphere.
 
 # TONE & STYLE
 
@@ -471,7 +674,7 @@ Suspects: ${caseStory.suspects.length} individuals
 
 # TASK: Generate 3-Phase Narration in Korean
 
-## Phase 1: ATMOSPHERE (50-80 words in Korean)
+## Phase 1: ATMOSPHERE (45-80 words in Korean)
 **Required Elements:**
 1. One striking visual hook that defines the scene
 2. At least 3 different senses (sight, sound, smell, touch, temperature)
@@ -480,7 +683,7 @@ Suspects: ${caseStory.suspects.length} individuals
 
 **Don't**: Explain the mood. **Do**: Show it through concrete details.
 
-## Phase 2: INCIDENT (50-80 words in Korean)
+## Phase 2: INCIDENT (45-80 words in Korean)
 **Required Elements:**
 1. Victim's name + position description with visual precision
 2. Specific weapon/method with one vivid detail
@@ -493,7 +696,7 @@ Suspects: ${caseStory.suspects.length} individuals
 - The impossibility (locked-room mystery element)
 - Evidence contradiction
 
-## Phase 3: STAKES (50-90 words in Korean)
+## Phase 3: STAKES (45-90 words in Korean)
 **Required Elements:**
 1. Detective identity ("당신은...")
 2. Specific suspect count with one detail about them
@@ -593,13 +796,32 @@ Generate the narration now.`;
       suspects: Array<{ name: string }>;
     },
     weapon: Weapon,
-    location: Location
-  ): { atmosphere: string; incident: string; stakes: string } {
-    return {
-      atmosphere: `${location.name}. 어둠이 내려앉은 밤, 긴장감이 감돈다. 무언가 끔찍한 일이 일어났다.`,
-      incident: `${caseStory.victim.name}이(가) ${location.name}에서 사망한 채 발견되었다. ${weapon.name}이(가) 현장에 있다. 침입 흔적은 없다.`,
-      stakes: `당신은 형사다. ${caseStory.suspects.length}명의 용의자가 있다. 진실을 밝혀내야 한다.`
-    };
+    location: Location,
+    style: 'classic' | 'noir' | 'cozy' | 'nordic' | 'honkaku' = 'classic'
+  ): IntroNarration {
+    console.log('⚠️ Using fallback narration');
+
+    try {
+      const fallbackNarration = this.narrationValidationService.getDefaultNarration();
+      console.log('🔍 Extracting keywords from fallback narration...');
+      const keywords = this.narrationValidationService.extractKeywords(fallbackNarration);
+      console.log('🎭 Generating emotional arc for fallback narration...');
+      const emotionalArc = this.narrationValidationService.generateEmotionalArc(fallbackNarration, style);
+
+      return {
+        ...fallbackNarration,
+        mysteryStyle: style,
+        keywords,
+        emotionalArc
+      };
+    } catch (error) {
+      console.error('❌ Error in fallback narration generation:', error);
+      // Last resort: return minimal fallback without keywords/arc
+      return {
+        ...this.narrationValidationService.getDefaultNarration(),
+        mysteryStyle: style
+      };
+    }
   }
 
   /**
@@ -902,6 +1124,7 @@ Mood: Mystery, intrigue, subtle emotional expression.`;
     const evidence: EvidenceItem[] = [];
 
     // Critical Evidence (4개) - 범인을 가리키는 결정적 증거
+    const criticalDifficulty: DiscoveryDifficulty = 'obvious';
     evidence.push({
       id: 'evidence-critical-1',
       type: 'physical',
@@ -910,7 +1133,10 @@ Mood: Mystery, intrigue, subtle emotional expression.`;
       discoveryHint: '범죄 현장을 주의 깊게 살펴보세요.',
       interpretationHint: `이 무기는 ${guiltyName}의 소유물로 추정됩니다.`,
       relevance: 'critical',
-      pointsToSuspect: guiltyIndex
+      pointsToSuspect: guiltyIndex,
+      discoveryDifficulty: criticalDifficulty,
+      discoveryProbability: getDiscoveryProbability(criticalDifficulty, 'critical'),
+      foundAtLocationId: 'crime-scene'
     });
 
     evidence.push({
@@ -921,7 +1147,10 @@ Mood: Mystery, intrigue, subtle emotional expression.`;
       discoveryHint: '감식팀의 보고서를 확인하세요.',
       interpretationHint: `지문은 ${guiltyName}의 것으로 확인되었습니다.`,
       relevance: 'critical',
-      pointsToSuspect: guiltyIndex
+      pointsToSuspect: guiltyIndex,
+      discoveryDifficulty: criticalDifficulty,
+      discoveryProbability: getDiscoveryProbability(criticalDifficulty, 'critical'),
+      foundAtLocationId: 'crime-scene'
     });
 
     evidence.push({
@@ -932,7 +1161,10 @@ Mood: Mystery, intrigue, subtle emotional expression.`;
       discoveryHint: '피해자의 휴대폰을 조사하세요.',
       interpretationHint: `발신자는 ${guiltyName}입니다.`,
       relevance: 'critical',
-      pointsToSuspect: guiltyIndex
+      pointsToSuspect: guiltyIndex,
+      discoveryDifficulty: criticalDifficulty,
+      discoveryProbability: getDiscoveryProbability(criticalDifficulty, 'critical'),
+      foundAtLocationId: 'victim-residence'
     });
 
     evidence.push({
@@ -943,10 +1175,14 @@ Mood: Mystery, intrigue, subtle emotional expression.`;
       discoveryHint: '주변 목격자들과 대화하세요.',
       interpretationHint: `목격자는 ${guiltyName}을(를) 봤다고 진술했습니다.`,
       relevance: 'critical',
-      pointsToSuspect: guiltyIndex
+      pointsToSuspect: guiltyIndex,
+      discoveryDifficulty: criticalDifficulty,
+      discoveryProbability: getDiscoveryProbability(criticalDifficulty, 'critical'),
+      foundAtLocationId: 'witness-area'
     });
 
     // Supporting Evidence (3개) - 보조 증거
+    const importantDifficulty: DiscoveryDifficulty = 'medium';
     evidence.push({
       id: 'evidence-supporting-1',
       type: 'financial',
@@ -954,7 +1190,10 @@ Mood: Mystery, intrigue, subtle emotional expression.`;
       description: '수상한 금융 거래 내역이 발견되었습니다.',
       discoveryHint: '피해자의 은행 계좌를 추적하세요.',
       interpretationHint: '범행 동기와 연관이 있을 수 있습니다.',
-      relevance: 'important'
+      relevance: 'important',
+      discoveryDifficulty: importantDifficulty,
+      discoveryProbability: getDiscoveryProbability(importantDifficulty, 'important'),
+      foundAtLocationId: 'victim-residence'
     });
 
     evidence.push({
@@ -964,7 +1203,10 @@ Mood: Mystery, intrigue, subtle emotional expression.`;
       description: '피해자와 용의자 간의 계약 문서가 발견되었습니다.',
       discoveryHint: '피해자의 서류를 검토하세요.',
       interpretationHint: '관계의 성격을 파악하는 데 도움이 됩니다.',
-      relevance: 'important'
+      relevance: 'important',
+      discoveryDifficulty: importantDifficulty,
+      discoveryProbability: getDiscoveryProbability(importantDifficulty, 'important'),
+      foundAtLocationId: 'victim-residence'
     });
 
     evidence.push({
@@ -974,10 +1216,14 @@ Mood: Mystery, intrigue, subtle emotional expression.`;
       description: '피해자와 용의자의 관계에 대한 제3자 증언.',
       discoveryHint: '주변 사람들과 인터뷰하세요.',
       interpretationHint: '사건 배경을 이해하는 데 유용합니다.',
-      relevance: 'important'
+      relevance: 'important',
+      discoveryDifficulty: importantDifficulty,
+      discoveryProbability: getDiscoveryProbability(importantDifficulty, 'important'),
+      foundAtLocationId: 'witness-area'
     });
 
     // Red Herrings (3개) - 혼란을 주는 증거
+    const minorDifficulty: DiscoveryDifficulty = 'hidden';
     const innocentIndices = suspects
       .map((s, i) => ({ index: i, guilty: s.isGuilty }))
       .filter(s => !s.guilty)
@@ -991,7 +1237,10 @@ Mood: Mystery, intrigue, subtle emotional expression.`;
       discoveryHint: '현장을 철저히 수색하세요.',
       interpretationHint: '이 증거는 실제 범인과 관련이 없습니다.',
       relevance: 'minor',
-      pointsToSuspect: innocentIndices[0]
+      pointsToSuspect: innocentIndices[0],
+      discoveryDifficulty: minorDifficulty,
+      discoveryProbability: getDiscoveryProbability(minorDifficulty, 'minor'),
+      foundAtLocationId: 'suspect-location'
     });
 
     evidence.push({
@@ -1002,7 +1251,10 @@ Mood: Mystery, intrigue, subtle emotional expression.`;
       discoveryHint: '목격자들의 진술을 수집하세요.',
       interpretationHint: '이 정보는 사건과 무관할 수 있습니다.',
       relevance: 'minor',
-      pointsToSuspect: innocentIndices[1]
+      pointsToSuspect: innocentIndices[1],
+      discoveryDifficulty: minorDifficulty,
+      discoveryProbability: getDiscoveryProbability(minorDifficulty, 'minor'),
+      foundAtLocationId: 'witness-area'
     });
 
     evidence.push({
@@ -1013,10 +1265,137 @@ Mood: Mystery, intrigue, subtle emotional expression.`;
       discoveryHint: '통신 기록을 분석하세요.',
       interpretationHint: '맥락을 고려하면 범행과 무관합니다.',
       relevance: 'minor',
-      pointsToSuspect: innocentIndices[0]
+      pointsToSuspect: innocentIndices[0],
+      discoveryDifficulty: minorDifficulty,
+      discoveryProbability: getDiscoveryProbability(minorDifficulty, 'minor'),
+      foundAtLocationId: 'suspect-location'
     });
 
     return evidence;
+  }
+
+  /**
+   * Convert EvidenceItem[] to MultilingualEvidence format
+   *
+   * @param caseId - Case ID
+   * @param evidence - Evidence items array
+   * @param guiltyIndex - Index of guilty suspect
+   * @returns MultilingualEvidence object for image generation
+   */
+  private convertToMultilingualEvidence(
+    caseId: string,
+    evidence: EvidenceItem[],
+    guiltyIndex: number
+  ): MultilingualEvidence {
+    const criticalCount = evidence.filter(e => e.relevance === 'critical').length;
+    const evidencePointingToGuilty = evidence.filter(e => e.pointsToSuspect === guiltyIndex).length;
+    const threeClueRuleCompliant = criticalCount >= 3 && evidencePointingToGuilty >= 3;
+
+    const evidenceContent: EvidenceContent = {
+      items: evidence,
+      summary: `${evidence.length}개의 증거가 발견되었습니다. ${criticalCount}개의 결정적 증거가 포함되어 있습니다.`
+    };
+
+    return {
+      caseId,
+      locationId: caseId, // Use caseId as locationId for case-wide evidence
+      translations: {
+        ko: evidenceContent,
+        en: evidenceContent // For now, use same content for both languages
+      },
+      metadata: {
+        totalItems: evidence.length,
+        criticalCount,
+        threeClueRuleCompliant,
+        guiltyIndex,
+        evidencePointingToGuilty
+      },
+      generatedAt: Date.now()
+    };
+  }
+
+  /**
+   * Start background image generation for evidence and locations
+   *
+   * This method starts image generation without blocking the main thread.
+   * Images will be generated progressively and can be polled by the client.
+   *
+   * @param caseId - Case ID
+   * @param evidence - Evidence items
+   * @param locations - Locations to generate images for
+   * @param guiltyIndex - Index of guilty suspect
+   */
+  private startBackgroundImageGeneration(
+    caseId: string,
+    evidence: EvidenceItem[],
+    locations: DiscoveryLocation[],
+    guiltyIndex: number
+  ): Promise<void> {
+    console.log(`\n🚀 ============================================`);
+    console.log(`🚀 Starting Background Image Generation`);
+    console.log(`🚀 Case: ${caseId}`);
+    console.log(`🚀 Evidence Count: ${evidence.length}`);
+    console.log(`🚀 Location Count: ${locations.length}`);
+    console.log(`🚀 ============================================\n`);
+
+    // Convert evidence to MultilingualEvidence format
+    const multilingualEvidence = this.convertToMultilingualEvidence(
+      caseId,
+      evidence,
+      guiltyIndex
+    );
+
+    // IMPORTANT: Create fresh service instances inside the Promise
+    // This ensures services aren't garbage collected when CaseGeneratorService instance is destroyed
+    const generationPromise = (async () => {
+      try {
+        // Get fresh adapter reference
+        const adapter = KVStoreManager.getAdapter();
+        console.log('🔧 Background: Retrieved KV adapter for image generation');
+
+        // Create fresh service instances for background operation
+        const imageGenerator = new ImageGenerator(this.geminiClient);
+        const storageService = new ImageStorageService(adapter);
+        const evidenceService = new EvidenceImageGeneratorService(imageGenerator, storageService);
+        const locationService = new LocationImageGeneratorService(imageGenerator, storageService);
+
+        console.log('✅ Background: Service instances created successfully');
+
+        // Generate images in parallel
+        await Promise.all([
+          evidenceService.generateEvidenceImages(caseId, multilingualEvidence)
+            .catch((error) => {
+              console.error(`❌ Evidence image generation failed for case ${caseId}:`, error);
+            }),
+          locationService.generateLocationImages(caseId, locations)
+            .catch((error) => {
+              console.error(`❌ Location image generation failed for case ${caseId}:`, error);
+            })
+        ]);
+
+        console.log(`\n✅ ============================================`);
+        console.log(`✅ Background Image Generation Complete`);
+        console.log(`✅ Case: ${caseId}`);
+        console.log(`✅ ============================================\n`);
+
+        // Cleanup: Remove from global map when complete
+        if ((globalThis as any).__imageGenerationPromises) {
+          (globalThis as any).__imageGenerationPromises.delete(caseId);
+        }
+      } catch (error) {
+        console.error(`❌ Unexpected error in background image generation for case ${caseId}:`, error);
+
+        // Cleanup: Remove from global map on error
+        if ((globalThis as any).__imageGenerationPromises) {
+          (globalThis as any).__imageGenerationPromises.delete(caseId);
+        }
+
+        throw error;
+      }
+    })();
+
+    console.log(`🔄 Background image generation started (non-blocking)`);
+    return generationPromise;
   }
 
   /**

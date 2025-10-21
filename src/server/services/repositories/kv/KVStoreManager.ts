@@ -114,7 +114,23 @@ export class KVStoreManager {
    * @param adapter - The storage adapter implementation to use
    */
   static setAdapter(adapter: IStorageAdapter): void {
+    console.log('🔧 KVStoreManager.setAdapter: Setting adapter:', adapter ? 'EXISTS' : 'UNDEFINED');
     this.adapter = adapter;
+    console.log('✅ KVStoreManager.setAdapter: Adapter set successfully');
+  }
+
+  /**
+   * Gets the current storage adapter.
+   * @returns The storage adapter instance
+   */
+  static getAdapter(): IStorageAdapter {
+    console.log('🔍 KVStoreManager.getAdapter: Called, adapter:', this.adapter ? 'EXISTS' : 'UNDEFINED');
+    if (!this.adapter) {
+      console.error('❌ KVStoreManager.getAdapter: Adapter not initialized!');
+      throw new Error('Storage adapter not initialized. Call setAdapter() first.');
+    }
+    console.log('✅ KVStoreManager.getAdapter: Returning adapter');
+    return this.adapter;
   }
 
   /**

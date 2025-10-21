@@ -214,6 +214,63 @@ router.post('/internal/menu/post-create', async (_req, res): Promise<void> => {
   }
 });
 
+/**
+ * POST /internal/menu/test-media-upload
+ * Run media upload validation tests from menu
+ */
+router.post('/internal/menu/test-media-upload', async (_req, res): Promise<void> => {
+  try {
+    console.log('🧪 Running media upload validation tests from menu...');
+
+    const apiKey = await settings.get<string>('geminiApiKey');
+    if (!apiKey) {
+      res.status(500).json({
+        status: 'error',
+        message: 'Gemini API key not configured'
+      });
+      return;
+    }
+
+    // Import test class
+    const { MediaUploadTest } = await import('./test/MediaUploadTest');
+    const tester = new MediaUploadTest(context, apiKey);
+
+    // Run all tests
+    console.log('🚀 Starting test suite...');
+    const results = await tester.runAllTests();
+
+    const allPassed = results.every(r => r.success);
+    const summary = {
+      totalTests: results.length,
+      passed: results.filter(r => r.success).length,
+      failed: results.filter(r => r.success === false).length,
+      totalDuration: results.reduce((sum, r) => sum + r.duration, 0)
+    };
+
+    console.log('\n📊 Test Summary:');
+    console.log(`   Total: ${summary.totalTests}`);
+    console.log(`   Passed: ${summary.passed}`);
+    console.log(`   Failed: ${summary.failed}`);
+    console.log(`   Duration: ${summary.totalDuration}ms`);
+    console.log(`   Status: ${allPassed ? '✅ ALL PASSED' : '❌ SOME FAILED'}\n`);
+
+    // Return results (Devvit will show this to the user)
+    res.json({
+      status: allPassed ? 'success' : 'partial_success',
+      message: `Tests complete: ${summary.passed}/${summary.totalTests} passed`,
+      results,
+      summary
+    });
+
+  } catch (error) {
+    console.error('❌ Test suite failed:', error);
+    res.status(500).json({
+      status: 'error',
+      message: `Test suite failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+    });
+  }
+});
+
 // =============================================================================
 // 🎮 GAME API ROUTES
 // =============================================================================
@@ -729,6 +786,80 @@ router.get('/api/case/:caseId', async (req, res): Promise<void> => {
     res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to fetch case'
+    });
+  }
+});
+
+/**
+ * GET /api/case/:caseId/evidence-images/status
+ * Get evidence image generation status for a case
+ */
+router.get('/api/case/:caseId/evidence-images/status', async (req, res): Promise<void> => {
+  try {
+    const { caseId } = req.params;
+
+    // Get storage adapter
+    const adapter = KVStoreManager.getAdapter();
+    const storageService = new (await import('./services/image/ImageStorageService')).ImageStorageService(adapter);
+
+    // Get status from KV store
+    const status = await storageService.getEvidenceImageStatus(caseId);
+
+    if (!status) {
+      // No status found - return default pending state
+      res.json({
+        status: 'pending',
+        totalCount: 0,
+        completedCount: 0,
+        images: {},
+        lastUpdated: new Date().toISOString()
+      });
+      return;
+    }
+
+    res.json(status);
+  } catch (error) {
+    console.error(`Error fetching evidence image status for case ${req.params.caseId}:`, error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Failed to fetch evidence image status'
+    });
+  }
+});
+
+/**
+ * GET /api/case/:caseId/location-images/status
+ * Get location image generation status for a case
+ */
+router.get('/api/case/:caseId/location-images/status', async (req, res): Promise<void> => {
+  try {
+    const { caseId } = req.params;
+
+    // Get storage adapter
+    const adapter = KVStoreManager.getAdapter();
+    const storageService = new (await import('./services/image/ImageStorageService')).ImageStorageService(adapter);
+
+    // Get status from KV store
+    const status = await storageService.getLocationImageStatus(caseId);
+
+    if (!status) {
+      // No status found - return default pending state
+      res.json({
+        status: 'pending',
+        totalCount: 0,
+        completedCount: 0,
+        images: {},
+        lastUpdated: new Date().toISOString()
+      });
+      return;
+    }
+
+    res.json(status);
+  } catch (error) {
+    console.error(`Error fetching location image status for case ${req.params.caseId}:`, error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Failed to fetch location image status'
     });
   }
 });
@@ -1643,6 +1774,213 @@ router.get('/api/admin/ap-integrity/:userId', async (req, res): Promise<void> =>
       success: false,
       error: 'INTEGRITY_CHECK_FAILED',
       message: error instanceof Error ? error.message : 'Failed to check AP integrity'
+    });
+  }
+});
+
+// =============================================================================
+// 🧪 POC WEBHOOK RECEIVER
+// =============================================================================
+/**
+ * POST /api/webhook/poc-test
+ * Webhook receiver for PoC testing (Test 4 & Test 5)
+ */
+router.post('/api/webhook/poc-test', async (req, res): Promise<void> => {
+  const receivedAt = Date.now();
+  const payload = req.body;
+
+  console.log('📥 PoC Webhook received:', {
+    test: payload.test,
+    caseId: payload.caseId,
+    timestamp: payload.timestamp,
+    imageCount: payload.images?.length
+  });
+
+  // Validate payload structure
+  const isValid = payload.test && (payload.test === 'poc-webhook' || payload.test === 'poc-e2e');
+
+  res.json({
+    received: true,
+    timestamp: receivedAt,
+    valid: isValid,
+    message: isValid
+      ? '✅ Valid webhook received'
+      : '❌ Invalid payload structure',
+    receivedPayload: {
+      test: payload.test,
+      caseId: payload.caseId,
+      hasImages: !!payload.images,
+      imageCount: payload.images?.length || 0
+    }
+  });
+});
+
+// =============================================================================
+// 🧪 MEDIA UPLOAD API VALIDATION TESTS
+// =============================================================================
+// Temporary test routes for validating context.media.upload() API
+// TODO: Remove after validation complete
+
+import { MediaUploadTest } from './test/MediaUploadTest';
+
+/**
+ * GET /api/test/media-check
+ * Test 1: API 존재 확인
+ */
+router.get('/api/test/media-check', async (_req, res): Promise<void> => {
+  try {
+    const apiKey = await settings.get<string>('geminiApiKey');
+    if (!apiKey) {
+      res.status(500).json({ error: 'Gemini API key not configured' });
+      return;
+    }
+
+    const tester = new MediaUploadTest(context, apiKey);
+    const result = await tester.testApiAvailability();
+
+    res.json(result);
+  } catch (error) {
+    console.error('Test error:', error);
+    res.status(500).json({
+      error: 'Test failed',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * POST /api/test/upload-single
+ * Test 2: 단일 이미지 업로드
+ */
+router.post('/api/test/upload-single', async (_req, res): Promise<void> => {
+  try {
+    const apiKey = await settings.get<string>('geminiApiKey');
+    if (!apiKey) {
+      res.status(500).json({ error: 'Gemini API key not configured' });
+      return;
+    }
+
+    const tester = new MediaUploadTest(context, apiKey);
+    const result = await tester.testSingleUpload();
+
+    res.json(result);
+  } catch (error) {
+    console.error('Test error:', error);
+    res.status(500).json({
+      error: 'Test failed',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * POST /api/test/upload-sequential
+ * Test 3: 순차 업로드
+ */
+router.post('/api/test/upload-sequential', async (req, res): Promise<void> => {
+  try {
+    const count = parseInt(req.query.count as string) || 5;
+
+    const apiKey = await settings.get<string>('geminiApiKey');
+    if (!apiKey) {
+      res.status(500).json({ error: 'Gemini API key not configured' });
+      return;
+    }
+
+    const tester = new MediaUploadTest(context, apiKey);
+    const result = await tester.testSequentialUploads(count);
+
+    res.json(result);
+  } catch (error) {
+    console.error('Test error:', error);
+    res.status(500).json({
+      error: 'Test failed',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * POST /api/test/upload-parallel
+ * Test 4: 병렬 업로드
+ */
+router.post('/api/test/upload-parallel', async (req, res): Promise<void> => {
+  try {
+    const count = parseInt(req.query.count as string) || 5;
+
+    const apiKey = await settings.get<string>('geminiApiKey');
+    if (!apiKey) {
+      res.status(500).json({ error: 'Gemini API key not configured' });
+      return;
+    }
+
+    const tester = new MediaUploadTest(context, apiKey);
+    const result = await tester.testParallelUploads(count);
+
+    res.json(result);
+  } catch (error) {
+    console.error('Test error:', error);
+    res.status(500).json({
+      error: 'Test failed',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * POST /api/test/upload-full
+ * Test 5: 전체 규모 테스트 (14개)
+ */
+router.post('/api/test/upload-full', async (_req, res): Promise<void> => {
+  try {
+    const apiKey = await settings.get<string>('geminiApiKey');
+    if (!apiKey) {
+      res.status(500).json({ error: 'Gemini API key not configured' });
+      return;
+    }
+
+    const tester = new MediaUploadTest(context, apiKey);
+    const result = await tester.testFullScale();
+
+    res.json(result);
+  } catch (error) {
+    console.error('Test error:', error);
+    res.status(500).json({
+      error: 'Test failed',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * POST /api/test/run-all
+ * 모든 테스트 순차 실행
+ */
+router.post('/api/test/run-all', async (_req, res): Promise<void> => {
+  try {
+    const apiKey = await settings.get<string>('geminiApiKey');
+    if (!apiKey) {
+      res.status(500).json({ error: 'Gemini API key not configured' });
+      return;
+    }
+
+    const tester = new MediaUploadTest(context, apiKey);
+    const results = await tester.runAllTests();
+
+    res.json({
+      allTests: results,
+      summary: {
+        totalTests: results.length,
+        passed: results.filter(r => r.success).length,
+        failed: results.filter(r => r.success === false).length,
+        totalDuration: results.reduce((sum, r) => sum + r.duration, 0)
+      }
+    });
+  } catch (error) {
+    console.error('Test error:', error);
+    res.status(500).json({
+      error: 'Test failed',
+      message: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 });

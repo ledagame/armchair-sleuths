@@ -1,6 +1,6 @@
 ---
 name: devvit-community-builder
-description: Build viral Reddit communities using Devvit platform features - daily posts, leaderboards, social mechanics, and engagement loops. This skill should be used PROACTIVELY when designing community features, planning post strategies, or implementing viral mechanics.
+description: Viral Reddit community building using Devvit platform features including daily posts, leaderboards, user flairs, and social engagement loops. Use when designing community features, implementing daily post automation, creating leaderboard systems, or building viral sharing mechanics. Targets K > 1.0 viral coefficient.
 ---
 
 # Devvit Community Builder

@@ -1,6 +1,6 @@
 ---
 name: ai-prompt-engineer
-description: Optimize Gemini API prompts for consistent, high-quality case generation. This skill should be used when improving case generation quality, fixing inconsistent outputs, reducing hallucinations, or implementing chain-of-thought reasoning for mystery cases.
+description: Gemini API prompt optimization for murder mystery case generation using few-shot learning, chain-of-thought reasoning, and hallucination prevention. Use when improving case quality, fixing inconsistent outputs, reducing AI hallucinations, or implementing difficulty-adaptive prompting. Includes iterative refinement workflow with validation.
 ---
 
 # AI Prompt Engineering Specialist

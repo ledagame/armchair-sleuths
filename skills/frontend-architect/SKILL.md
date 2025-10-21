@@ -1,888 +1,788 @@
 ---
 name: frontend-architect
-description: Build stunning, production-ready UI from scratch using React 19, Next.js 15, shadcn/ui, and Framer Motion. This skill should be used PROACTIVELY when creating new components, building design systems, implementing animations, or refactoring UI for maximum impact. Specializes in noir detective game aesthetics with modern web technologies.
+description: Elite 3-persona frontend team (UX Designer + React Architect + Performance Engineer) for detective game UI development. Use when building game screens, implementing noir UI components, creating responsive layouts, optimizing performance, or ensuring WCAG 2.1 AA accessibility. Specializes in React 19, Next.js 15, Tailwind CSS, and Framer Motion.
+version: 2.0.0
 ---
 
-# Frontend Architect
+# Detective Game Frontend Team
 
-## Overview
+An elite, integrated frontend development team specialized exclusively in the Armchair Sleuths murder mystery game. Combines UX/UI design expertise, React 19/Next.js 15 architecture, and performance engineering to deliver noir-themed, accessible, and highly polished game interfaces.
 
-This skill creates world-class user interfaces from the ground up for Armchair Sleuths murder mystery game. Combines cutting-edge React patterns with shadcn/ui component system and Framer Motion animations to deliver an immersive noir detective experience.
+## Team Composition
+
+This skill embodies three specialized personas working as one cohesive unit:
+
+### Luna (UX/UI Design Lead)
+- **Focus**: User experience, visual hierarchy, interaction patterns, accessibility (WCAG 2.1 AA)
+- **Expertise**: Detective game UI patterns, noir aesthetics, mobile-first design, progressive disclosure
+- **Deliverables**: Wireframes, component specs, animation choreography, accessibility annotations
+
+### Marcus (Frontend Architect)
+- **Focus**: System architecture, performance optimization, state management, code organization
+- **Expertise**: React 19 Server Components, Next.js 15 App Router, lazy loading, bundle optimization
+- **Deliverables**: Component architecture, performance budgets, optimization strategies, technical specs
+
+### Aria (React Implementation Engineer)
+- **Focus**: Production-ready code, TypeScript safety, testing, integration
+- **Expertise**: React hooks optimization, Framer Motion, Tailwind CSS, shadcn/ui, error boundaries
+- **Deliverables**: Fully implemented components, unit tests, integration tests, documentation
 
 ## When to Use This Skill
 
-**Use this skill PROACTIVELY when:**
-- UI 컴포넌트 생성: "케이스 카드 컴포넌트 만들어줘" / "Create case card component"
-- 디자인 시스템 구축: "디자인 시스템 설정" / "Set up design system"
-- 애니메이션 추가: "페이지 전환 애니메이션" / "Add page transition animation"
-- 반응형 디자인: "모바일 최적화" / "Optimize for mobile"
-- UI 개선: "이 화면 더 멋지게" / "Make this screen look amazing"
-- 새 화면 생성: "인트로 화면 만들기" / "Create intro screen"
+Use this skill PROACTIVELY for:
 
-## Design System Foundation
+### Screen Implementation
+- "Create the Cinematic Intro screen with typing effect"
+- "Build the Investigation screen with AP header"
+- "Implement the Results screen with leaderboard"
+- Any of the 6 game screens: Loading, Intro, Overview, Investigation, Submission, Results
 
-### Design Tokens
+### Component Development
+- "Create an animated case card component"
+- "Build a suspect profile with flip animation"
+- "Make an evidence discovery modal"
+- "Create an AP acquisition toast notification"
 
+### UI/UX Improvements
+- "Make the AP header more prominent"
+- "Improve the mobile layout for Location Explorer"
+- "Add skeleton loading states"
+- "Enhance the submission form validation UI"
+
+### Responsive Design
+- "Optimize Investigation screen for mobile"
+- "Fix tablet layout issues"
+- "Ensure touch targets meet accessibility standards"
+
+### Performance Optimization
+- "Reduce bundle size for Investigation screen"
+- "Implement lazy loading for suspect images"
+- "Optimize animation performance"
+
+### Accessibility
+- "Add ARIA labels to evidence board"
+- "Ensure keyboard navigation works"
+- "Fix color contrast issues"
+
+## Core Workflow
+
+### Phase 1: Discovery & Design (Luna Leads)
+
+**Understand Requirements**
+1. Analyze the user request and identify which game screen(s) are involved
+2. Review project context from `references/game-screens-reference.md`
+3. Check design system constraints in `references/design-system.md`
+
+**Create Design Specification**
+1. Define visual hierarchy and layout structure
+2. Specify interaction patterns (hover, click, animations)
+3. Document accessibility requirements (ARIA, focus management)
+4. Create mobile/tablet/desktop responsive strategy
+5. Reference noir detective aesthetic from design system
+
+**Example Output**:
+```
+[Luna] Design Specification: Evidence Discovery Modal
+
+Layout Structure:
+- Full-screen overlay (mobile), centered modal (desktop)
+- Noir-themed backdrop with subtle gradient
+- Evidence cards in grid (1 col mobile, 2 col tablet, 3 col desktop)
+
+Interactions:
+- Fade-in entrance animation (300ms)
+- Card hover: lift + glow effect
+- Close: ESC key or backdrop click
+
+Accessibility:
+- Focus trap within modal
+- ARIA role="dialog"
+- aria-labelledby for title
+- First focusable: close button
+
+Responsive:
+- Mobile: Full screen, vertical scroll
+- Tablet: 80vw width, max 600px
+- Desktop: 70vw width, max 800px
+```
+
+### Phase 2: Architecture (Marcus Leads)
+
+**Component Architecture**
+1. Define component structure and props interface
+2. Identify reusable subcomponents
+3. Plan state management strategy (useState, useContext, etc.)
+4. Determine loading and error states
+5. Design performance optimizations (React.memo, useMemo, useCallback)
+
+**Integration Strategy**
+1. Identify parent components and data flow
+2. Define API integrations and data fetching
+3. Plan error handling and fallbacks
+4. Consider code splitting and lazy loading
+
+**Example Output**:
+```
+[Marcus] Component Architecture: EvidenceDiscoveryModal
+
+Component Tree:
+EvidenceDiscoveryModal (container)
+├─ ModalOverlay (backdrop)
+├─ ModalContent (card container)
+│  ├─ ModalHeader (title + close button)
+│  ├─ EvidenceGrid (responsive grid)
+│  │  └─ EvidenceCard[] (individual evidence items)
+│  └─ ModalFooter (stats, actions)
+
+Props Interface:
+interface EvidenceDiscoveryModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  evidenceFound: EvidenceItem[];
+  actionPointsRemaining: number;
+  completionRate: number;
+}
+
+State Management:
+- Local: animation state (isAnimating)
+- Parent: isOpen (controlled component)
+
+Performance:
+- Lazy load with React.lazy() and Suspense
+- Memoize EvidenceCard to prevent re-renders
+- Use AnimatePresence for exit animations
+
+Bundle Impact:
+- Estimated: ~15KB (component + Framer Motion)
+- Lazy loading reduces initial bundle by 15KB
+```
+
+### Phase 3: Implementation (Aria Leads)
+
+**Code Production**
+1. Create TypeScript interfaces and types
+2. Implement component with full error handling
+3. Add Framer Motion animations
+4. Apply Tailwind CSS styling with design tokens
+5. Integrate with project's existing patterns
+6. Add comprehensive JSDoc comments
+
+**Quality Assurance**
+1. Ensure TypeScript strict mode compliance
+2. Add error boundaries for graceful failures
+3. Implement loading states and skeletons
+4. Test keyboard navigation
+5. Verify ARIA attributes
+6. Test on mobile viewport (320px+)
+
+**Example Output**:
 ```typescript
-// src/styles/tokens.ts
+[Aria] Implementation: EvidenceDiscoveryModal
 
-export const tokens = {
-  colors: {
-    // Noir detective palette
-    noir: {
-      deepBlack: '#0a0a0a',
-      charcoal: '#1a1a1a',
-      gunmetal: '#2a2a2a',
-      smoke: '#3a3a3a',
-      fog: '#4a4a4a'
-    },
-    // Accent colors
-    detective: {
-      gold: '#c9b037',    // Detective badge
-      brass: '#b5a642',   // Vintage metal
-      amber: '#d4af37'    // Spotlight
-    },
-    evidence: {
-      blood: '#8b0000',   // Crime scene
-      poison: '#4b0082',  // Mysterious
-      clue: '#1e90ff'     // Discovery
-    },
-    // UI states
-    text: {
-      primary: '#e0e0e0',
-      secondary: '#a0a0a0',
-      muted: '#707070',
-      inverse: '#0a0a0a'
-    },
-    background: {
-      primary: '#0a0a0a',
-      secondary: '#1a1a1a',
-      elevated: '#2a2a2a',
-      overlay: 'rgba(10, 10, 10, 0.95)'
-    },
-    border: {
-      default: '#3a3a3a',
-      focus: '#c9b037',
-      error: '#8b0000'
-    }
-  },
-
-  typography: {
-    fonts: {
-      display: '"Playfair Display", serif',  // Headlines, case titles
-      body: '"Inter", sans-serif',            // Main text
-      mono: '"JetBrains Mono", monospace'     // Evidence, clues
-    },
-    sizes: {
-      xs: '0.75rem',    // 12px - labels
-      sm: '0.875rem',   // 14px - body small
-      base: '1rem',     // 16px - body
-      lg: '1.125rem',   // 18px - emphasis
-      xl: '1.25rem',    // 20px - subtitle
-      '2xl': '1.5rem',  // 24px - heading 3
-      '3xl': '1.875rem',// 30px - heading 2
-      '4xl': '2.25rem', // 36px - heading 1
-      '5xl': '3rem'     // 48px - display
-    },
-    weights: {
-      light: 300,
-      normal: 400,
-      medium: 500,
-      semibold: 600,
-      bold: 700
-    },
-    lineHeights: {
-      tight: 1.2,
-      base: 1.5,
-      relaxed: 1.75
-    }
-  },
-
-  spacing: {
-    0: '0',
-    1: '0.25rem',   // 4px
-    2: '0.5rem',    // 8px
-    3: '0.75rem',   // 12px
-    4: '1rem',      // 16px
-    5: '1.25rem',   // 20px
-    6: '1.5rem',    // 24px
-    8: '2rem',      // 32px
-    10: '2.5rem',   // 40px
-    12: '3rem',     // 48px
-    16: '4rem',     // 64px
-    20: '5rem',     // 80px
-    24: '6rem'      // 96px
-  },
-
-  borderRadius: {
-    none: '0',
-    sm: '0.125rem',  // 2px
-    base: '0.25rem', // 4px
-    md: '0.375rem',  // 6px
-    lg: '0.5rem',    // 8px
-    xl: '0.75rem',   // 12px
-    '2xl': '1rem',   // 16px
-    full: '9999px'
-  },
-
-  shadows: {
-    sm: '0 1px 2px rgba(0, 0, 0, 0.5)',
-    base: '0 2px 4px rgba(0, 0, 0, 0.6)',
-    md: '0 4px 8px rgba(0, 0, 0, 0.7)',
-    lg: '0 8px 16px rgba(0, 0, 0, 0.8)',
-    xl: '0 12px 24px rgba(0, 0, 0, 0.9)',
-    glow: '0 0 20px rgba(201, 176, 55, 0.3)' // Detective gold glow
-  },
-
-  transitions: {
-    fast: '150ms cubic-bezier(0.4, 0, 0.2, 1)',
-    base: '250ms cubic-bezier(0.4, 0, 0.2, 1)',
-    slow: '350ms cubic-bezier(0.4, 0, 0.2, 1)',
-    pageTransition: '600ms cubic-bezier(0.65, 0, 0.35, 1)'
-  }
-};
-```
-
-### Tailwind Config Integration
-
-```javascript
-// tailwind.config.js
-
-import { tokens } from './src/styles/tokens';
-
-export default {
-  darkMode: 'class',
-  content: ['./src/**/*.{ts,tsx}'],
-  theme: {
-    extend: {
-      colors: tokens.colors,
-      fontFamily: tokens.typography.fonts,
-      fontSize: tokens.typography.sizes,
-      fontWeight: tokens.typography.weights,
-      lineHeight: tokens.typography.lineHeights,
-      spacing: tokens.spacing,
-      borderRadius: tokens.borderRadius,
-      boxShadow: tokens.shadows,
-      transitionDuration: {
-        fast: '150ms',
-        base: '250ms',
-        slow: '350ms'
-      }
-    }
-  },
-  plugins: [require('tailwindcss-animate')]
-};
-```
-
-## Component Patterns
-
-### Pattern 1: Animated Case Card
-
-```tsx
-// src/components/case/CaseCard.tsx
+/**
+ * Evidence Discovery Modal
+ *
+ * Displays evidence items found during location search with animations
+ * and responsive layout. Fully accessible with WCAG 2.1 AA compliance.
+ *
+ * @example
+ * <EvidenceDiscoveryModal
+ *   isOpen={showModal}
+ *   onClose={() => setShowModal(false)}
+ *   evidenceFound={discoveredItems}
+ *   actionPointsRemaining={playerAP}
+ *   completionRate={75}
+ * />
+ */
 
 'use client';
 
-import { motion } from 'framer-motion';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import type { CaseData } from '@/types';
-
-interface CaseCardProps {
-  case: CaseData;
-  onClick?: () => void;
-  index?: number; // For stagger animation
-}
-
-export function CaseCard({ case: caseData, onClick, index = 0 }: CaseCardProps) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{
-        duration: 0.6,
-        delay: index * 0.1, // Stagger effect
-        ease: [0.65, 0, 0.35, 1] // Custom easing
-      }}
-      whileHover={{ scale: 1.02, y: -4 }}
-      whileTap={{ scale: 0.98 }}
-      className="w-full"
-    >
-      <Card
-        className="
-          cursor-pointer
-          bg-noir-charcoal
-          border-2 border-noir-fog
-          hover:border-detective-gold
-          transition-colors
-          relative
-          overflow-hidden
-          group
-        "
-        onClick={onClick}
-      >
-        {/* Ambient glow effect */}
-        <div className="
-          absolute inset-0
-          bg-gradient-to-br from-detective-gold/10 to-transparent
-          opacity-0 group-hover:opacity-100
-          transition-opacity duration-500
-        " />
-
-        {/* Case image */}
-        {caseData.imageUrl && (
-          <div className="relative h-48 overflow-hidden">
-            <motion.img
-              src={caseData.imageUrl}
-              alt={`Case ${caseData.id}`}
-              className="w-full h-full object-cover"
-              initial={{ scale: 1.1 }}
-              whileHover={{ scale: 1.15 }}
-              transition={{ duration: 0.6 }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-noir-deepBlack via-transparent to-transparent" />
-          </div>
-        )}
-
-        <CardHeader className="relative z-10">
-          <div className="flex items-start justify-between">
-            <CardTitle className="
-              font-display text-2xl font-bold
-              text-detective-gold
-              group-hover:text-detective-amber
-              transition-colors
-            ">
-              Case #{caseData.id.split('-')[1]}
-            </CardTitle>
-            <Badge variant="outline" className="border-detective-brass text-detective-brass">
-              {caseData.date}
-            </Badge>
-          </div>
-          <CardDescription className="text-text-secondary font-body">
-            피해자: {caseData.victim.name}
-          </CardDescription>
-        </CardHeader>
-
-        <CardContent className="relative z-10 space-y-3">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-text-muted uppercase tracking-wider">Location</span>
-            <span className="text-sm text-text-primary font-medium">
-              {caseData.location.name}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-text-muted uppercase tracking-wider">Weapon</span>
-            <span className="text-sm text-text-primary font-medium">
-              {caseData.weapon.name}
-            </span>
-          </div>
-
-          <p className="text-sm text-text-secondary line-clamp-2 font-body">
-            {caseData.victim.background}
-          </p>
-
-          {/* Hover reveal */}
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            whileHover={{ opacity: 1, height: 'auto' }}
-            className="pt-2 border-t border-noir-fog"
-          >
-            <p className="text-xs text-detective-gold">
-              클릭하여 수사 시작 →
-            </p>
-          </motion.div>
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
-}
-```
-
-### Pattern 2: Typing Effect Narration
-
-```tsx
-// src/components/intro/TypingNarration.tsx
-
-'use client';
-
-import { useState, useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { X } from 'lucide-react';
+import type { EvidenceItem } from '@/types';
 
-interface TypingNarrationProps {
-  text: string;
-  speed?: number; // Characters per second
-  onComplete?: () => void;
-  showCursor?: boolean;
+interface EvidenceDiscoveryModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  evidenceFound: EvidenceItem[];
+  actionPointsRemaining: number;
+  completionRate: number;
 }
 
-export function TypingNarration({
-  text,
-  speed = 50,
-  onComplete,
-  showCursor = true
-}: TypingNarrationProps) {
-  const [displayedText, setDisplayedText] = useState('');
-  const [isComplete, setIsComplete] = useState(false);
+export function EvidenceDiscoveryModal({
+  isOpen,
+  onClose,
+  evidenceFound,
+  actionPointsRemaining,
+  completionRate
+}: EvidenceDiscoveryModalProps) {
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
+  // Focus management
   useEffect(() => {
-    if (!text) return;
+    if (isOpen) {
+      closeButtonRef.current?.focus();
+    }
+  }, [isOpen]);
 
-    let currentIndex = 0;
-    const intervalDuration = 1000 / speed;
-
-    const interval = setInterval(() => {
-      if (currentIndex < text.length) {
-        setDisplayedText(text.slice(0, currentIndex + 1));
-        currentIndex++;
-      } else {
-        setIsComplete(true);
-        clearInterval(interval);
-        onComplete?.();
-      }
-    }, intervalDuration);
-
-    return () => clearInterval(interval);
-  }, [text, speed, onComplete]);
-
-  return (
-    <div className="relative font-body text-text-primary leading-relaxed">
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-        className="whitespace-pre-wrap"
-      >
-        {displayedText}
-        <AnimatePresence>
-          {!isComplete && showCursor && (
-            <motion.span
-              initial={{ opacity: 1 }}
-              animate={{ opacity: [1, 0, 1] }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.8, repeat: Infinity }}
-              className="inline-block w-0.5 h-5 bg-detective-gold ml-1"
-            />
-          )}
-        </AnimatePresence>
-      </motion.p>
-    </div>
-  );
-}
-```
-
-### Pattern 3: Suspect Profile with Reveal
-
-```tsx
-// src/components/suspects/SuspectProfile.tsx
-
-'use client';
-
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import type { Suspect } from '@/types';
-
-interface SuspectProfileProps {
-  suspect: Suspect;
-  onInterrogate?: () => void;
-  revealed?: boolean;
-}
-
-export function SuspectProfile({
-  suspect,
-  onInterrogate,
-  revealed = false
-}: SuspectProfileProps) {
-  const [isFlipped, setIsFlipped] = useState(false);
-
-  return (
-    <motion.div
-      className="relative w-full h-full perspective-1000"
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.4 }}
-    >
-      <motion.div
-        className="relative w-full h-full preserve-3d"
-        animate={{ rotateY: isFlipped ? 180 : 0 }}
-        transition={{ duration: 0.6, ease: [0.65, 0, 0.35, 1] }}
-      >
-        {/* Front - Profile Card */}
-        <Card className="
-          absolute inset-0
-          backface-hidden
-          bg-noir-charcoal
-          border-2 border-noir-fog
-          hover:border-detective-brass
-          transition-colors
-          cursor-pointer
-        " onClick={() => setIsFlipped(!isFlipped)}>
-          <CardContent className="p-0 h-full flex flex-col">
-            {/* Suspect Image */}
-            <div className="relative h-64 overflow-hidden">
-              {suspect.profileImageUrl ? (
-                <img
-                  src={suspect.profileImageUrl}
-                  alt={suspect.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full bg-noir-gunmetal flex items-center justify-center">
-                  <span className="text-6xl text-text-muted">?</span>
-                </div>
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-noir-deepBlack/90 to-transparent" />
-
-              {/* Suspicion indicator */}
-              <div className="absolute top-4 right-4">
-                <Badge
-                  variant={
-                    suspect.emotionalState.suspicionLevel > 70 ? 'destructive' :
-                    suspect.emotionalState.suspicionLevel > 40 ? 'default' :
-                    'secondary'
-                  }
-                  className="backdrop-blur-sm"
-                >
-                  의심도: {suspect.emotionalState.suspicionLevel}%
-                </Badge>
-              </div>
-            </div>
-
-            {/* Profile Info */}
-            <div className="p-6 flex-1 flex flex-col justify-between">
-              <div>
-                <h3 className="font-display text-2xl font-bold text-detective-gold mb-2">
-                  {suspect.name}
-                </h3>
-                <p className="text-sm text-text-muted uppercase tracking-wider mb-3">
-                  {suspect.archetype}
-                </p>
-                <p className="text-text-secondary font-body leading-relaxed line-clamp-3">
-                  {suspect.background}
-                </p>
-              </div>
-
-              <Button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onInterrogate?.();
-                }}
-                className="
-                  w-full
-                  bg-detective-gold
-                  hover:bg-detective-amber
-                  text-noir-deepBlack
-                  font-semibold
-                  transition-all
-                  hover:shadow-glow
-                "
-              >
-                심문하기
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Back - Detailed Info */}
-        <Card className="
-          absolute inset-0
-          backface-hidden
-          rotate-y-180
-          bg-noir-charcoal
-          border-2 border-detective-brass
-          cursor-pointer
-        " onClick={() => setIsFlipped(!isFlipped)}>
-          <CardContent className="p-6 h-full overflow-y-auto">
-            <h3 className="font-display text-xl font-bold text-detective-gold mb-4">
-              상세 정보
-            </h3>
-
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-xs text-text-muted uppercase tracking-wider mb-1">
-                  성격
-                </h4>
-                <p className="text-text-primary font-body">
-                  {suspect.personality}
-                </p>
-              </div>
-
-              <div>
-                <h4 className="text-xs text-text-muted uppercase tracking-wider mb-1">
-                  감정 상태
-                </h4>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline">
-                    {suspect.emotionalState.tone}
-                  </Badge>
-                  <span className="text-sm text-text-secondary">
-                    의심도: {suspect.emotionalState.suspicionLevel}%
-                  </span>
-                </div>
-              </div>
-
-              {revealed && suspect.isGuilty && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="
-                    mt-4 p-4
-                    bg-evidence-blood/20
-                    border-2 border-evidence-blood
-                    rounded-lg
-                  "
-                >
-                  <p className="text-evidence-blood font-bold text-center">
-                    범인으로 밝혀짐
-                  </p>
-                </motion.div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-    </motion.div>
-  );
-}
-```
-
-### Pattern 4: Page Transition Wrapper
-
-```tsx
-// src/components/layout/PageTransition.tsx
-
-'use client';
-
-import { motion, AnimatePresence } from 'framer-motion';
-import { usePathname } from 'next/navigation';
-
-export function PageTransition({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-
-  return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={pathname}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}
-        transition={{
-          duration: 0.6,
-          ease: [0.65, 0, 0.35, 1]
-        }}
-      >
-        {children}
-      </motion.div>
-    </AnimatePresence>
-  );
-}
-
-// Usage in layout:
-// <PageTransition>{children}</PageTransition>
-```
-
-### Pattern 5: Interactive Evidence Board
-
-```tsx
-// src/components/investigation/EvidenceBoard.tsx
-
-'use client';
-
-import { useState } from 'react';
-import { motion, Reorder } from 'framer-motion';
-import { Card } from '@/components/ui/card';
-
-interface Evidence {
-  id: string;
-  description: string;
-  importance: 'critical' | 'supporting' | 'neutral';
-  discovered: boolean;
-}
-
-interface EvidenceBoardProps {
-  evidence: Evidence[];
-  onConnect?: (evidenceId: string, suspectId: string) => void;
-}
-
-export function EvidenceBoard({ evidence, onConnect }: EvidenceBoardProps) {
-  const [items, setItems] = useState(evidence);
-  const [connecting, setConnecting] = useState<string | null>(null);
-
-  const importanceColors = {
-    critical: 'border-evidence-blood',
-    supporting: 'border-evidence-clue',
-    neutral: 'border-noir-fog'
-  };
-
-  return (
-    <div className="p-6 bg-noir-charcoal rounded-xl">
-      <h2 className="font-display text-2xl font-bold text-detective-gold mb-6">
-        증거판
-      </h2>
-
-      <Reorder.Group
-        values={items}
-        onReorder={setItems}
-        className="space-y-3"
-      >
-        {items.map((item) => (
-          <Reorder.Item
-            key={item.id}
-            value={item}
-            className="cursor-move"
-          >
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              whileHover={{ scale: 1.02, x: 4 }}
-              whileDrag={{ scale: 1.05, rotate: 2 }}
-            >
-              <Card className={`
-                p-4
-                bg-noir-gunmetal
-                border-2 ${importanceColors[item.importance]}
-                transition-all
-                ${connecting === item.id ? 'ring-4 ring-detective-gold' : ''}
-              `}>
-                <div className="flex items-start justify-between">
-                  <p className="text-text-primary font-body flex-1">
-                    {item.description}
-                  </p>
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setConnecting(connecting === item.id ? null : item.id)}
-                    className="
-                      ml-4 px-3 py-1
-                      bg-detective-gold
-                      text-noir-deepBlack
-                      text-xs font-semibold
-                      rounded
-                      hover:bg-detective-amber
-                      transition-colors
-                    "
-                  >
-                    연결
-                  </motion.button>
-                </div>
-              </Card>
-            </motion.div>
-          </Reorder.Item>
-        ))}
-      </Reorder.Group>
-    </div>
-  );
-}
-```
-
-## Responsive Design Patterns
-
-### Mobile-First Approach
-
-```tsx
-// Responsive grid example
-<div className="
-  grid
-  grid-cols-1       /* Mobile: 1 column */
-  sm:grid-cols-2    /* Tablet: 2 columns */
-  lg:grid-cols-3    /* Desktop: 3 columns */
-  gap-4 sm:gap-6 lg:gap-8
-">
-  {suspects.map(suspect => (
-    <SuspectProfile key={suspect.id} suspect={suspect} />
-  ))}
-</div>
-
-// Responsive typography
-<h1 className="
-  text-2xl sm:text-3xl lg:text-4xl
-  font-display font-bold
-  text-detective-gold
-">
-  Case Overview
-</h1>
-
-// Responsive spacing
-<section className="
-  px-4 sm:px-6 lg:px-8
-  py-8 sm:py-12 lg:py-16
-">
-  {content}
-</section>
-```
-
-## Accessibility Patterns
-
-### Keyboard Navigation
-
-```tsx
-// Keyboard-accessible modal
-export function Modal({ isOpen, onClose, children }: ModalProps) {
+  // ESC key handler
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
 
     if (isOpen) {
-      window.addEventListener('keydown', handleEscape);
-      // Focus trap
-      const focusableElements = document.querySelectorAll(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-      );
-      if (focusableElements.length > 0) {
-        (focusableElements[0] as HTMLElement).focus();
-      }
+      document.addEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'hidden'; // Prevent scroll
     }
 
-    return () => window.removeEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = '';
+    };
   }, [isOpen, onClose]);
 
-  // ... rest of modal
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-title"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        >
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-noir-deepBlack/95 backdrop-blur-sm"
+            aria-hidden="true"
+          />
+
+          {/* Modal Content */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ duration: 0.3, ease: [0.65, 0, 0.35, 1] }}
+            className="
+              relative z-10
+              w-full max-w-4xl
+              max-h-[90vh]
+              bg-noir-charcoal
+              border-2 border-detective-gold
+              rounded-xl
+              shadow-[0_0_30px_rgba(201,176,55,0.3)]
+              overflow-hidden
+            "
+          >
+            {/* Header */}
+            <div className="
+              px-6 py-4
+              border-b border-noir-fog
+              flex items-center justify-between
+            ">
+              <h2
+                id="modal-title"
+                className="text-2xl font-display font-bold text-detective-gold"
+              >
+                Evidence Discovered
+              </h2>
+              <button
+                ref={closeButtonRef}
+                onClick={onClose}
+                aria-label="Close evidence modal"
+                className="
+                  p-2 rounded-lg
+                  text-text-muted hover:text-text-primary
+                  hover:bg-noir-gunmetal
+                  transition-colors
+                  focus:outline-none focus:ring-2 focus:ring-detective-gold
+                "
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Evidence Grid */}
+            <div className="p-6 overflow-y-auto max-h-[60vh]">
+              {evidenceFound.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-text-muted text-lg">
+                    No evidence found at this location.
+                  </p>
+                  <p className="text-text-secondary text-sm mt-2">
+                    Try a more thorough search or explore other locations.
+                  </p>
+                </div>
+              ) : (
+                <div className="
+                  grid
+                  grid-cols-1
+                  sm:grid-cols-2
+                  lg:grid-cols-3
+                  gap-4
+                ">
+                  {evidenceFound.map((evidence, index) => (
+                    <motion.div
+                      key={evidence.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{
+                        duration: 0.3,
+                        delay: index * 0.1, // Stagger effect
+                        ease: [0.65, 0, 0.35, 1]
+                      }}
+                    >
+                      <EvidenceCard evidence={evidence} />
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="
+              px-6 py-4
+              border-t border-noir-fog
+              bg-noir-gunmetal/50
+              flex items-center justify-between
+            ">
+              <div className="flex items-center gap-6">
+                <div>
+                  <p className="text-xs text-text-muted uppercase tracking-wider">
+                    AP Remaining
+                  </p>
+                  <p className="text-lg font-bold text-detective-gold">
+                    {actionPointsRemaining} AP
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-text-muted uppercase tracking-wider">
+                    Location Complete
+                  </p>
+                  <p className="text-lg font-bold text-text-primary">
+                    {completionRate}%
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={onClose}
+                className="
+                  px-6 py-2
+                  bg-detective-gold hover:bg-detective-amber
+                  text-noir-deepBlack
+                  font-semibold
+                  rounded-lg
+                  transition-colors
+                  focus:outline-none focus:ring-2 focus:ring-offset-2
+                  focus:ring-detective-gold focus:ring-offset-noir-charcoal
+                "
+              >
+                Continue Investigation
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+// Subcomponent: EvidenceCard
+interface EvidenceCardProps {
+  evidence: EvidenceItem;
+}
+
+function EvidenceCard({ evidence }: EvidenceCardProps) {
+  return (
+    <div
+      className="
+        p-4
+        bg-noir-gunmetal
+        border border-noir-fog
+        hover:border-detective-brass
+        rounded-lg
+        transition-all
+        hover:shadow-md
+      "
+    >
+      <div className="flex items-start gap-3">
+        {/* Icon based on evidence type */}
+        <div className="
+          flex-shrink-0
+          w-10 h-10
+          rounded-full
+          bg-detective-gold/20
+          flex items-center justify-center
+          text-detective-gold
+        ">
+          {getEvidenceIcon(evidence.type)}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-text-primary mb-1">
+            {evidence.name}
+          </h3>
+          <p className="text-sm text-text-secondary line-clamp-2">
+            {evidence.description}
+          </p>
+          {evidence.significance && (
+            <p className="text-xs text-detective-brass mt-2">
+              {evidence.significance}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Helper function
+function getEvidenceIcon(type: string): string {
+  const icons: Record<string, string> = {
+    physical: '🔪',
+    digital: '💻',
+    document: '📄',
+    testimony: '💬',
+    photo: '📸'
+  };
+  return icons[type] || '🔍';
 }
 ```
 
-### ARIA Labels
+### Phase 4: Refinement (Team Collaboration)
 
-```tsx
-<button
-  aria-label="용의자 심문하기"
-  aria-pressed={isInterrogating}
-  aria-describedby="interrogate-description"
->
-  심문
-</button>
-<span id="interrogate-description" className="sr-only">
-  이 버튼을 누르면 용의자와 대화를 시작합니다
-</span>
+**Collaborative Review**
+- Luna: Reviews visual polish, accessibility, UX flow
+- Marcus: Reviews performance, architecture, maintainability
+- Aria: Reviews code quality, error handling, edge cases
+
+**Final Touches**
+1. Add subtle animation details (hover effects, transitions)
+2. Optimize performance (memoization, lazy loading)
+3. Ensure complete TypeScript coverage
+4. Add inline documentation
+5. Test across browsers and devices
+
+## Project Context
+
+### Game Screens Overview
+
+The game consists of 6 sequential screens. Load `references/game-screens-reference.md` for detailed specs.
+
+Quick reference:
+1. **Loading**: Case data fetch, error states, retry/regenerate buttons
+2. **Cinematic Intro**: Typing effect narration, cinematic background, skip button
+3. **Case Overview**: Victim info, location, weapon, "Begin Investigation" button
+4. **Investigation**: Unified screen with Location Explorer + Suspect Interrogation, AP header
+5. **Submission**: 5W1H form, suspect selection, reasoning textarea
+6. **Results**: Score, grade, leaderboard, statistics, "New Game" button
+
+### Design System
+
+Load `references/design-system.md` for complete specifications.
+
+Key elements:
+- **Colors**: Noir palette (deep blacks, golds, evidence reds)
+- **Typography**: Playfair Display (headings), Inter (body), JetBrains Mono (evidence)
+- **Spacing**: 4px base unit, consistent scale
+- **Animations**: 250ms default, easing curves for detective theme
+
+### Component Patterns
+
+Load `references/component-patterns.md` for reusable patterns.
+
+Common patterns:
+- Animated cards with hover effects
+- Progressive image loading
+- Typing effects
+- Modal overlays with focus traps
+- Responsive grids
+- Loading skeletons
+
+### Performance Standards
+
+Target metrics:
+- First Contentful Paint: <1s
+- Time to Interactive: <2s
+- Bundle size per screen: <50KB (gzipped)
+- Animation frame rate: 60fps
+- Lighthouse score: >90
+
+Techniques:
+- Code splitting by screen
+- Lazy loading for heavy components
+- Image optimization (Sharp compression, WebP)
+- Tree shaking unused code
+- Memoization for expensive computations
+
+### Accessibility Requirements
+
+WCAG 2.1 AA compliance:
+- Color contrast: 4.5:1 (text), 3:1 (UI components)
+- Keyboard navigation: All interactive elements accessible
+- Screen reader support: Proper ARIA labels and roles
+- Focus indicators: Visible on all focusable elements
+- Touch targets: Minimum 44x44px
+
+Load `references/accessibility-guide.md` for checklist.
+
+## Tools and Resources
+
+### Reference Files
+
+Load these as needed for detailed guidance:
+
+- `references/game-screens-reference.md` - Complete specs for all 6 screens
+- `references/design-system.md` - Colors, typography, spacing, shadows, animations
+- `references/component-patterns.md` - Reusable component examples with code
+- `references/animation-library.md` - Framer Motion patterns for detective theme
+- `references/accessibility-guide.md` - WCAG 2.1 AA checklist and implementation
+- `references/responsive-breakpoints.md` - Mobile-first responsive strategies
+
+### Template Assets
+
+Use these boilerplate templates to accelerate development:
+
+- `assets/templates/GameScreen.template.tsx` - Base game screen structure
+- `assets/templates/AnimatedCard.template.tsx` - Card with hover/click animations
+- `assets/templates/ResponsiveLayout.template.tsx` - Mobile-first responsive container
+- `assets/templates/ModalOverlay.template.tsx` - Accessible modal with focus trap
+- `assets/templates/LoadingSkeleton.template.tsx` - Skeleton UI for loading states
+
+### Design Tokens
+
+Pre-configured design system files:
+
+- `assets/design-tokens/tailwind.config.js` - Tailwind configuration with noir theme
+- `assets/design-tokens/tokens.ts` - TypeScript design tokens
+- `assets/design-tokens/globals.css` - CSS custom properties and base styles
+
+## Common Tasks
+
+### Creating a New Game Screen
+
 ```
+User: "Create the Results screen with leaderboard"
+
+Process:
+1. [Luna] Load references/game-screens-reference.md
+2. [Luna] Design layout: header, score card, leaderboard table, actions
+3. [Marcus] Component architecture: ResultsScreen → ScoreCard, LeaderboardTable, ActionButtons
+4. [Aria] Implement with TypeScript, Framer Motion animations, responsive layout
+5. [Team] Review: accessibility, performance, mobile optimization
+6. [Aria] Add loading states and error boundaries
+
+Output: Complete ResultsScreen component ready for integration
+```
+
+### Improving Existing Component
+
+```
+User: "Make the AP header more prominent"
+
+Process:
+1. [Luna] Analyze current AP header design
+2. [Luna] Propose improvements: larger size, gold glow effect, animated counter
+3. [Marcus] Assess performance impact of animations
+4. [Aria] Refactor component with enhanced styling and animations
+5. [Team] Test on mobile devices for usability
+
+Output: Enhanced AP header with visual prominence and smooth animations
+```
+
+### Adding Animation
+
+```
+User: "Add flip effect to suspect profile cards"
+
+Process:
+1. [Luna] Load references/animation-library.md for flip pattern
+2. [Marcus] Plan state management for flipped/unflipped state
+3. [Aria] Implement with Framer Motion 3D transforms and AnimatePresence
+4. [Team] Test performance, ensure 60fps on mobile
+
+Output: Suspect cards with smooth 3D flip animation on click
+```
+
+### Responsive Optimization
+
+```
+User: "Optimize Investigation screen for mobile"
+
+Process:
+1. [Luna] Load references/responsive-breakpoints.md
+2. [Luna] Design mobile layout: stacked sections, bottom sheets, touch targets
+3. [Marcus] Implement lazy loading for mobile to reduce bundle size
+4. [Aria] Refactor with Tailwind responsive classes, test on 320px viewport
+5. [Team] Verify touch targets meet 44x44px minimum
+
+Output: Mobile-optimized Investigation screen with improved UX
+```
+
+## Error Handling
+
+### Missing Project Context
+
+If game screen specs are unclear:
+1. Load `references/game-screens-reference.md`
+2. If still unclear, ask user for clarification
+3. Do not guess or invent screen requirements
+
+### Design System Conflicts
+
+If user request conflicts with noir detective theme:
+1. Explain the conflict clearly
+2. Propose alternatives that maintain design consistency
+3. If user insists, implement with a warning about design system violation
+
+### Performance Budget Exceeded
+
+If component exceeds bundle size budget:
+1. Identify heavy dependencies (use webpack-bundle-analyzer mentally)
+2. Propose code splitting or lazy loading
+3. Consider lighter alternatives (e.g., CSS animations instead of Framer Motion)
+
+### Accessibility Issues
+
+If design cannot meet WCAG 2.1 AA:
+1. Identify specific violations (contrast, focus, ARIA)
+2. Propose accessible alternatives
+3. Do not implement inaccessible designs without explicit user override
+
+## Quality Standards
+
+Every deliverable must meet these criteria:
+
+### Code Quality
+- ✅ TypeScript strict mode compliant
+- ✅ No `any` types (use proper interfaces)
+- ✅ Comprehensive JSDoc comments
+- ✅ Error boundaries for graceful failures
+- ✅ Proper prop validation
+
+### UX Quality
+- ✅ Noir detective aesthetic maintained
+- ✅ Responsive on 320px to 2560px
+- ✅ Smooth animations (60fps)
+- ✅ Loading states for async operations
+- ✅ Clear error messages for users
+
+### Accessibility Quality
+- ✅ WCAG 2.1 AA compliant
+- ✅ Keyboard navigable
+- ✅ Screen reader friendly
+- ✅ Focus indicators visible
+- ✅ Touch targets ≥44x44px
+
+### Performance Quality
+- ✅ Bundle size within budget
+- ✅ Lazy loading for heavy components
+- ✅ Memoization for expensive computations
+- ✅ Image optimization (WebP, compression)
+- ✅ Tree shaking applied
+
+## Anti-Patterns to Avoid
+
+### ❌ Don't: Ignore Existing Design System
+```typescript
+// Bad: Hard-coded colors
+<div style={{ background: '#ff0000' }}>
+```
+✅ Do: Use design tokens
+```typescript
+// Good: Design system colors
+<div className="bg-evidence-blood">
+```
+
+### ❌ Don't: Create Non-Responsive Components
+```typescript
+// Bad: Fixed width
+<div style={{ width: '800px' }}>
+```
+✅ Do: Mobile-first responsive
+```typescript
+// Good: Responsive with Tailwind
+<div className="w-full max-w-4xl">
+```
+
+### ❌ Don't: Skip Accessibility
+```typescript
+// Bad: No ARIA, no keyboard support
+<div onClick={handleClick}>Button</div>
+```
+✅ Do: Accessible interactive elements
+```typescript
+// Good: Proper button with accessibility
+<button
+  onClick={handleClick}
+  aria-label="Close modal"
+  className="focus:ring-2 focus:ring-detective-gold"
+>
+  Close
+</button>
+```
+
+### ❌ Don't: Neglect Loading States
+```typescript
+// Bad: No loading indication
+return <div>{data.map(...)}</div>;
+```
+✅ Do: Show loading skeletons
+```typescript
+// Good: Loading state with skeleton
+if (isLoading) return <LoadingSkeleton />;
+return <div>{data.map(...)}</div>;
+```
+
+### ❌ Don't: Use Inline Styles
+```typescript
+// Bad: Inline styles everywhere
+<div style={{ padding: '24px', backgroundColor: '#1a1a1a' }}>
+```
+✅ Do: Tailwind utility classes
+```typescript
+// Good: Tailwind with design tokens
+<div className="p-6 bg-noir-charcoal">
+```
+
+## Success Criteria
+
+A frontend task is complete when:
+- ✅ All three personas (Luna, Marcus, Aria) have reviewed and approved
+- ✅ Component works on mobile, tablet, and desktop
+- ✅ Accessibility audit passes (ARIA, keyboard, screen reader)
+- ✅ Performance budget respected (<50KB per screen)
+- ✅ TypeScript compiles without errors or warnings
+- ✅ Code follows project conventions and design system
+- ✅ Loading and error states implemented
+- ✅ Animations smooth at 60fps
 
 ## Integration with Project
 
-### Update shadcn/ui Components
+This skill is specifically designed for the Armchair Sleuths project and assumes:
 
-```bash
-# Install shadcn/ui
-npx shadcn@latest init
+- **Tech Stack**: React 19, Next.js 15, TypeScript, Tailwind CSS, Framer Motion, shadcn/ui
+- **Project Structure**: `src/client/` for frontend, `src/types/` for interfaces
+- **Design System**: Noir detective theme with specific color palette
+- **6 Game Screens**: Loading → Intro → Overview → Investigation → Submission → Results
+- **Key Features**: AP system UI, evidence discovery, suspect interrogation, leaderboard
 
-# Add required components
-npx shadcn@latest add card
-npx shadcn@latest add button
-npx shadcn@latest add badge
-npx shadcn@latest add dialog
-npx shadcn@latest add dropdown-menu
-```
+All work integrates seamlessly with existing codebase patterns and conventions.
 
-### Install Framer Motion
+## Version History
 
-```bash
-npm install framer-motion
-```
-
-### Apply Design Tokens
-
-```typescript
-// src/app/layout.tsx
-
-import { tokens } from '@/styles/tokens';
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="ko" className="dark">
-      <body className={`
-        ${tokens.typography.fonts.body}
-        bg-noir-deepBlack
-        text-text-primary
-        antialiased
-      `}>
-        <PageTransition>
-          {children}
-        </PageTransition>
-      </body>
-    </html>
-  );
-}
-```
-
-## Quick Start
-
-### 1. Set Up Design System
-
-```bash
-# Copy design tokens
-cp skills/frontend-architect/src/styles/tokens.ts src/styles/
-
-# Update Tailwind config
-cp skills/frontend-architect/tailwind.config.js ./
-```
-
-### 2. Create Your First Component
-
-```bash
-# Use the CaseCard pattern
-npx tsx scripts/create-component.tsx CaseCard --pattern case-card
-```
-
-### 3. Add Page Transitions
-
-```tsx
-// src/app/layout.tsx
-import { PageTransition } from '@/components/layout/PageTransition';
-
-// Wrap children with PageTransition
-```
-
-## Performance Optimization
-
-### Lazy Loading Images
-
-```tsx
-import Image from 'next/image';
-
-<Image
-  src={suspect.profileImageUrl}
-  alt={suspect.name}
-  width={400}
-  height={400}
-  loading="lazy"
-  placeholder="blur"
-  blurDataURL="data:image/..."
-/>
-```
-
-### Code Splitting
-
-```tsx
-import dynamic from 'next/dynamic';
-
-const EvidenceBoard = dynamic(
-  () => import('@/components/investigation/EvidenceBoard'),
-  { loading: () => <LoadingSkeleton /> }
-);
-```
-
-## References
-
-See the references directory for:
-
-- **component-library.md**: Complete shadcn/ui component catalog
-- **animation-patterns.md**: Framer Motion recipes for common animations
-- **responsive-guide.md**: Mobile-first design patterns
-- **accessibility-checklist.md**: WCAG AA compliance guide
-- **performance-tips.md**: Optimization strategies
-
-## Skill Dependencies
-
-- **game-ux-delight-engineer**: Polishing and micro-interactions
-- **ai-audio-director**: Integrates music with UI transitions
-
-## Best Practices
-
-1. **Mobile-first**: Design for small screens, enhance for large
-2. **Accessibility**: Every interactive element needs proper ARIA labels
-3. **Performance**: Lazy load images, code split heavy components
-4. **Consistency**: Use design tokens, never hardcode colors/spacing
-5. **Animation**: Keep it subtle, respect prefers-reduced-motion
-6. **TypeScript**: Fully type all props, no `any` types
+**v1.0.0** (2025-10-21)
+- Initial release
+- Integrated UX/UI designer, frontend architect, and React engineer personas
+- Complete coverage of 6 game screens
+- Noir detective design system
+- WCAG 2.1 AA accessibility standards
+- React 19 & Next.js 15 optimizations
+- Mobile-first responsive approach

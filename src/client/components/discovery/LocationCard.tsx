@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { ExplorationArea } from '@/shared/types/Location';
 import type { SearchType } from '@/shared/types/Evidence';
 import { SearchMethodSelector } from './SearchMethodSelector';
+import { SkeletonLoader } from '../ui/SkeletonLoader';
 
 export interface LocationCardProps {
   location: {
@@ -20,6 +21,7 @@ export interface LocationCardProps {
     emoji: string;
     imageUrl?: string;
   };
+  imageStatus?: 'loading' | 'loaded' | 'error';
   isSearched: boolean;
   isSearching?: boolean;
   completionRate?: number;
@@ -35,6 +37,7 @@ export interface LocationCardProps {
  */
 export function LocationCard({
   location,
+  imageStatus = 'error',
   isSearched,
   isSearching = false,
   completionRate = 0,
@@ -90,9 +93,26 @@ export function LocationCard({
         aria-label={`${location.name} ${isSearched ? '탐색 완료' : '탐색하기'}`}
         aria-disabled={isSearched || isSearching}
       >
-      {/* Location Icon */}
-      <div className="text-5xl mb-3 flex justify-center">
-        {location.emoji}
+      {/* Location Image/Icon */}
+      <div className="mb-3 flex justify-center">
+        {imageStatus === 'loading' ? (
+          <div className="w-full h-48 rounded-lg overflow-hidden">
+            <SkeletonLoader />
+          </div>
+        ) : imageStatus === 'loaded' && location.imageUrl ? (
+          <div className="w-full h-48 rounded-lg overflow-hidden">
+            <motion.img
+              src={location.imageUrl}
+              alt={location.name}
+              className="w-full h-full object-cover"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+            />
+          </div>
+        ) : (
+          <div className="text-5xl">{location.emoji}</div>
+        )}
       </div>
 
       {/* Location Name */}

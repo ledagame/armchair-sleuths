@@ -1,0 +1,129 @@
+# Developer Metadata File
+# This SKILL.yaml contains project management metadata (npm scripts, dependencies, version control).
+# Claude reads SKILL.md for instructions and triggering.
+# - SKILL.md: Claude's reference (instructions, usage, examples)
+# - SKILL.yaml: Developer's reference (scripts, dependencies, integration)
+
+name: evidence-system-architect
+version: 1.0.0
+description: |
+  Design comprehensive evidence discovery and location exploration systems for
+  murder mystery games. Combines Fair Play principles, difficulty balancing,
+  AI image generation, and game loop integration.
+
+author: Armchair Sleuths Team
+license: MIT
+
+# Trigger keywords for auto-activation
+triggers:
+  - evidence discovery
+  - location exploration
+  - evidence system
+  - fair play
+  - clue discovery
+  - search mechanics
+  - evidence difficulty
+  - location images
+  - evidence images
+  - investigation system
+
+# Dependencies
+dependencies:
+  skills:
+    - mystery-game-designer    # Fair Play principles
+    - gemini-image-generator   # Location and evidence images
+    - ai-prompt-engineer       # Evidence generation prompts
+  apis:
+    - gemini-ai               # Image generation
+  packages:
+    - sharp                   # Image processing
+
+# Capabilities
+capabilities:
+  - name: fair-play-evidence
+    description: Design evidence systems that follow Fair Play mystery rules
+    usage: Ensure all evidence is discoverable through gameplay
+
+  - name: difficulty-balancing
+    description: Balance evidence distribution across difficulty levels
+    usage: Easy (70% obvious), Medium (50%), Hard (30%), Legendary (20%)
+
+  - name: location-image-generation
+    description: Generate AI images for investigation locations
+    usage: Crime scene photography style, 1024x768 resolution
+
+  - name: evidence-image-generation
+    description: Generate AI images for evidence items
+    usage: Forensic photography style, 512x512 resolution
+
+# Configuration
+config:
+  evidence_types:
+    critical: 0.30   # 30% critical evidence
+    supporting: 0.40 # 40% supporting
+    red_herring: 0.30 # 30% red herrings
+
+  difficulty_configs:
+    easy:
+      locations: 3
+      evidence_min: 6
+      evidence_max: 8
+      obvious_ratio: 0.70
+    medium:
+      locations: 4
+      evidence_min: 8
+      evidence_max: 12
+      obvious_ratio: 0.50
+    hard:
+      locations: 5
+      evidence_min: 12
+      evidence_max: 15
+      obvious_ratio: 0.30
+    legendary:
+      locations: 5
+      evidence_min: 15
+      evidence_max: 18
+      obvious_ratio: 0.20
+
+# npm scripts
+npm_scripts:
+  evidence:generate: "tsx scripts/generate-evidence-system.ts"
+  evidence:validate: "tsx scripts/validate-evidence.ts"
+  evidence:images: "tsx scripts/generate-evidence-images.ts"
+  evidence:fairplay: "tsx scripts/verify-fair-play.ts"
+
+# Documentation
+documentation:
+  readme: SKILL.md
+  references:
+    - references/evidence-types.md
+    - references/location-props.md
+    - references/difficulty-configs.md
+    - references/fair-play-checklist.md
+    - references/image-generation-guide.md
+
+# Integration points
+integration:
+  reads_from:
+    - src/server/services/case/CaseGeneratorService.ts
+    - src/server/data/CaseElementLibrary.ts
+  writes_to:
+    - src/shared/types/Evidence.ts
+    - src/shared/types/Location.ts
+    - src/server/services/evidence/EvidenceDiscoveryService.ts
+  influences:
+    - mystery-case-generator    # Enhanced case generation
+    - viral-detective-challenge # Evidence-based challenges
+
+# Version history
+changelog:
+  - version: 1.0.0
+    date: 2025-01-20
+    changes:
+      - Initial release
+      - Fair Play evidence system
+      - Difficulty-based balancing
+      - Location image generation
+      - Evidence image generation
+      - Discovery probability system
+      - Game loop integration
