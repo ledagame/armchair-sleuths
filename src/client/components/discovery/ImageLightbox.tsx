@@ -57,7 +57,7 @@ export function ImageLightbox({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.2, ease: [0.65, 0, 0.35, 1] }}
+        transition={{ duration: 0.2, ease: [0.65, 0, 0.35, 1] as const }}
         onClick={onClose}
         role="dialog"
         aria-modal="true"
@@ -83,7 +83,7 @@ export function ImageLightbox({
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
-          transition={{ duration: 0.25, ease: [0.65, 0, 0.35, 1] }}
+          transition={{ duration: 0.25, ease: [0.65, 0, 0.35, 1] as const }}
           style={{
             maxWidth: '90%',
             maxHeight: '90%',

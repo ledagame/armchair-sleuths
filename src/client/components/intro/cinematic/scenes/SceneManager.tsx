@@ -85,7 +85,7 @@ const transitionVariants: Record<TransitionType, any> = {
     initial: { x: '100%' },
     animate: { x: 0 },
     exit: { x: '-100%' },
-    transition: { duration: 1.2, ease: [0.6, 0.01, 0.05, 0.95] }
+    transition: { duration: 1.2, ease: [0.6, 0.01, 0.05, 0.95] as const }
   },
 
   zoom: {

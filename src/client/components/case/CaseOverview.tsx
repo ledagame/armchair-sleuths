@@ -47,7 +47,7 @@ export function CaseOverview({ caseData, onStartInvestigation }: CaseOverviewPro
       y: 0,
       transition: {
         duration: 0.4,
-        ease: [0.65, 0, 0.35, 1],
+        ease: [0.65, 0, 0.35, 1] as const,
       },
     },
   };

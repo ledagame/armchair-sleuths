@@ -3,10 +3,14 @@
  *
  * Manages answer submission and scoring
  * Handles validation, submission state, and result retrieval
+ *
+ * Migration: Uses GameAPI architecture instead of direct fetch
  */
 
 import { useState, useCallback } from 'react';
-import type { W4HAnswer, ScoringResult, UseSubmissionReturn, ApiError } from '../types';
+import type { W4HAnswer, ScoringResult, UseSubmissionReturn } from '../types';
+import { useGameAPI } from '../contexts/GameAPIContext';
+import { APIError } from '../api/GameAPI';
 
 interface UseSubmissionOptions {
   caseId: string;
@@ -15,8 +19,11 @@ interface UseSubmissionOptions {
 
 /**
  * Hook for submitting and scoring answers
+ *
+ * Uses GameAPI for type-safe backend communication
  */
 export function useSubmission({ caseId, userId }: UseSubmissionOptions): UseSubmissionReturn {
+  const api = useGameAPI();
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,7 +47,7 @@ export function useSubmission({ caseId, userId }: UseSubmissionOptions): UseSubm
     return null; // Valid
   };
 
-  // Submit answer for scoring
+  // Submit answer for scoring using GameAPI
   const submitAnswer = useCallback(
     async (answer: W4HAnswer): Promise<ScoringResult> => {
       setSubmitting(true);
@@ -55,38 +62,32 @@ export function useSubmission({ caseId, userId }: UseSubmissionOptions): UseSubm
       }
 
       try {
-        const response = await fetch('/api/submit', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            userId,
-            caseId,
-            answers: answer,
-          }),
-        });
+        // Use GameAPI instead of direct fetch
+        const result = await api.submitAnswer(userId, caseId, answer);
 
-        if (!response.ok) {
-          const errorData: ApiError = await response.json();
-          throw new Error(errorData.message || 'Failed to submit answer');
-        }
-
-        const result: ScoringResult = await response.json();
-
-        console.log('Scoring result:', result);
+        console.log('[useSubmission] Scoring result:', result);
 
         return result;
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+        let errorMessage: string;
+
+        if (err instanceof APIError) {
+          // Handle APIError with status code
+          errorMessage = `제출 실패 (${err.status}): ${err.message}`;
+        } else if (err instanceof Error) {
+          errorMessage = err.message;
+        } else {
+          errorMessage = '알 수 없는 오류가 발생했습니다';
+        }
+
         setError(errorMessage);
-        console.error('Failed to submit answer:', err);
+        console.error('[useSubmission] Failed to submit answer:', err);
         throw err;
       } finally {
         setSubmitting(false);
       }
     },
-    [caseId, userId]
+    [api, caseId, userId]
   );
 
   return {

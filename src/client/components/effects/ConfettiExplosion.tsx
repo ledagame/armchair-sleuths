@@ -127,7 +127,7 @@ export function ConfettiExplosion({
             }}
             transition={{
               duration: duration / 1000,
-              ease: [0.25, 0.46, 0.45, 0.94],
+              ease: [0.25, 0.46, 0.45, 0.94] as const,
               opacity: {
                 times: [0, 0.7, 1],
                 duration: duration / 1000,

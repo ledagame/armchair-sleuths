@@ -340,7 +340,7 @@ export function InvestigationScreen({
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
-            transition={{ duration: 0.3, ease: [0.65, 0, 0.35, 1] }}
+            transition={{ duration: 0.3, ease: [0.65, 0, 0.35, 1] as const }}
           >
             <LocationExplorerSection
               caseId={caseId}
@@ -360,7 +360,7 @@ export function InvestigationScreen({
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3, ease: [0.65, 0, 0.35, 1] }}
+            transition={{ duration: 0.3, ease: [0.65, 0, 0.35, 1] as const }}
           >
             <SuspectInterrogationSection
               caseId={caseId}
@@ -378,7 +378,7 @@ export function InvestigationScreen({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3, ease: [0.65, 0, 0.35, 1] }}
+            transition={{ duration: 0.3, ease: [0.65, 0, 0.35, 1] as const }}
           >
             <EvidenceNotebookSection
               caseId={caseId}

@@ -13,8 +13,9 @@ module.exports = {
         noir: {
           deepBlack: '#0a0a0a',   // Primary background
           charcoal: '#1a1a1a',    // Card backgrounds
-          gunmetal: '#2a2a2a',    // Elevated surfaces
-          smoke: '#3a3a3a',       // Hover states
+          gunmetal: '#2a2a2a',    // Elevated surfaces (darkGray in docs)
+          ash: '#3a3a3a',         // Hover states (Magic MCP compatibility) ✅
+          smoke: '#3a3a3a',       // Alias for ash (backward compatibility)
           fog: '#4a4a4a',         // Borders
         },
 
@@ -36,6 +37,7 @@ module.exports = {
         text: {
           primary: '#e0e0e0',     // Primary readable text (WCAG AA: 12.6:1)
           secondary: '#a0a0a0',   // Secondary text, descriptions (WCAG AA: 7.2:1)
+          tertiary: '#959595',    // Metadata, tertiary text (WCAG AA: 4.6:1) ✅
           muted: '#707070',       // Disabled, placeholder text
           inverse: '#0a0a0a',     // Text on light backgrounds
         },

@@ -90,7 +90,7 @@ export function LocationCard({
         whileHover={!isSearched && !isSearching ? {
           scale: 1.02,
           y: -4,
-          transition: { duration: 0.2, ease: [0.65, 0, 0.35, 1] }
+          transition: { duration: 0.2, ease: [0.65, 0, 0.35, 1] as const }
         } : {}}
         // Click animation
         whileTap={!isSearched && !isSearching ? {

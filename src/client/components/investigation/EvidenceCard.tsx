@@ -83,7 +83,7 @@ export function EvidenceCard({ evidence, onClick }: EvidenceCardProps) {
       whileHover={{
         y: -4,
         scale: 1.01,
-        transition: { duration: 0.2, ease: [0.65, 0, 0.35, 1] }
+        transition: { duration: 0.2, ease: [0.65, 0, 0.35, 1] as const }
       }}
       whileTap={{
         scale: 0.98,

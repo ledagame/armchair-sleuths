@@ -120,7 +120,7 @@ export const App = () => {
       y: 0,
       transition: {
         duration: 0.3,
-        ease: [0.65, 0, 0.35, 1], // Custom easing curve
+        ease: [0.65, 0, 0.35, 1] as const, // Custom easing curve
       },
     },
     exit: {
@@ -128,7 +128,7 @@ export const App = () => {
       y: -20,
       transition: {
         duration: 0.2,
-        ease: [0.65, 0, 0.35, 1],
+        ease: [0.65, 0, 0.35, 1] as const,
       },
     },
   };

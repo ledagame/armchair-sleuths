@@ -121,7 +121,7 @@ export function EvidenceDetailModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.25, ease: [0.65, 0, 0.35, 1] }}
+            transition={{ duration: 0.25, ease: [0.65, 0, 0.35, 1] as const }}
             onClick={onClose}
             aria-label="닫기"
           />
@@ -142,7 +142,7 @@ export function EvidenceDetailModal({
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               transition={{
                 duration: 0.25,
-                ease: [0.65, 0, 0.35, 1]
+                ease: [0.65, 0, 0.35, 1] as const
               }}
               onClick={(e) => e.stopPropagation()}
               role="dialog"

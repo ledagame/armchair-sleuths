@@ -4,54 +4,44 @@
  * Manages case data fetching and state
  * Handles loading, error states, and data caching
  * Supports loading specific cases via postData.caseId (for archive/historical games)
+ *
+ * REFACTORED: Now uses GameAPI architecture with Repository Pattern
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import type { CaseData, UseCaseReturn, CaseApiResponse, ApiError } from '../types';
-
-// Devvit postData interface
-interface DevvitPostData {
-  gameState?: string;
-  score?: number;
-  caseId?: string; // Custom case ID for loading specific historical cases
-}
-
-// Access Devvit postData from window (set by Devvit framework)
-declare global {
-  interface Window {
-    __POST_DATA__?: DevvitPostData;
-  }
-}
+import { useGameAPI } from '../contexts/GameAPIContext';
+import { DevvitMessenger } from '../utils/DevvitMessenger';
+import { APIError } from '../api/GameAPI';
+import type { CaseData, UseCaseReturn } from '../types';
 
 /**
  * Hook for fetching and managing case data
  * - If postData.caseId exists: loads that specific case (for historical posts)
  * - Otherwise: loads today's case (default behavior)
+ *
+ * @returns UseCaseReturn - case data, loading states, error, and refetch function
  */
 export function useCase(): UseCaseReturn {
+  const api = useGameAPI();
   const [caseData, setCaseData] = useState<CaseData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [generating, setGenerating] = useState<boolean>(false);
 
-  const generateCase = useCallback(async () => {
+  /**
+   * Generate a new case
+   * Used when today's case doesn't exist yet
+   */
+  const generateCase = useCallback(async (): Promise<boolean> => {
     setGenerating(true);
     setError(null);
 
     try {
       console.log('🔄 Generating today\'s case...');
-      const response = await fetch('/api/case/generate', {
-        method: 'POST',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate case');
-      }
-
-      const result = await response.json();
+      const result = await api.generateCase();
       console.log('✅ Case generated:', result.caseId);
 
-      // Wait a bit for the case to be fully saved, then fetch it
+      // Wait a bit for the case to be fully saved
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       return true;
@@ -63,75 +53,51 @@ export function useCase(): UseCaseReturn {
     } finally {
       setGenerating(false);
     }
-  }, []);
+  }, [api]);
 
+  /**
+   * Fetch case data
+   * - Checks postData for specific caseId
+   * - Auto-generates if case doesn't exist (404)
+   * - Validates suspects and discovery data
+   */
   const fetchCase = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
       // Check if postData contains a specific caseId
-      const postData = window.__POST_DATA__;
+      const postData = DevvitMessenger.getPostData();
       const specificCaseId = postData?.caseId;
-
-      // Determine which endpoint to use
-      const endpoint = specificCaseId
-        ? `/api/case/${specificCaseId}`
-        : '/api/case/today';
 
       console.log(specificCaseId
         ? `📦 Loading specific case: ${specificCaseId}`
         : '📅 Loading today\'s case'
       );
 
-      const response = await fetch(endpoint);
-
-      if (!response.ok) {
-        const errorData: ApiError = await response.json();
-
-        // If case doesn't exist, try to generate it automatically
-        if (response.status === 404 && errorData.message?.includes('not been generated')) {
+      // Fetch case using GameAPI
+      let data: CaseData;
+      try {
+        data = specificCaseId
+          ? await api.getCaseById(specificCaseId)
+          : await api.getCaseToday();
+      } catch (err) {
+        // If case doesn't exist (404), try to generate it automatically
+        if (err instanceof APIError && err.status === 404 && err.message?.includes('not been generated')) {
           console.log('📭 No case found. Auto-generating...');
           const generated = await generateCase();
 
           if (generated) {
             // Retry fetching after generation
-            const retryResponse = await fetch('/api/case/today');
-            if (!retryResponse.ok) {
-              throw new Error('Case generated but failed to fetch');
-            }
-            const retryData: CaseApiResponse = await retryResponse.json();
-
-            // 🔧 FIX: Include locations, evidence, and evidenceDistribution in transformation
-            const transformedCase: CaseData = {
-              id: retryData.id,
-              date: retryData.date,
-              victim: retryData.victim,
-              weapon: retryData.weapon,
-              location: retryData.location,
-              suspects: retryData.suspects || [],
-              locations: retryData.locations, // Include discovery locations
-              evidence: retryData.evidence, // Include evidence items
-              evidenceDistribution: retryData.evidenceDistribution, // Include evidence distribution
-              imageUrl: retryData.imageUrl,
-              cinematicImages: retryData.cinematicImages,
-              introSlides: retryData.introSlides, // NEW: 3-slide intro system
-              introNarration: retryData.introNarration, // LEGACY: backward compatibility
-              generatedAt: retryData.generatedAt,
-            };
-
-            // Log discovery data status
-            console.log(`✅ Case loaded with ${retryData.locations?.length || 0} locations and evidence distribution`);
-
-            setCaseData(transformedCase);
+            data = await api.getCaseToday();
+            console.log(`✅ Case loaded with ${data.locations?.length || 0} locations and evidence distribution`);
+            setCaseData(data);
             return;
           }
         }
 
-        throw new Error(errorData.message || 'Failed to fetch case');
+        throw err;
       }
-
-      const data: CaseApiResponse = await response.json();
 
       // Validate suspects exist
       if (!data.suspects || data.suspects.length === 0) {
@@ -148,25 +114,7 @@ export function useCase(): UseCaseReturn {
         console.log(`✅ Discovery data loaded: ${data.locations.length} locations`);
       }
 
-      // 🔧 FIX: Transform API response to CaseData INCLUDING locations, evidence, and evidenceDistribution
-      const transformedCase: CaseData = {
-        id: data.id,
-        date: data.date,
-        victim: data.victim,
-        weapon: data.weapon,
-        location: data.location,
-        suspects: data.suspects || [],
-        locations: data.locations, // Include discovery locations
-        evidence: data.evidence, // Include evidence items
-        evidenceDistribution: data.evidenceDistribution, // Include evidence distribution
-        imageUrl: data.imageUrl,
-        cinematicImages: data.cinematicImages,
-        introSlides: data.introSlides, // NEW: 3-slide intro system
-        introNarration: data.introNarration, // LEGACY: backward compatibility
-        generatedAt: data.generatedAt,
-      };
-
-      setCaseData(transformedCase);
+      setCaseData(data);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
@@ -174,7 +122,7 @@ export function useCase(): UseCaseReturn {
     } finally {
       setLoading(false);
     }
-  }, [generateCase]);
+  }, [api, generateCase]);
 
   // Fetch on mount
   useEffect(() => {
