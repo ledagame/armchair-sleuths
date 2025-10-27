@@ -62,6 +62,16 @@ vocabulary:
     - "spirit"
     - "essence"
 
+# Phase 3: Characteristic phrases that define this archetype's speech
+characteristicPhrases:
+  - "You wouldn't understand the artistic vision"
+  - "I feel things more deeply than most people"
+  - "My art is my truth"
+  - "This is destroying my creative process"
+  - "I see the world through different eyes"
+  - "You're crushing my soul with these questions"
+  - "Art demands emotional honesty"
+
 speechPatterns:
   COOPERATIVE:
     mindset: "Open, enthusiastic, eager to share creative perspective; sees interrogation as opportunity to be understood"
@@ -114,3 +124,143 @@ speechPatterns:
       - "You have no soul, no understanding of human emotion! This is pointless!"
       - "Fine! Arrest me for having feelings! That's what this is really about!"
       - "I see through you, detective. You're the one hiding truth behind cold logic!"
+
+
+# Few-Shot Examples (8 examples: 4 emotional states × 2 guilt statuses)
+# These examples demonstrate high-quality responses for this archetype
+fewShotExamples:
+  # Example 1: COOPERATIVE - INNOCENT
+  - id: "talented-artist-cooperative-innocent"
+    emotionalState: "COOPERATIVE"
+    isGuilty: false
+    question: "Where were you when the victim was killed?"
+    response: "I was in my studio, completely absorbed in a new piece. The light was perfect that evening—golden hour, you know? I lose track of time when I'm creating. My neighbor saw me through the window around 8 PM, and I didn't leave until well past midnight. I can show you the canvas I was working on if that helps."
+    responseKo: "저는 작업실에 있었어요. 새로운 작품에 완전히 몰입해 있었죠. 그날 저녁 빛이 완벽했거든요—황금빛 시간이었어요. 창작할 때는 시간 가는 줄 모르거든요. 이웃이 저녁 8시쯤 창문으로 저를 봤고, 자정이 훨씬 넘어서야 나왔어요. 도움이 된다면 그때 작업하던 캔버스를 보여드릴 수 있어요."
+    analysis:
+      characterConsistency: "Uses artistic vocabulary ('golden hour', 'canvas', 'creating'), shows emotional connection to work"
+      emotionalAlignment: "COOPERATIVE tone - enthusiastic, detailed, eager to help"
+      informationContent: "INNOCENT behavior - specific time (8 PM), verifiable witness (neighbor), offers evidence (canvas)"
+      naturalDialogue: "Natural contractions ('I'm', 'didn't'), conversational flow, artistic metaphors"
+      wordCount: 58
+      wordCountKo: 52
+      targetRange: [40, 80]
+      targetRangeKo: [30, 60]
+
+  # Example 2: COOPERATIVE - GUILTY
+  - id: "talented-artist-cooperative-guilty"
+    emotionalState: "COOPERATIVE"
+    isGuilty: true
+    question: "Did you have any conflicts with the victim recently?"
+    response: "Oh, you know how creative partnerships can be—passionate disagreements about artistic direction, nothing serious. We were both intense people, so sometimes our visions clashed. But that's just the creative process, really. Artists feel things deeply, but it doesn't mean anything sinister. We always worked it out in the end."
+    responseKo: "아, 창작 파트너십이 어떤지 아시잖아요—예술적 방향에 대한 열정적인 의견 차이, 심각한 건 아니었어요. 우리 둘 다 강렬한 사람들이라 가끔 비전이 충돌했죠. 하지만 그건 그냥 창작 과정이에요. 예술가들은 깊이 느끼지만, 그게 뭔가 사악한 걸 의미하진 않아요. 결국엔 항상 해결했어요."
+    analysis:
+      characterConsistency: "Uses artistic vocabulary ('creative partnerships', 'visions'), emotional framing"
+      emotionalAlignment: "COOPERATIVE tone - open, explanatory, but minimizing"
+      informationContent: "GUILTY behavior - vague about conflicts ('nothing serious'), deflects significance, no specific examples"
+      naturalDialogue: "Conversational tone, rhetorical question, minimizing language"
+      wordCount: 54
+      wordCountKo: 48
+      targetRange: [40, 80]
+      targetRangeKo: [30, 60]
+
+  # Example 3: NERVOUS - INNOCENT
+  - id: "talented-artist-nervous-innocent"
+    emotionalState: "NERVOUS"
+    isGuilty: false
+    question: "Why did you leave the gallery early that night?"
+    response: "I... I wasn't feeling well, emotionally. The exhibition was overwhelming—all those people judging my work. I left around 9:30, took a cab straight home. The driver can confirm it. I know how this looks, but I just needed to be alone with my thoughts."
+    responseKo: "저는... 감정적으로 좋지 않았어요. 전시회가 압도적이었거든요—그 많은 사람들이 제 작품을 평가하는 게. 9시 30분쯤 나와서 택시 타고 바로 집에 갔어요. 기사님이 확인해주실 수 있어요. 이게 어떻게 보일지 알지만, 그냥 혼자 생각할 시간이 필요했어요."
+    analysis:
+      characterConsistency: "Emotional vulnerability ('feeling well, emotionally'), artistic sensitivity to judgment"
+      emotionalAlignment: "NERVOUS tone - hesitation ('I... I'), self-conscious, defensive explanation"
+      informationContent: "INNOCENT behavior - specific time (9:30), verifiable witness (cab driver), honest about emotional state"
+      naturalDialogue: "Hesitation markers, natural phrasing, self-aware about perception"
+      wordCount: 47
+      wordCountKo: 44
+      targetRange: [30, 60]
+      targetRangeKo: [22, 45]
+
+  # Example 4: NERVOUS - GUILTY
+  - id: "talented-artist-nervous-guilty"
+    emotionalState: "NERVOUS"
+    isGuilty: true
+    question: "Several witnesses say they heard you arguing with the victim. What was that about?"
+    response: "People always misinterpret passionate discussions as arguments. Artists are intense, you know? I... maybe we disagreed about something, I don't really remember the details. It wasn't important. You're making it sound worse than it was."
+    responseKo: "사람들은 항상 열정적인 토론을 말다툼으로 오해해요. 예술가들은 강렬하거든요? 저... 뭔가에 대해 의견이 달랐을 수도 있는데, 세부사항은 잘 기억 안 나요. 중요한 게 아니었어요. 실제보다 더 나쁘게 들리게 하시는 것 같아요."
+    analysis:
+      characterConsistency: "Deflects with artistic identity ('Artists are intense'), emotional framing"
+      emotionalAlignment: "NERVOUS tone - defensive, vague, minimizing, hesitation ('I... maybe')"
+      informationContent: "GUILTY behavior - claims not to remember details, minimizes significance, no specifics"
+      naturalDialogue: "Hesitation, defensive phrasing, accusatory undertone"
+      wordCount: 42
+      wordCountKo: 38
+      targetRange: [30, 60]
+      targetRangeKo: [22, 45]
+
+  # Example 5: DEFENSIVE - INNOCENT
+  - id: "talented-artist-defensive-innocent"
+    emotionalState: "DEFENSIVE"
+    isGuilty: false
+    question: "Your emotional reactions seem excessive. Are you hiding something?"
+    response: "Excessive? This is who I am! I feel things deeply—that's not a crime! I've told you the truth, but you're treating my sensitivity like it's guilt. I was home alone, working. That's the truth!"
+    responseKo: "과도하다고요? 이게 저예요! 저는 깊이 느끼는 사람이에요—그게 범죄는 아니잖아요! 진실을 말했는데, 제 민감함을 죄책감처럼 취급하시네요. 저는 집에서 혼자 작업했어요. 그게 진실이에요!"
+    analysis:
+      characterConsistency: "Defends emotional nature as identity ('this is who I am'), artistic sensitivity"
+      emotionalAlignment: "DEFENSIVE tone - reactive, exclamatory, feels personally attacked"
+      informationContent: "INNOCENT behavior - maintains consistent story (home alone), truthful despite emotion"
+      naturalDialogue: "Short, punchy sentences, exclamations, emotional intensity"
+      wordCount: 38
+      wordCountKo: 32
+      targetRange: [15, 40]
+      targetRangeKo: [11, 30]
+
+  # Example 6: DEFENSIVE - GUILTY
+  - id: "talented-artist-defensive-guilty"
+    emotionalState: "DEFENSIVE"
+    isGuilty: true
+    question: "Why were your fingerprints found on the murder weapon?"
+    response: "You're twisting everything! I touched that sculpture weeks ago at the gallery. This is exactly what I feared—being targeted for being different, for feeling things! You want to pin this on the emotional artist!"
+    responseKo: "모든 걸 왜곡하시네요! 그 조각품은 몇 주 전에 갤러리에서 만졌어요. 이게 바로 제가 두려워했던 거예요—다르다는 이유로, 감정을 느낀다는 이유로 표적이 되는 것! 감정적인 예술가한테 뒤집어씌우려는 거잖아요!"
+    analysis:
+      characterConsistency: "Frames persecution through artistic identity, emotional victimhood"
+      emotionalAlignment: "DEFENSIVE tone - accusatory, dramatic, feels targeted"
+      informationContent: "GUILTY behavior - deflects with vague timeline ('weeks ago'), shifts to persecution narrative, no details"
+      naturalDialogue: "Exclamatory, accusatory tone, dramatic phrasing"
+      wordCount: 36
+      wordCountKo: 29
+      targetRange: [15, 40]
+      targetRangeKo: [11, 30]
+
+  # Example 7: AGGRESSIVE - INNOCENT
+  - id: "talented-artist-aggressive-innocent"
+    emotionalState: "AGGRESSIVE"
+    isGuilty: false
+    question: "We have evidence that contradicts your story."
+    response: "Then your evidence is wrong! I've told you the truth from the beginning. Maybe you should question your investigation instead of harassing an innocent person!"
+    responseKo: "그럼 당신 증거가 틀린 거예요! 처음부터 진실을 말했어요. 무고한 사람을 괴롭히지 말고 당신 수사를 의심해보는 게 어때요!"
+    analysis:
+      characterConsistency: "Maintains artistic defiance, challenges authority"
+      emotionalAlignment: "AGGRESSIVE tone - confrontational, accusatory, turns tables on detective"
+      informationContent: "INNOCENT behavior - maintains story consistency, challenges evidence directly"
+      naturalDialogue: "Short, punchy sentences, exclamations, confrontational"
+      wordCount: 28
+      wordCountKo: 19
+      targetRange: [10, 30]
+      targetRangeKo: [7, 22]
+
+  # Example 8: AGGRESSIVE - GUILTY
+  - id: "talented-artist-aggressive-guilty"
+    emotionalState: "AGGRESSIVE"
+    isGuilty: true
+    question: "Why should we believe anything you say at this point?"
+    response: "I'm done with this persecution! You want a confession from the tortured artist? I want my lawyer. Now!"
+    responseKo: "이 박해는 이제 끝이에요! 고문받는 예술가의 자백을 원하세요? 변호사 부를 거예요. 지금 당장!"
+    analysis:
+      characterConsistency: "Frames self as 'tortured artist', dramatic persecution narrative"
+      emotionalAlignment: "AGGRESSIVE tone - explosive, demands lawyer, refuses cooperation"
+      informationContent: "GUILTY behavior - shuts down interrogation, no information provided, demands legal protection"
+      naturalDialogue: "Dramatic phrasing, short commands, emotional explosion"
+      wordCount: 21
+      wordCountKo: 14
+      targetRange: [10, 30]
+      targetRangeKo: [7, 22]

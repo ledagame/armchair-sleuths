@@ -24,17 +24,9 @@ export const createPost = async (options?: CreatePostOptions) => {
   const postTitle = options?.title || 'armchair-sleuths';
   const caseId = options?.caseId || undefined;
 
-  return await reddit.submitCustomPost({
-    splash: {
-      // Splash Screen Configuration
-      appDisplayName: 'armchair-sleuths',
-      backgroundUri: 'default-splash.png',
-      buttonLabel: '🔍 게임 시작',
-      description: '미스터리를 풀어보세요',
-      entryUri: 'index.html',
-      heading: '오늘의 미스터리',
-      appIconUri: 'default-icon.png',
-    },
+  // Splash screen for initial post loading
+  // Custom Post UI defined in main.tsx (Devvit.addCustomPostType)
+  const payload = {
     postData: {
       gameState: 'initial',
       score: 0,
@@ -42,5 +34,24 @@ export const createPost = async (options?: CreatePostOptions) => {
     },
     subredditName: targetSubreddit,
     title: postTitle,
-  });
+    splash: {
+      appDisplayName: 'Armchair Sleuths',
+    },
+  };
+
+  console.log('[createPost] 📤 Submitting custom post with payload:', JSON.stringify(payload, null, 2));
+
+  try {
+    const result = await reddit.submitCustomPost(payload);
+    console.log('[createPost] ✅ Post created successfully:', result.id);
+    return result;
+  } catch (error) {
+    console.error('[createPost] ❌ Failed to create post:', error);
+    console.error('[createPost] Payload that failed:', JSON.stringify(payload, null, 2));
+    if (error instanceof Error) {
+      console.error('[createPost] Error message:', error.message);
+      console.error('[createPost] Error stack:', error.stack);
+    }
+    throw error;
+  }
 };

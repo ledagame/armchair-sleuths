@@ -58,13 +58,13 @@ export function SuspectInterrogationSection({
   // Defensive check: Ensure suspects exist
   if (!suspects || suspects.length === 0) {
     return (
-      <div className="p-6">
+      <div className="px-4 py-6 sm:px-6 sm:py-8">
         <div className="flex flex-col items-center justify-center min-h-[60vh]">
-          <div className="text-6xl mb-4">⚠️</div>
-          <h2 className="text-2xl font-bold mb-2">용의자 데이터를 불러올 수 없습니다</h2>
-          <p className="text-gray-400 mb-2">사건 데이터에 용의자 정보가 없습니다.</p>
-          <p className="text-sm text-gray-500 mb-6">케이스 ID: {caseId}</p>
-          <div className="flex gap-4">
+          <div className="text-5xl sm:text-6xl mb-4">⚠️</div>
+          <h2 className="text-xl sm:text-2xl font-bold text-evidence-blood mb-2">용의자 데이터를 불러올 수 없습니다</h2>
+          <p className="text-text-secondary text-sm sm:text-base mb-2">사건 데이터에 용의자 정보가 없습니다.</p>
+          <p className="text-xs sm:text-sm text-text-muted mb-6">케이스 ID: {caseId}</p>
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <button
               onClick={async () => {
                 try {
@@ -80,13 +80,13 @@ export function SuspectInterrogationSection({
                   console.error('Generation failed:', e);
                 }
               }}
-              className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-bold"
+              className="px-6 py-3 min-h-[48px] bg-evidence-clue hover:bg-evidence-clue/90 text-text-primary rounded-lg sm:rounded-xl font-bold transition-all duration-base focus:outline-none focus:ring-2 focus:ring-evidence-clue focus:ring-offset-2 focus:ring-offset-noir-deepBlack"
             >
               🎲 케이스 재생성
             </button>
             <button
               onClick={() => window.location.reload()}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-bold"
+              className="px-6 py-3 min-h-[48px] bg-noir-gunmetal hover:bg-noir-smoke text-text-primary rounded-lg sm:rounded-xl font-bold transition-all duration-base focus:outline-none focus:ring-2 focus:ring-detective-brass focus:ring-offset-2 focus:ring-offset-noir-deepBlack"
             >
               다시 시도
             </button>
@@ -97,7 +97,7 @@ export function SuspectInterrogationSection({
   }
 
   return (
-    <div className="relative p-6">
+    <div className="relative px-4 py-6 sm:px-6 sm:py-8 md:px-8 md:py-10">
       {/* AP Header - Fixed position */}
       <APHeader current={currentAP} maximum={maximumAP} />
 
@@ -113,7 +113,7 @@ export function SuspectInterrogationSection({
 
       {/* Chat Interface (shown when suspect is selected) */}
       {selectedSuspect && (
-        <div className="mt-6">
+        <div className="mt-6 sm:mt-8">
           <ChatInterface
             suspectName={selectedSuspect.name}
             suspectId={selectedSuspect.id}
@@ -127,12 +127,12 @@ export function SuspectInterrogationSection({
 
       {/* Helper message when no suspect is selected */}
       {!selectedSuspect && (
-        <div className="mt-12 text-center">
-          <div className="text-6xl mb-4">👆</div>
-          <h3 className="text-xl font-bold text-gray-300 mb-2">
+        <div className="mt-12 sm:mt-16 md:mt-20 text-center px-4">
+          <div className="text-5xl sm:text-6xl mb-4">👆</div>
+          <h3 className="text-xl sm:text-2xl font-bold text-detective-gold mb-2 sm:mb-3">
             용의자를 선택하여 심문을 시작하세요
           </h3>
-          <p className="text-gray-500">
+          <p className="text-text-secondary text-sm sm:text-base">
             각 용의자의 프로필을 확인하고 대화를 나눠보세요
           </p>
         </div>

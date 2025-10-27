@@ -1,1 +1,349 @@
+/* Armchair Sleuths - Noir Detective Design System */
+
+/* Import Tailwind CSS */
 @import 'tailwindcss';
+
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* CSS Custom Properties (Design Tokens) */
+:root {
+  /* Noir Color Palette */
+  --color-noir-deepBlack: #0a0a0a;
+  --color-noir-charcoal: #1a1a1a;
+  --color-noir-gunmetal: #2a2a2a;
+  --color-noir-smoke: #3a3a3a;
+  --color-noir-fog: #4a4a4a;
+
+  /* Detective Accent Colors */
+  --color-detective-gold: #c9b037;
+  --color-detective-brass: #b5a642;
+  --color-detective-amber: #d4af37;
+
+  /* Evidence Colors */
+  --color-evidence-blood: #8b0000;
+  --color-evidence-poison: #4b0082;
+  --color-evidence-clue: #1e90ff;
+
+  /* Text Colors */
+  --color-text-primary: #e0e0e0;
+  --color-text-secondary: #a0a0a0;
+  --color-text-muted: #707070;
+  --color-text-inverse: #0a0a0a;
+
+  /* Typography */
+  --font-display: 'Playfair Display', serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Spacing */
+  --spacing-base: 1rem;  /* 16px */
+
+  /* Border Radius */
+  --radius-sm: 0.125rem;   /* 2px */
+  --radius-md: 0.375rem;   /* 6px */
+  --radius-lg: 0.5rem;     /* 8px */
+  --radius-xl: 0.75rem;    /* 12px */
+
+  /* Shadows */
+  --shadow-glow: 0 0 20px rgba(201, 176, 55, 0.3);
+  --shadow-glow-strong: 0 0 30px rgba(201, 176, 55, 0.5);
+
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-page: 600ms cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* Base Styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  /* Prevent font size adjustment on iOS */
+  -webkit-text-size-adjust: 100%;
+  /* Enable smooth scrolling */
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: 1rem; /* 16px base - prevents iOS zoom */
+  line-height: 1.5;
+  color: var(--color-text-primary);
+  background-color: var(--color-noir-deepBlack);
+  /* Prevent horizontal scroll on mobile */
+  overflow-x: hidden;
+  /* Enable font smoothing */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography Defaults */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-detective-gold);
+}
+
+p {
+  margin-bottom: 1rem;
+}
+
+a {
+  color: var(--color-detective-gold);
+  text-decoration: none;
+  transition: color var(--transition-base);
+}
+
+a:hover {
+  color: var(--color-detective-amber);
+}
+
+a:focus {
+  outline: 2px solid var(--color-detective-gold);
+  outline-offset: 2px;
+}
+
+/* Button Reset */
+button {
+  font-family: inherit;
+  font-size: 100%;
+  line-height: 1.15;
+  margin: 0;
+  overflow: visible;
+  text-transform: none;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+/* Input Reset */
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-size: 100%;
+  line-height: 1.15;
+  margin: 0;
+  /* Prevent iOS zoom on focus */
+  font-size: 16px !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid var(--color-detective-gold);
+  outline-offset: 2px;
+}
+
+/* Accessibility: Focus Visible */
+:focus-visible {
+  outline: 2px solid var(--color-detective-gold);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Remove default focus outline for mouse users */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Scrollbar Styling (Webkit browsers) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-noir-charcoal);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-noir-fog);
+  border-radius: var(--radius-lg);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-detective-gold);
+}
+
+/* Selection Styling */
+::selection {
+  background-color: var(--color-detective-gold);
+  color: var(--color-noir-deepBlack);
+}
+
+::-moz-selection {
+  background-color: var(--color-detective-gold);
+  color: var(--color-noir-deepBlack);
+}
+
+/* Image Optimization */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Prevent text overflow */
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+/* Reduced Motion Support (Accessibility) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Touch-Friendly Interactive Elements */
+@media (hover: none) and (pointer: coarse) {
+  /* Increase touch target sizes on touch devices */
+  button,
+  a,
+  input[type="button"],
+  input[type="submit"],
+  [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Mobile-Specific Adjustments */
+@media (max-width: 640px) {
+  /* Prevent iOS Safari bottom bar overlap */
+  .min-h-screen {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+  }
+
+  /* Adjust spacing for mobile */
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Noir Theme Utilities */
+.noir-gradient {
+  background: linear-gradient(
+    135deg,
+    var(--color-noir-deepBlack) 0%,
+    var(--color-noir-charcoal) 50%,
+    var(--color-noir-gunmetal) 100%
+  );
+}
+
+.detective-gradient {
+  background: linear-gradient(
+    135deg,
+    var(--color-detective-brass) 0%,
+    var(--color-detective-gold) 50%,
+    var(--color-detective-amber) 100%
+  );
+}
+
+.text-glow {
+  text-shadow: 0 0 10px rgba(201, 176, 55, 0.5);
+}
+
+/* Animation Utilities */
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.slide-up {
+  animation: slideUp 0.4s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.scale-pop {
+  animation: scalePop 0.3s ease-out;
+}
+
+/* Shimmer effect for skeleton loaders */
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-noir-gunmetal) 0%,
+    var(--color-noir-smoke) 20%,
+    var(--color-noir-gunmetal) 40%,
+    var(--color-noir-gunmetal) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Keyframes (Already in Tailwind config, but adding for direct CSS usage) */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scalePop {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Print Styles */
+@media print {
+  * {
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+}

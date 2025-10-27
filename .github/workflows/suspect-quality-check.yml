@@ -1,0 +1,128 @@
+name: Suspect Prompt Quality Check
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'skills/suspect-ai-prompter/**'
+      - 'skills/suspect-personality-core/**'
+      - 'src/server/services/prompts/archetypes/**'
+  push:
+    branches: [main, develop]
+    paths:
+      - 'skills/suspect-ai-prompter/**'
+      - 'skills/suspect-personality-core/**'
+      - 'src/server/services/prompts/archetypes/**'
+
+jobs:
+  quality-check:
+    name: Batch Validate Suspect Prompts
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run batch validation
+        id: batch-validate
+        run: |
+          npm run suspect:workflow:batch-validate > validation-output.txt 2>&1
+          cat validation-output.txt
+        continue-on-error: true
+
+      - name: Parse validation results
+        id: parse-results
+        run: |
+          # Extract pass rate from output
+          PASS_RATE=$(grep -oP 'Pass Rate: \K[\d.]+' validation-output.txt || echo "0")
+          echo "pass_rate=$PASS_RATE" >> $GITHUB_OUTPUT
+          
+          # Check if pass rate meets threshold (90%)
+          if (( $(echo "$PASS_RATE >= 90" | bc -l) )); then
+            echo "quality_passed=true" >> $GITHUB_OUTPUT
+          else
+            echo "quality_passed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload validation results
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-results
+          path: |
+            validation-output.txt
+            batch-validation-results.json
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const passRate = '${{ steps.parse-results.outputs.pass_rate }}';
+            const qualityPassed = '${{ steps.parse-results.outputs.quality_passed }}' === 'true';
+            
+            let resultsJson = {};
+            try {
+              resultsJson = JSON.parse(fs.readFileSync('batch-validation-results.json', 'utf8'));
+            } catch (error) {
+              console.log('Could not parse results JSON');
+            }
+            
+            const emoji = qualityPassed ? '✅' : '⚠️';
+            const status = qualityPassed ? 'PASSED' : 'NEEDS IMPROVEMENT';
+            
+            let archetypeDetails = '';
+            if (resultsJson.archetypes) {
+              archetypeDetails = '\n\n### Archetype Scores\n\n';
+              for (const [name, stats] of Object.entries(resultsJson.archetypes)) {
+                const score = stats.averageScore.toFixed(1);
+                const rating = score >= 90 ? '⭐⭐⭐⭐⭐' : 
+                              score >= 75 ? '⭐⭐⭐⭐' : 
+                              score >= 60 ? '⭐⭐⭐' : '⭐⭐';
+                archetypeDetails += `- **${name}**: ${score}/100 ${rating}\n`;
+              }
+            }
+            
+            const output = `### ${emoji} Suspect Prompt Quality Check: ${status}
+
+            **Pass Rate**: ${passRate}%
+            **Threshold**: 90%
+
+            ${archetypeDetails}
+
+            ${qualityPassed ? 
+              '✅ All quality thresholds met. Ready to merge!' : 
+              '⚠️ Quality below threshold. Please review and improve low-scoring archetypes before merging.'}
+
+            <details>
+            <summary>View detailed results</summary>
+
+            Check the uploaded artifacts for complete validation output.
+            </details>`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });
+
+      - name: Fail if quality threshold not met
+        if: steps.parse-results.outputs.quality_passed != 'true'
+        run: |
+          echo "❌ Quality check failed: Pass rate ${{ steps.parse-results.outputs.pass_rate }}% is below threshold (90%)"
+          exit 1
+
+      - name: Success message
+        if: steps.parse-results.outputs.quality_passed == 'true'
+        run: |
+          echo "✅ Quality check passed: Pass rate ${{ steps.parse-results.outputs.pass_rate }}% meets threshold (90%)"

@@ -8,6 +8,7 @@
  * - Per-suspect loading states
  * - Error resilience (one failure doesn't break others)
  * - Cleanup on unmount (AbortController)
+ * - Global cache (persists across component mount/unmount)
  */
 
 import { useState, useEffect, useRef } from 'react';
@@ -18,6 +19,11 @@ import type {
   UseSuspectImagesReturn,
   SuspectImageApiResponse,
 } from '../types';
+
+// Global cache that persists across component mount/unmount
+// This prevents re-fetching images when navigating between tabs
+const globalImageCache = new Map<string, SuspectImageState>();
+const globalFetchedSuspects = new Set<string>();
 
 /**
  * Hook for progressive loading of suspect profile images
@@ -40,13 +46,19 @@ import type {
  */
 export function useSuspectImages(suspects: Suspect[]): UseSuspectImagesReturn {
   // State for image loading results
-  const [images, setImages] = useState<SuspectImagesMap>(new Map());
+  // Initialize from global cache
+  const [images, setImages] = useState<SuspectImagesMap>(() => {
+    const initial = new Map<string, SuspectImageState>();
+    suspects.forEach((suspect) => {
+      const cached = globalImageCache.get(suspect.id);
+      if (cached) {
+        initial.set(suspect.id, cached);
+      }
+    });
+    return initial;
+  });
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isComplete, setIsComplete] = useState<boolean>(false);
-
-  // Track which suspects we've already attempted to fetch
-  // This prevents re-fetching on re-renders
-  const fetchedSuspectsRef = useRef<Set<string>>(new Set());
 
   // AbortController for cleanup on unmount
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -54,24 +66,27 @@ export function useSuspectImages(suspects: Suspect[]): UseSuspectImagesReturn {
   useEffect(() => {
     // Filter suspects that need image loading
     const suspectsToFetch = suspects.filter((suspect) => {
-      // Skip if already fetched
-      if (fetchedSuspectsRef.current.has(suspect.id)) {
+      // Skip if already fetched (check global cache)
+      if (globalFetchedSuspects.has(suspect.id)) {
         return false;
       }
 
       // Skip if profileImageUrl already exists (backwards compatibility)
       if (suspect.profileImageUrl) {
         // Set the image immediately from existing data
+        const imageState = {
+          imageUrl: suspect.profileImageUrl!,
+          loading: false,
+          error: null,
+        };
         setImages((prev) => {
           const next = new Map(prev);
-          next.set(suspect.id, {
-            imageUrl: suspect.profileImageUrl!,
-            loading: false,
-            error: null,
-          });
+          next.set(suspect.id, imageState);
           return next;
         });
-        fetchedSuspectsRef.current.add(suspect.id);
+        // Store in global cache
+        globalImageCache.set(suspect.id, imageState);
+        globalFetchedSuspects.add(suspect.id);
         return false;
       }
 
@@ -95,12 +110,16 @@ export function useSuspectImages(suspects: Suspect[]): UseSuspectImagesReturn {
     setImages((prev) => {
       const next = new Map(prev);
       suspectsToFetch.forEach((suspect) => {
-        next.set(suspect.id, {
+        const loadingState = {
           imageUrl: null,
           loading: true,
           error: null,
-        });
-        fetchedSuspectsRef.current.add(suspect.id);
+        };
+        next.set(suspect.id, loadingState);
+        // Mark as fetched to prevent duplicate fetches
+        globalFetchedSuspects.add(suspect.id);
+        // Store loading state in cache
+        globalImageCache.set(suspect.id, loadingState);
       });
       return next;
     });
@@ -156,11 +175,14 @@ export function useSuspectImages(suspects: Suspect[]): UseSuspectImagesReturn {
         results.forEach((result) => {
           if (result.status === 'fulfilled' && result.value) {
             const { suspectId, imageUrl, error } = result.value;
-            next.set(suspectId, {
+            const imageState = {
               imageUrl,
               loading: false,
               error,
-            });
+            };
+            next.set(suspectId, imageState);
+            // Update global cache with final result
+            globalImageCache.set(suspectId, imageState);
           }
         });
 
@@ -171,6 +193,7 @@ export function useSuspectImages(suspects: Suspect[]): UseSuspectImagesReturn {
       setIsComplete(true);
 
       console.log('[useSuspectImages] Image loading complete');
+      console.log(`[useSuspectImages] Global cache now has ${globalImageCache.size} images`);
     };
 
     // Execute parallel fetch

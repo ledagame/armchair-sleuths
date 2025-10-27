@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useFocusTrap } from '@/client/hooks/useFocusTrap';
 
 interface ImageLightboxProps {
   imageUrl: string;
@@ -15,6 +16,8 @@ interface ImageLightboxProps {
  * - Zoom in/out buttons
  * - Drag to pan when zoomed
  * - Escape key to close
+ * - Focus trap for accessibility
+ * - Keyboard controls (+/- for zoom)
  */
 export function ImageLightbox({
   imageUrl,
@@ -22,16 +25,21 @@ export function ImageLightbox({
   onClose
 }: ImageLightboxProps) {
   const [scale, setScale] = useState(1);
+  const lightboxRef = useFocusTrap<HTMLDivElement>(true);
 
-  // Handle escape key
+  // Handle escape key and zoom shortcuts
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
+    const handleKeyboard = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose();
+      } else if (e.key === '+' || e.key === '=') {
+        handleZoomIn();
+      } else if (e.key === '-' || e.key === '_') {
+        handleZoomOut();
       }
     };
-    window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
+    window.addEventListener('keydown', handleKeyboard);
+    return () => window.removeEventListener('keydown', handleKeyboard);
   }, [onClose]);
 
   const handleZoomIn = () => {
@@ -45,10 +53,15 @@ export function ImageLightbox({
   return (
     <AnimatePresence>
       <motion.div
+        ref={lightboxRef}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
+        transition={{ duration: 0.2, ease: [0.65, 0, 0.35, 1] }}
         onClick={onClose}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${evidenceName} 이미지 확대 보기`}
         style={{
           position: 'fixed',
           top: 0,
@@ -67,8 +80,10 @@ export function ImageLightbox({
         <motion.img
           src={imageUrl}
           alt={evidenceName}
-          initial={{ scale: 0.8, opacity: 0 }}
+          initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale, opacity: 1 }}
+          exit={{ scale: 0.9, opacity: 0 }}
+          transition={{ duration: 0.25, ease: [0.65, 0, 0.35, 1] }}
           style={{
             maxWidth: '90%',
             maxHeight: '90%',
@@ -95,55 +110,70 @@ export function ImageLightbox({
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          <button
+          <motion.button
             onClick={handleZoomOut}
             disabled={scale <= 0.5}
+            whileHover={scale > 0.5 ? { scale: 1.1 } : {}}
+            whileTap={scale > 0.5 ? { scale: 0.95 } : {}}
+            aria-label="축소 (키보드: -)"
             style={{
               background: 'transparent',
               border: '2px solid white',
               color: 'white',
-              width: '36px',
-              height: '36px',
+              width: '44px',
+              height: '44px',
+              minWidth: '44px',
+              minHeight: '44px',
               borderRadius: '50%',
-              cursor: 'pointer',
+              cursor: scale <= 0.5 ? 'not-allowed' : 'pointer',
               fontSize: '20px',
               opacity: scale <= 0.5 ? 0.5 : 1
             }}
           >
             −
-          </button>
-          <button
+          </motion.button>
+          <motion.button
             onClick={handleZoomIn}
             disabled={scale >= 3}
+            whileHover={scale < 3 ? { scale: 1.1 } : {}}
+            whileTap={scale < 3 ? { scale: 0.95 } : {}}
+            aria-label="확대 (키보드: +)"
             style={{
               background: 'transparent',
               border: '2px solid white',
               color: 'white',
-              width: '36px',
-              height: '36px',
+              width: '44px',
+              height: '44px',
+              minWidth: '44px',
+              minHeight: '44px',
               borderRadius: '50%',
-              cursor: 'pointer',
+              cursor: scale >= 3 ? 'not-allowed' : 'pointer',
               fontSize: '20px',
               opacity: scale >= 3 ? 0.5 : 1
             }}
           >
             +
-          </button>
-          <button
+          </motion.button>
+          <motion.button
             onClick={onClose}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            aria-label="닫기 (키보드: Esc)"
             style={{
               background: 'transparent',
               border: '2px solid white',
               color: 'white',
-              width: '36px',
-              height: '36px',
+              width: '44px',
+              height: '44px',
+              minWidth: '44px',
+              minHeight: '44px',
               borderRadius: '50%',
               cursor: 'pointer',
               fontSize: '20px'
             }}
           >
             ✕
-          </button>
+          </motion.button>
         </div>
 
         {/* Image Name */}

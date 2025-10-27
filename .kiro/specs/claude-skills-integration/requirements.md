@@ -38,6 +38,21 @@ This spec defines how to integrate Claude's Skills system into Kiro IDE, enablin
 5. WHEN a skill has dependencies, THE system SHALL load dependent skills automatically and notify the user
 6. WHEN skill activation fails, THE system SHALL display an error message with troubleshooting suggestions in the chat
 
+#### Testing Procedure
+
+**Manual Testing in Kiro IDE Chat:**
+1. Open Kiro IDE chat interface
+2. Type message containing skill trigger keywords (e.g., "improve prompt", "generate case", "debug error")
+3. Verify skill activation notification appears in chat
+4. Confirm skill context is loaded (check AI response includes skill-specific knowledge)
+5. Test with multiple keywords to verify multiple skill activation
+6. Test with invalid keywords to verify error handling
+
+**Automated Testing:**
+- Run: `npx tsx .kiro/skills-system/demo-skill-activation.ts`
+- Use commands: `activate improve prompt`, `list`, `active`, `stats`
+- Verify 13 skills are discovered and can be activated by keywords
+
 ### Requirement 3: Skill Context Integration
 
 **User Story:** As a developer, I want skills to work seamlessly with Kiro's steering rules, so that I get consistent AI behavior across all features.
@@ -151,6 +166,8 @@ This spec defines how to integrate Claude's Skills system into Kiro IDE, enablin
 5. WHEN a script modifies files before being cancelled, THE system SHALL offer a "Rollback Changes" option with a diff preview
 6. WHEN a skill chain fails mid-execution, THE system SHALL save the execution state and allow resuming from the last successful step
 7. WHEN an error occurs, THE system SHALL provide contextual help links to relevant documentation or troubleshooting guides
+8. **WHEN circular dependencies are detected, THE system SHALL display a clear error message with the dependency chain and suggest removing one dependency to break the cycle**
+9. **WHEN a skill has circular dependencies, THE system SHALL still allow activation but skip loading dependent skills to prevent infinite loops**
 
 ### Requirement 12: Security and Sandboxing
 

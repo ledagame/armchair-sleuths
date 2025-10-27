@@ -48,6 +48,9 @@ export class EvidenceImageGeneratorService {
       lastUpdated: new Date().toISOString()
     });
 
+    // Mark unified status as started (for frontend polling)
+    await this.storageService.markImageTypeStarted(caseId, 'evidence');
+
     // Sort by difficulty (easy → medium → hard)
     // This ensures most discoverable evidence has images first
     const sortedItems = this.sortByDifficulty(items);
@@ -91,13 +94,25 @@ export class EvidenceImageGeneratorService {
             await this.storageService.storeEvidenceImageUrl(caseId, item.id, result.imageUrl);
             images[item.id] = result.imageUrl;
             completedCount++;
+
+            // Update unified status
+            await this.storageService.incrementCompleted(caseId, 'evidence');
+
             console.log(`      ✅ Success: ${item.id}`);
           } else {
             images[item.id] = undefined; // Mark as failed
+
+            // Update unified status
+            await this.storageService.incrementFailed(caseId, 'evidence');
+
             console.warn(`      ⚠️  Failed: ${item.id} - ${result.error}`);
           }
         } catch (error) {
           images[item.id] = undefined;
+
+          // Update unified status
+          await this.storageService.incrementFailed(caseId, 'evidence');
+
           console.error(`      ❌ Error: ${item.id}`, error);
         }
 

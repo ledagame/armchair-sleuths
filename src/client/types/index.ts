@@ -3,7 +3,7 @@
  */
 
 import type { ActionPointsConfig } from '../../shared/types/Case';
-import type { ImageGenerationStatus } from '../../shared/types';
+import type { ImageGenerationStatus, IntroSlides } from '../../shared/types';
 
 // ============================================================================
 // Core Entity Types
@@ -73,7 +73,8 @@ export interface CaseData {
   actionPoints?: ActionPointsConfig; // AP system configuration (Phase 2)
   imageUrl?: string;
   cinematicImages?: CinematicImages;
-  introNarration?: IntroNarration;
+  introSlides?: IntroSlides; // NEW: 3-slide intro system (preferred)
+  introNarration?: IntroNarration; // LEGACY: 5-scene cinematic (backward compatibility)
   generatedAt: number;
 
   // Phase 2: Evidence System Image Generation Status
@@ -205,7 +206,8 @@ export interface CaseApiResponse {
   actionPoints?: ActionPointsConfig; // AP system configuration (Phase 2)
   imageUrl?: string;
   cinematicImages?: CinematicImages;
-  introNarration?: IntroNarration;
+  introSlides?: IntroSlides; // NEW: 3-slide intro system (preferred)
+  introNarration?: IntroNarration; // LEGACY: 5-scene cinematic (backward compatibility)
   generatedAt: number;
 }
 

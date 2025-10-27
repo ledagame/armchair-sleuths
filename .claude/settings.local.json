@@ -9,7 +9,14 @@
       "WebFetch(domain:vercel-dusky-mu-36.vercel.app)",
       "Skill(example-skills:skill-creator)",
       "Read(//c/Users/hpcra/.claude/plugins/marketplaces/anthropic-agent-skills/skill-creator/references/**)",
-      "Read(//c/Users/hpcra/.claude/plugins/marketplaces/anthropic-agent-skills/skill-creator/**)"
+      "Read(//c/Users/hpcra/.claude/plugins/marketplaces/anthropic-agent-skills/skill-creator/**)",
+      "Bash(cat:*)",
+      "Bash(sed:*)",
+      "mcp__context7__get-library-docs",
+      "Skill(implementation-guardian)",
+      "Bash(devvit logs:*)",
+      "mcp__Ref__ref_search_documentation",
+      "mcp__magic__21st_magic_component_builder"
     ],
     "deny": [],
     "ask": []

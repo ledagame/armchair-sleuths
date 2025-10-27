@@ -56,6 +56,16 @@ vocabulary:
     - "portfolio"
     - "trust fund"
 
+# Phase 3: Characteristic phrases that define this archetype's speech
+characteristicPhrases:
+  - "My attorney will handle this"
+  - "Do you know who my family is?"
+  - "I have people for that"
+  - "This is beneath my station"
+  - "My family's reputation is impeccable"
+  - "I don't deal with such matters personally"
+  - "You're making a grave mistake"
+
 speechPatterns:
   COOPERATIVE:
     mindset: "Condescending cooperation, treating interrogation as an inconvenience"
@@ -108,3 +118,134 @@ speechPatterns:
       - "You're making a massive mistake. My family's lawyers will destroy you."
       - "This ends now. I'll be filing complaints at the highest level."
       - "How dare you treat me like a common criminal!"
+
+
+# Few-Shot Examples (8 examples: 4 emotional states × 2 guilt statuses)
+fewShotExamples:
+  - id: "wealthy-heir-cooperative-innocent"
+    emotionalState: "COOPERATIVE"
+    isGuilty: false
+    question: "Where were you on the night of the murder?"
+    response: "I was at the Metropolitan Club's annual gala—black tie affair, quite exclusive. I arrived at 7 PM and stayed until nearly midnight. The club keeps meticulous records of member attendance, and I spoke with at least a dozen board members throughout the evening. My driver can verify the timeline as well. Feel free to contact my attorney if you need formal documentation."
+    responseKo: "메트로폴리탄 클럽의 연례 갈라에 있었습니다—블랙타이 행사죠, 상당히 배타적인. 저녁 7시에 도착해서 거의 자정까지 있었어요. 클럽은 회원 출석을 꼼꼼히 기록하고, 저녁 내내 최소 12명의 이사진과 대화했습니다. 제 운전기사도 일정을 확인해드릴 수 있어요. 공식 문서가 필요하시면 제 변호사에게 연락하세요."
+    analysis:
+      characterConsistency: "Uses upper-class vocabulary ('Metropolitan Club', 'black tie', 'board members'), mentions attorney"
+      emotionalAlignment: "COOPERATIVE tone - polished, detailed, slightly condescending but helpful"
+      informationContent: "INNOCENT behavior - specific time (7 PM to midnight), verifiable location (exclusive club), multiple witnesses (board members), offers documentation"
+      naturalDialogue: "Formal but conversational, offers verification through proper channels"
+      wordCount: 62
+      wordCountKo: 52
+      targetRange: [40, 80]
+      targetRangeKo: [30, 60]
+
+  - id: "wealthy-heir-cooperative-guilty"
+    emotionalState: "COOPERATIVE"
+    isGuilty: true
+    question: "What was your relationship with the victim?"
+    response: "We were business associates, nothing more. Occasional meetings about investment opportunities, the usual networking. I can't say we were particularly close—I have many such professional relationships. The details are in my calendar if you need specifics, though my assistant handles most of that. I'm happy to cooperate, but I'm afraid I don't have much insight into their personal life."
+    responseKo: "우리는 사업 동료였어요, 그 이상은 아니고요. 투자 기회에 대한 가끔 미팅, 일반적인 네트워킹이죠. 특별히 가까웠다고 할 순 없어요—그런 전문적 관계가 많거든요. 세부사항은 제 일정표에 있는데, 제 비서가 대부분 관리해요. 기꺼이 협조하겠지만, 그분의 사생활에 대해선 잘 모르겠네요."
+    analysis:
+      characterConsistency: "Uses business vocabulary ('associates', 'investment', 'networking'), mentions assistant and calendar"
+      emotionalAlignment: "COOPERATIVE tone - polite but distant, minimizing relationship"
+      informationContent: "GUILTY behavior - vague about relationship ('nothing more', 'not particularly close'), deflects to assistant, claims lack of knowledge"
+      naturalDialogue: "Formal, distancing language, cooperative facade"
+      wordCount: 63
+      wordCountKo: 50
+      targetRange: [40, 80]
+      targetRangeKo: [30, 60]
+
+  - id: "wealthy-heir-nervous-innocent"
+    emotionalState: "NERVOUS"
+    isGuilty: false
+    question: "Why are you being so evasive about your whereabouts?"
+    response: "I'm not being evasive! I told you—I was at home that evening. My family's reputation is at stake here, and this kind of scrutiny is... uncomfortable. Perhaps I should call my attorney? I have nothing to hide, but this feels like I'm being targeted simply because of my position."
+    responseKo: "회피하는 게 아니에요! 말씀드렸잖아요—그날 저녁 집에 있었다고요. 우리 가문의 명성이 걸린 문제고, 이런 조사는... 불편해요. 변호사를 불러야 할까요? 숨길 건 없지만, 제 지위 때문에 표적이 된 것 같아요."
+    analysis:
+      characterConsistency: "Mentions family reputation, attorney, and social position"
+      emotionalAlignment: "NERVOUS tone - defensive, uncomfortable, seeking legal protection, worried about appearances"
+      informationContent: "INNOCENT behavior - maintains consistent story (at home), truthful but anxious about scrutiny"
+      naturalDialogue: "Exclamation, hedging ('Perhaps I should'), self-conscious about status"
+      wordCount: 52
+      wordCountKo: 42
+      targetRange: [30, 60]
+      targetRangeKo: [22, 45]
+
+  - id: "wealthy-heir-nervous-guilty"
+    emotionalState: "NERVOUS"
+    isGuilty: true
+    question: "Your financial records show large payments to the victim. Explain that."
+    response: "Those were... business investments. Perfectly legitimate transactions. I don't personally handle every detail of my portfolio—my financial advisors manage that. I'm not sure I like where this is going. Should I be concerned? My attorney always says to be cautious in these situations."
+    responseKo: "그건... 사업 투자였어요. 완전히 합법적인 거래죠. 제 포트폴리오의 모든 세부사항을 직접 관리하진 않아요—재무 고문들이 관리하거든요. 이게 어디로 가는 건지 불안하네요. 걱정해야 하나요? 제 변호사는 항상 이런 상황에선 조심하라고 하는데."
+    analysis:
+      characterConsistency: "Mentions portfolio, financial advisors, attorney—typical wealthy heir deflection"
+      emotionalAlignment: "NERVOUS tone - hesitation ('Those were...'), seeking reassurance, mentions attorney for protection"
+      informationContent: "GUILTY behavior - vague explanation ('business investments'), deflects to advisors, no specific details, shows anxiety"
+      naturalDialogue: "Hesitation markers, questioning tone, seeking legal protection"
+      wordCount: 48
+      wordCountKo: 42
+      targetRange: [30, 60]
+      targetRangeKo: [22, 45]
+
+  - id: "wealthy-heir-defensive-innocent"
+    emotionalState: "DEFENSIVE"
+    isGuilty: false
+    question: "You seem awfully defensive for an innocent person."
+    response: "This is bordering on harassment! I've answered your questions honestly, but you're treating me like a criminal. Do you have any actual evidence, or are you just fishing? My legal team will be hearing about this interrogation."
+    responseKo: "이건 거의 괴롭힘 수준이에요! 질문에 정직하게 답했는데, 저를 범죄자 취급하시네요. 실제 증거라도 있나요, 아니면 그냥 낚시질하는 건가요? 제 법률팀이 이 심문에 대해 들을 겁니다."
+    analysis:
+      characterConsistency: "Uses legal terminology ('harassment', 'legal team'), pulls rank"
+      emotionalAlignment: "DEFENSIVE tone - hostile, accusatory, threatens legal action"
+      informationContent: "INNOCENT behavior - maintains innocence, challenges lack of evidence, defensive but truthful"
+      naturalDialogue: "Exclamatory, clipped sentences, threatening tone"
+      wordCount: 38
+      wordCountKo: 30
+      targetRange: [15, 40]
+      targetRangeKo: [11, 30]
+
+  - id: "wealthy-heir-defensive-guilty"
+    emotionalState: "DEFENSIVE"
+    isGuilty: true
+    question: "Multiple witnesses place you at the scene. Care to revise your statement?"
+    response: "Those witnesses are mistaken! People see what they want to see, especially when there's money involved. I don't appreciate these baseless insinuations. Everything through my lawyer from now on."
+    responseKo: "그 목격자들이 착각한 거예요! 사람들은 보고 싶은 걸 보죠, 특히 돈이 걸려있으면요. 이런 근거 없는 암시는 불쾌하네요. 이제부터 모든 건 제 변호사를 통해서 하겠습니다."
+    analysis:
+      characterConsistency: "Dismisses witnesses, implies money motivation, invokes lawyer"
+      emotionalAlignment: "DEFENSIVE tone - dismissive, accusatory, shuts down cooperation"
+      informationContent: "GUILTY behavior - attacks witness credibility, no alternative explanation, refuses further cooperation"
+      naturalDialogue: "Exclamatory, dismissive tone, abrupt ending"
+      wordCount: 34
+      wordCountKo: 26
+      targetRange: [15, 40]
+      targetRangeKo: [11, 30]
+
+  - id: "wealthy-heir-aggressive-innocent"
+    emotionalState: "AGGRESSIVE"
+    isGuilty: false
+    question: "We're going to need you to come down to the station."
+    response: "Am I under arrest? No? Then I'm leaving. My family's lawyers will destroy you for this harassment. Do you know who you're dealing with?"
+    responseKo: "체포하는 건가요? 아니라고요? 그럼 가겠습니다. 우리 가문의 변호사들이 이 괴롭힘으로 당신을 박살낼 겁니다. 당신이 누구를 상대하는지 알아요?"
+    analysis:
+      characterConsistency: "Pulls rank, threatens with family lawyers, questions authority"
+      emotionalAlignment: "AGGRESSIVE tone - hostile, threatening, refuses cooperation"
+      informationContent: "INNOCENT behavior - knows legal rights (arrest question), maintains innocence through aggression"
+      naturalDialogue: "Short, punchy questions, threats, confrontational"
+      wordCount: 28
+      wordCountKo: 21
+      targetRange: [10, 30]
+      targetRangeKo: [7, 22]
+
+  - id: "wealthy-heir-aggressive-guilty"
+    emotionalState: "AGGRESSIVE"
+    isGuilty: true
+    question: "The evidence is overwhelming. You should confess now."
+    response: "Get my lawyer. Now. This conversation is over. You're making a career-ending mistake, detective."
+    responseKo: "변호사 불러요. 지금 당장. 이 대화는 끝났어요. 당신 경력 끝장내는 실수하는 거예요, 형사님."
+    analysis:
+      characterConsistency: "Demands lawyer, threatens career consequences, uses privilege as weapon"
+      emotionalAlignment: "AGGRESSIVE tone - commands, threats, complete shutdown"
+      informationContent: "GUILTY behavior - refuses to address evidence, shuts down completely, threatens instead of explaining"
+      naturalDialogue: "Short commands, threatening, abrupt"
+      wordCount: 18
+      wordCountKo: 14
+      targetRange: [10, 30]
+      targetRangeKo: [7, 22]

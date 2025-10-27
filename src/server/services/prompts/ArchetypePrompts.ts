@@ -43,6 +43,7 @@ export interface ArchetypePromptData {
     primary: string[];
     secondary: string[];
   };
+  characteristicPhrases?: string[];  // Phase 3: Archetype-specific phrases (minimum 5)
 }
 
 interface ArchetypeYAMLData {
@@ -61,6 +62,7 @@ interface ArchetypeYAMLData {
     primary: string[];
     secondary: string[];
   };
+  characteristicPhrases?: string[];  // Phase 3: Archetype-specific phrases (minimum 5)
   speechPatterns: {
     [K in EmotionalStateName]: {
       mindset: string;
@@ -367,7 +369,8 @@ function loadArchetypeFromFile(archetypeName: ArchetypeName): ArchetypePromptDat
       definition: yamlData.definition,
       personality: yamlData.personality,
       vocabulary: yamlData.vocabulary,
-      speechPatterns: yamlData.speechPatterns
+      speechPatterns: yamlData.speechPatterns,
+      characteristicPhrases: yamlData.characteristicPhrases  // Phase 3: Include characteristic phrases
     };
 
     // Cache the loaded data

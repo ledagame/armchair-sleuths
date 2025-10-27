@@ -1,5 +1,5 @@
 import express from 'express';
-import { InitResponse, IncrementResponse, DecrementResponse, InterrogationResponse } from '../shared/types/api';
+import { InitResponse, IncrementResponse, DecrementResponse, InterrogationResponse, ImageGenerationStatusResponse } from '../shared/types/api';
 import { redis, reddit, createServer, context, getServerPort, settings } from '@devvit/web/server';
 import { createPost } from './core/post';
 import { createGeminiClient } from './services/gemini/GeminiClient';
@@ -19,6 +19,8 @@ import type { SearchLocationRequest } from '../shared/types/Discovery';
 import { APAcquisitionService } from './services/ap/APAcquisitionService';
 // Scheduler initialization
 import { initializeAllSchedulers } from './schedulers/DailyCaseScheduler';
+// Image services
+import { ImageStorageService } from './services/image/ImageStorageService';
 
 const app = express();
 
@@ -148,15 +150,22 @@ router.post('/internal/on-app-install', async (_req, res): Promise<void> => {
 router.post('/internal/menu/post-create', async (_req, res): Promise<void> => {
   try {
     console.log('🎮 Creating new unique game case from menu...');
+    console.log('📋 Context info:', {
+      subredditName: context.subredditName,
+      postId: context.postId,
+      userId: context.userId
+    });
 
     // 1. Get Gemini API key
     const apiKey = await settings.get<string>('geminiApiKey');
 
     if (!apiKey) {
-      console.error('Gemini API key not configured');
-      res.status(500).json({
-        status: 'error',
-        message: 'Gemini API key not configured. Please set it in app settings.'
+      console.error('❌ Gemini API key not configured');
+      res.json({
+        showToast: {
+          text: 'Gemini API key not configured. Please set it in app settings.',
+          appearance: 'neutral'
+        }
       });
       return;
     }
@@ -173,6 +182,7 @@ router.post('/internal/menu/post-create', async (_req, res): Promise<void> => {
     const geminiClient = createGeminiClient(apiKey);
     const caseGenerator = createCaseGeneratorService(geminiClient);
 
+    console.log('🎨 Starting case generation...');
     const newCase = await caseGenerator.generateCase({
       date: now,
       includeImage: true,
@@ -186,6 +196,12 @@ router.post('/internal/menu/post-create', async (_req, res): Promise<void> => {
     console.log(`   - Victim: ${newCase.victim.name}`);
     console.log(`   - Suspects: ${newCase.suspects.map(s => s.name).join(', ')}`);
     console.log(`   - Images: ${newCase.suspects.filter(s => s.profileImageUrl).length}/${newCase.suspects.length}`);
+    console.log(`   - IntroSlides: ${newCase.introSlides ? 'Generated' : 'Missing'}`);
+    if (newCase.introSlides) {
+      console.log(`     - Slide 1 (Discovery): ${JSON.stringify(newCase.introSlides.discovery).substring(0, 100)}...`);
+      console.log(`     - Slide 2 (Suspects): ${newCase.introSlides.suspects.suspectCards.length} cards`);
+      console.log(`     - Slide 3 (Challenge): ${newCase.introSlides.challenge.question}`);
+    }
 
     // 4. Create post title with game info
     const suspectNames = newCase.suspects.map(s => s.name).join(', ');
@@ -200,16 +216,37 @@ router.post('/internal/menu/post-create', async (_req, res): Promise<void> => {
       subredditName: context.subredditName
     });
 
-    console.log(`✅ Post created: ${post.id}`);
+    console.log(`✅ Post created successfully: ${post.id}`);
 
+    // Return UIResponse format with post object (not URL string)
+    // See: https://developers.reddit.com/docs/capabilities/client/menu-actions#menu-responses
     res.json({
-      navigateTo: `https://reddit.com/r/${context.subredditName}/comments/${post.id}`,
+      navigateTo: post,
     });
   } catch (error) {
-    console.error(`Error creating post: ${error}`);
-    res.status(400).json({
-      status: 'error',
-      message: 'Failed to create post',
+    console.error(`❌ [menu/post-create] Error occurred:`, error);
+    if (error instanceof Error) {
+      console.error(`   - Error type: ${error.constructor.name}`);
+      console.error(`   - Error message: ${error.message}`);
+      console.error(`   - Error stack: ${error.stack}`);
+    }
+
+    // Check if it's a specific Devvit error
+    const errorObj = error as any;
+    if (errorObj.statusCode) {
+      console.error(`   - HTTP Status Code: ${errorObj.statusCode}`);
+    }
+    if (errorObj.response) {
+      console.error(`   - Response body: ${JSON.stringify(errorObj.response, null, 2)}`);
+    }
+
+    // Return UIResponse format with showToast for errors
+    // See: https://developers.reddit.com/docs/capabilities/client/menu-actions#menu-responses
+    res.json({
+      showToast: {
+        text: error instanceof Error ? error.message : 'Failed to create post',
+        appearance: 'neutral'
+      }
     });
   }
 });
@@ -659,7 +696,9 @@ router.get('/api/case/today', async (req, res): Promise<void> => {
             location: regeneratedCase.location,
             suspects: suspectsData,
             imageUrl: regeneratedCase.imageUrl,
-            introNarration: regeneratedCase.introNarration,
+            introNarration: regeneratedCase.introNarration, // LEGACY: 5-scene cinematic
+            introSlides: regeneratedCase.introSlides, // NEW: 3-slide intro system
+            cinematicImages: regeneratedCase.cinematicImages, // Background images for intro
             locations: regeneratedCase.locations,
             evidence: regeneratedCase.evidence, // Include evidence items for discovery system
             evidenceDistribution: regeneratedCase.evidenceDistribution,
@@ -699,7 +738,9 @@ router.get('/api/case/today', async (req, res): Promise<void> => {
       location: todaysCase.location,
       suspects: suspectsData,
       imageUrl: todaysCase.imageUrl,
-      introNarration: todaysCase.introNarration,
+      introNarration: todaysCase.introNarration, // LEGACY: 5-scene cinematic (backward compatibility)
+      introSlides: todaysCase.introSlides, // NEW: 3-slide intro system (preferred)
+      cinematicImages: todaysCase.cinematicImages, // Background images for intro
       locations: todaysCase.locations,
       evidence: todaysCase.evidence, // Include evidence items for discovery system
       evidenceDistribution: todaysCase.evidenceDistribution,
@@ -725,6 +766,7 @@ router.get('/api/case/today', async (req, res): Promise<void> => {
 router.get('/api/case/:caseId', async (req, res): Promise<void> => {
   try {
     const { caseId } = req.params;
+    const userId = req.query.userId as string;
 
     // Get language from query parameter (default: 'ko')
     const language = (req.query.language as string) || 'ko';
@@ -748,6 +790,25 @@ router.get('/api/case/:caseId', async (req, res): Promise<void> => {
       return;
     }
 
+    // 🔧 Auto-initialize player state if userId provided (Phase 1 Fix)
+    let playerState = null;
+    if (userId) {
+      playerState = await KVStoreManager.getPlayerEvidenceState(caseId, userId);
+
+      if (!playerState) {
+        console.log(`🔧 Auto-initializing player state for ${userId}/${caseId}`);
+        const stateService = createPlayerEvidenceStateService();
+        playerState = stateService.initializeState(caseId, userId);
+
+        // Initialize action points
+        initializeActionPoints(caseData, playerState);
+
+        // Save to storage
+        await KVStoreManager.savePlayerEvidenceState(playerState);
+        console.log(`✅ Player state initialized: ${playerState.actionPoints.current} AP`);
+      }
+    }
+
     // Fetch full suspect data
     const fullSuspects = await CaseRepository.getCaseSuspects(caseData.id);
 
@@ -765,7 +826,7 @@ router.get('/api/case/:caseId', async (req, res): Promise<void> => {
       hasProfileImage: !!s.profileImageUrl
     }));
 
-    res.json({
+    const responseData: any = {
       id: caseData.id,
       date: caseData.date,
       language: language,
@@ -774,13 +835,26 @@ router.get('/api/case/:caseId', async (req, res): Promise<void> => {
       location: caseData.location,
       suspects: suspectsData,
       imageUrl: caseData.imageUrl,
-      introNarration: caseData.introNarration,
+      introNarration: caseData.introNarration, // LEGACY: 5-scene cinematic
+      introSlides: caseData.introSlides, // NEW: 3-slide intro system
+      cinematicImages: caseData.cinematicImages, // Background images for intro
       locations: caseData.locations,
       evidence: caseData.evidence, // Include evidence items for discovery system
       evidenceDistribution: caseData.evidenceDistribution,
       actionPoints: caseData.actionPoints, // AP configuration (Phase 2)
       generatedAt: caseData.generatedAt
-    });
+    };
+
+    // Include player state if initialized
+    if (playerState) {
+      responseData.playerState = {
+        ...playerState,
+        actionPointsRemaining: playerState.actionPoints.current,
+        actionPointsUsed: playerState.actionPoints.spent
+      };
+    }
+
+    res.json(responseData);
   } catch (error) {
     console.error(`Error fetching case ${req.params.caseId}:`, error);
     res.status(500).json({
@@ -800,7 +874,7 @@ router.get('/api/case/:caseId/evidence-images/status', async (req, res): Promise
 
     // Get storage adapter
     const adapter = KVStoreManager.getAdapter();
-    const storageService = new (await import('./services/image/ImageStorageService')).ImageStorageService(adapter);
+    const storageService = new ImageStorageService(adapter);
 
     // Get status from KV store
     const status = await storageService.getEvidenceImageStatus(caseId);
@@ -837,7 +911,7 @@ router.get('/api/case/:caseId/location-images/status', async (req, res): Promise
 
     // Get storage adapter
     const adapter = KVStoreManager.getAdapter();
-    const storageService = new (await import('./services/image/ImageStorageService')).ImageStorageService(adapter);
+    const storageService = new ImageStorageService(adapter);
 
     // Get status from KV store
     const status = await storageService.getLocationImageStatus(caseId);
@@ -860,6 +934,78 @@ router.get('/api/case/:caseId/location-images/status', async (req, res): Promise
     res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to fetch location image status'
+    });
+  }
+});
+
+/**
+ * GET /api/case/:caseId/image-status
+ *
+ * GAP-002: Unified image generation status endpoint
+ *
+ * Returns real-time progress for both evidence and location image generation.
+ * Frontend polls this endpoint every 5s to track async background generation.
+ *
+ * Response format:
+ * {
+ *   caseId: string,
+ *   evidence: { status, total, completed, failed, startedAt?, completedAt? },
+ *   location: { status, total, completed, failed, startedAt?, completedAt? },
+ *   complete: boolean,
+ *   lastUpdated: string
+ * }
+ */
+router.get('/api/case/:caseId/image-status', async (req, res): Promise<void> => {
+  try {
+    const { caseId } = req.params;
+
+    console.log(`📊 [ImageStatus] GET /api/case/${caseId}/image-status`);
+
+    // Get storage adapter and service
+    const adapter = KVStoreManager.getAdapter();
+    const storageService = new ImageStorageService(adapter);
+
+    // Get unified status from KV store
+    const status = await storageService.getImageGenerationStatus(caseId);
+
+    if (!status) {
+      // No status found - return default pending state
+      const defaultStatus: ImageGenerationStatusResponse = {
+        caseId,
+        evidence: {
+          status: 'pending',
+          total: 0,
+          completed: 0,
+          failed: 0
+        },
+        location: {
+          status: 'pending',
+          total: 0,
+          completed: 0,
+          failed: 0
+        },
+        complete: false,
+        lastUpdated: new Date().toISOString()
+      };
+
+      console.log(`📊 [ImageStatus] No status found for ${caseId}, returning default pending`);
+      res.json(defaultStatus);
+      return;
+    }
+
+    console.log(
+      `📊 [ImageStatus] Status for ${caseId}: ` +
+      `evidence=${status.evidence.status} (${status.evidence.completed}/${status.evidence.total}), ` +
+      `location=${status.location.status} (${status.location.completed}/${status.location.total}), ` +
+      `complete=${status.complete}`
+    );
+
+    res.json(status);
+  } catch (error) {
+    console.error(`❌ [ImageStatus] Error fetching status for case ${req.params.caseId}:`, error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Failed to fetch image generation status'
     });
   }
 });
@@ -1493,14 +1639,33 @@ router.get('/api/player-state/:caseId/:userId', async (req, res): Promise<void> 
   try {
     const { caseId, userId } = req.params;
 
-    const playerState = await KVStoreManager.getPlayerEvidenceState(caseId, userId);
+    let playerState = await KVStoreManager.getPlayerEvidenceState(caseId, userId);
 
+    // 🔧 Auto-initialize player state if not found (Phase 1 Fix)
     if (!playerState) {
-      res.status(404).json({
-        error: 'Player state not found',
-        message: 'No evidence discovery state found for this player and case'
-      });
-      return;
+      console.log(`🔧 Auto-initializing player state for ${userId}/${caseId}`);
+
+      // Get case data for action points configuration
+      const caseData = await CaseRepository.getCaseById(caseId);
+
+      if (!caseData) {
+        res.status(404).json({
+          error: 'Case not found',
+          message: `Case ${caseId} not found. Cannot initialize player state.`
+        });
+        return;
+      }
+
+      // Initialize new player state
+      const stateService = createPlayerEvidenceStateService();
+      playerState = stateService.initializeState(caseId, userId);
+
+      // Initialize action points
+      initializeActionPoints(caseData, playerState);
+
+      // Save to storage
+      await KVStoreManager.savePlayerEvidenceState(playerState);
+      console.log(`✅ Player state initialized: ${playerState.actionPoints.current} AP`);
     }
 
     res.json({

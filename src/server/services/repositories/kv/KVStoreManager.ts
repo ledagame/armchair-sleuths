@@ -6,7 +6,7 @@
  */
 
 import { IStorageAdapter } from '../adapters/IStorageAdapter';
-import type { IntroNarration, CinematicImages, ImageGenerationStatus, ImageGenerationMeta } from '../../../shared/types/index';
+import type { IntroNarration, IntroSlides, CinematicImages, ImageGenerationStatus, ImageGenerationMeta } from '../../../shared/types/index';
 import type { Location, EvidenceDistribution } from '../../../shared/types/Discovery';
 import type { EvidenceItem, PlayerEvidenceState } from '../../../shared/types/Evidence';
 import type { APTopic, ActionPointsConfig } from '../../../shared/types/Case';
@@ -44,7 +44,8 @@ export interface CaseData {
   generatedAt: number; // timestamp
   imageUrl?: string;
   cinematicImages?: CinematicImages; // 시네마틱 인트로 이미지 (Gemini API로 생성, 3개 핵심 씬)
-  introNarration?: IntroNarration; // 인트로 나레이션 (Gemini API로 생성)
+  introNarration?: IntroNarration; // 인트로 나레이션 (Gemini API로 생성) - DEPRECATED, use introSlides
+  introSlides?: IntroSlides; // NEW: 3-slide intro system (discovery, suspects, challenge)
   // Image generation status (백그라운드 생성 추적)
   imageGenerationStatus?: ImageGenerationStatus; // 이미지 생성 상태
   imageGenerationMeta?: ImageGenerationMeta; // 이미지 생성 메타데이터
@@ -507,6 +508,36 @@ export class KVStoreManager {
     }
 
     return JSON.parse(data) as EvidenceDistribution;
+  }
+
+  /**
+   * 범용 키-값 저장 (Generic put method)
+   * 임의의 객체를 JSON으로 직렬화하여 저장
+   */
+  static async put(key: string, value: any): Promise<void> {
+    if (!this.adapter) {
+      throw new Error('Storage adapter not initialized. Call KVStoreManager.setAdapter() first.');
+    }
+
+    await this.adapter.set(key, JSON.stringify(value));
+  }
+
+  /**
+   * 범용 키-값 조회 (Generic get method)
+   * JSON으로 직렬화된 데이터를 파싱하여 반환
+   */
+  static async get<T = any>(key: string): Promise<T | null> {
+    if (!this.adapter) {
+      throw new Error('Storage adapter not initialized. Call KVStoreManager.setAdapter() first.');
+    }
+
+    const data = await this.adapter.get(key);
+
+    if (!data) {
+      return null;
+    }
+
+    return JSON.parse(data) as T;
   }
 
   /**

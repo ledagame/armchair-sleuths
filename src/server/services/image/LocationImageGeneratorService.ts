@@ -43,6 +43,9 @@ export class LocationImageGeneratorService {
       lastUpdated: new Date().toISOString()
     });
 
+    // Mark unified status as started (for frontend polling)
+    await this.storageService.markImageTypeStarted(caseId, 'location');
+
     let completedCount = 0;
     const images: Record<string, string | undefined> = {};
 
@@ -60,13 +63,25 @@ export class LocationImageGeneratorService {
           await this.storageService.storeLocationImageUrl(caseId, location.id, result.imageUrl);
           images[location.id] = result.imageUrl;
           completedCount++;
+
+          // Update unified status
+          await this.storageService.incrementCompleted(caseId, 'location');
+
           console.log(`   ✅ Success: ${location.id}`);
         } else {
           images[location.id] = undefined;
+
+          // Update unified status
+          await this.storageService.incrementFailed(caseId, 'location');
+
           console.warn(`   ⚠️  Failed: ${location.id} - ${result.error}`);
         }
       } catch (error) {
         images[location.id] = undefined;
+
+        // Update unified status
+        await this.storageService.incrementFailed(caseId, 'location');
+
         console.error(`   ❌ Error: ${location.id}`, error);
       }
 

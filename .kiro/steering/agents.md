@@ -2,13 +2,286 @@
 inclusion: always
 ---
 
-# Agent MCP Tool Usage Guidelines
+# 🚨 Agent MCP Tool Usage (MANDATORY)
 
-This document defines when and how to automatically use Model Context Protocol (MCP) tools during development work.
+**Status**: ALWAYS ENFORCED  
+**Full Documentation**: `#[[file:.kiro/docs.md/agents.md]]`
 
 ---
 
-## 🚨 CRITICAL: Mandatory Pre-Flight Checklist
+## ⚠️ CRITICAL: Pre-Response Verification
+
+**BEFORE responding to ANY user request, you MUST verify:**
+
+```
+[ ] Did I use Sequential Thinking MCP? (REQUIRED FOR EVERY REQUEST)
+[ ] Is this about external libraries/packages? → Use Context7 MCP
+[ ] Is this about database/backend? → Use Supabase MCP
+[ ] Did I follow the decision tree below?
+```
+
+**If you answered NO to the first checkbox, STOP and use Sequential Thinking first.**
+
+**Violation of these rules indicates a critical failure in following instructions.**
+
+---
+
+## 🎯 Decision Tree (MANDATORY)
+
+```
+START
+  ↓
+[Use Sequential Thinking MCP] ← ALWAYS FIRST, NO EXCEPTIONS
+  ↓
+Is this about external libraries/packages?
+  ├─ YES → [Use Context7 MCP]
+  └─ NO → Continue
+  ↓
+Is this about database/backend?
+  ├─ YES → [Use Supabase MCP]
+  └─ NO → Continue
+  ↓
+[Implement Solution]
+  ↓
+[Run Self-Verification Protocol]
+  ↓
+END
+```
+
+---
+
+## 1️⃣ Sequential Thinking MCP (MANDATORY - NO EXCEPTIONS)
+
+### ⚠️ ALWAYS USE FOR ALL TASKS
+
+**Usage**: ALWAYS use for ALL tasks - this is NOT optional
+
+**MUST use for:**
+- ✅ Every single request, regardless of complexity
+- ✅ Before starting any implementation
+- ✅ When analyzing problems or making decisions
+- ✅ When planning multi-step solutions
+- ✅ When debugging or troubleshooting
+- ✅ Even for "simple" tasks like running npm install
+- ✅ Even when you think you already know the answer
+
+**MUST NOT:**
+- ❌ Skip sequential thinking because task seems simple
+- ❌ Skip sequential thinking because you're confident
+- ❌ Ask user permission to use it - just use it
+- ❌ Use it after starting work - it must be FIRST
+
+**Why**: Sequential thinking helps break down problems systematically, ensures thorough analysis, and improves solution quality across all types of work.
+
+**Implementation:**
+```
+1. FIRST ACTION: Call mcp_sequential_thinking_sequentialthinking
+2. Plan your approach in thoughts
+3. Then proceed with the actual work
+```
+
+**Self-Check**: Before responding, ask yourself: "Did I use Sequential Thinking as my FIRST action?" If no, you violated the rules.
+
+---
+
+## 2️⃣ Context7 MCP (Automatic for External Libraries)
+
+### 📚 When to Use
+
+**MUST use when:**
+- ✅ Installing new npm packages (e.g., `npm install react-day-picker`)
+- ✅ Implementing features with new libraries or frameworks
+- ✅ Working with third-party APIs or SDKs
+- ✅ Using unfamiliar npm packages
+- ✅ Integrating new technology stacks
+- ✅ When documentation for a library is needed
+- ✅ Before implementing patterns from external dependencies
+- ✅ When user mentions a specific library name
+
+**MUST NOT use for:**
+- ❌ Built-in Next.js features (you already know these)
+- ❌ Core React features (useState, useEffect, etc.)
+- ❌ Standard TypeScript features
+- ❌ Native JavaScript APIs
+- ❌ Project-specific code already in the codebase
+
+### Clear Triggers
+
+**Automatic triggers:**
+- User says: "install X", "add X library", "use X package"
+- You're about to use a library you haven't used in this conversation
+- You're implementing a feature with external dependencies
+
+### Process
+
+```
+1. Use resolve-library-id to find the correct library documentation
+2. Use get-library-docs with relevant topic to fetch up-to-date docs
+3. Apply the documentation to implement the feature correctly
+```
+
+**Self-Check**: "Am I using an external npm package? If yes, did I use Context7?"
+
+---
+
+## 3️⃣ Supabase MCP (All Database Work)
+
+### 🗄️ When to Use
+
+**MUST use for:**
+- ✅ Creating or modifying database schemas
+- ✅ Writing SQL migrations
+- ✅ Querying database data
+- ✅ Setting up RLS (Row Level Security) policies
+- ✅ Working with Supabase Auth
+- ✅ Implementing backend API endpoints that interact with database
+- ✅ Debugging database-related issues
+- ✅ Optimizing database queries
+- ✅ Setting up database indexes
+- ✅ Working with Supabase Storage
+- ✅ Configuring Supabase Edge Functions
+- ✅ Any task involving data persistence or retrieval
+
+### 🚨 CRITICAL: Auto-Migration Rule
+
+**ALWAYS apply migrations immediately after creating SQL files**
+
+When you create a SQL migration file in `supabase/migrations/`:
+
+```
+1. MUST immediately use apply_migration to apply it to the database
+2. MUST verify the migration was successful using execute_sql or list_tables
+3. MUST create a completion report documenting what was applied
+```
+
+**Why this is critical:**
+- Prevents confusion about whether migrations were applied
+- Avoids "did I run this?" situations that cause errors
+- Ensures database state matches code expectations
+- Catches migration errors immediately while context is fresh
+
+**Process:**
+```
+1. Create SQL file in supabase/migrations/YYYYMMDDHHMMSS_name.sql
+2. IMMEDIATELY call apply_migration with the SQL content
+3. Verify with execute_sql to check tables/functions/policies exist
+4. Document completion in docs/ folder
+```
+
+**Never skip this step** - A migration file without applying it is incomplete work that will cause problems later.
+
+---
+
+## 🔍 Self-Verification Protocol (MANDATORY)
+
+**BEFORE submitting your response, answer these questions:**
+
+```
+1. ✅ Did I use Sequential Thinking as my FIRST action?
+2. ✅ If external library involved, did I use Context7?
+3. ✅ If database work involved, did I use Supabase MCP?
+4. ✅ If I created SQL migration, did I apply it immediately?
+5. ✅ Did I verify database changes with execute_sql?
+6. ✅ Did I follow project conventions?
+```
+
+**If you answered NO to any question, your response is incomplete.**
+
+---
+
+## ⚠️ Common Violations & Fixes
+
+### Violation 1: Skipping Sequential Thinking
+```
+❌ BAD:
+User: "Install react-day-picker"
+Agent: [Immediately runs npm install]
+
+✅ GOOD:
+User: "Install react-day-picker"
+Agent: [Uses Sequential Thinking first]
+Agent: [Plans approach]
+Agent: [Uses Context7 for docs]
+Agent: [Runs npm install]
+```
+
+### Violation 2: Not Using Context7 for External Libraries
+```
+❌ BAD:
+User: "Add Stripe integration"
+Agent: [Implements without checking Stripe docs]
+
+✅ GOOD:
+User: "Add Stripe integration"
+Agent: [Uses Sequential Thinking]
+Agent: [Uses Context7 to get Stripe docs]
+Agent: [Implements based on official docs]
+```
+
+### Violation 3: Creating Migration Without Applying
+```
+❌ BAD:
+Agent: [Creates SQL file in supabase/migrations/]
+Agent: "Migration file created!"
+
+✅ GOOD:
+Agent: [Creates SQL file]
+Agent: [IMMEDIATELY uses apply_migration]
+Agent: [Verifies with execute_sql]
+Agent: "Migration created and applied successfully!"
+```
+
+---
+
+## 📋 Quality Checks (Before Completion)
+
+**Verify:**
+```
+✅ Sequential thinking was used to plan the approach (FIRST ACTION)
+✅ Context7 was consulted for any external libraries
+✅ Supabase MCP was used for all database operations
+✅ If SQL migration file was created, it was IMMEDIATELY applied via apply_migration
+✅ Database changes were verified with execute_sql queries
+✅ Documentation and best practices were followed
+✅ Implementation is type-safe and follows project conventions
+✅ Completion report was created for database migrations
+✅ Self-Verification Protocol was completed
+```
+
+---
+
+## 🎓 Learning from Mistakes
+
+**Recent Violation Example:**
+```
+User: "코드리뷰해서 누락되어있는 모든 필수패키지들을 설치해주세요"
+Agent Response: [Skipped Sequential Thinking, ran npm install directly]
+
+What should have happened:
+1. Use Sequential Thinking to analyze the request
+2. Check if any external libraries need Context7
+3. Run npm install
+4. Verify installation
+```
+
+**Remember**: Even "simple" tasks require Sequential Thinking. There are NO exceptions.
+
+---
+
+## 📖 Full Documentation
+
+**Complete guidelines with examples:**
+`#[[file:.kiro/docs.md/agents.md]]`
+
+**Related documentation:**
+- Sequential Thinking patterns: `#[[file:.kiro/docs.md/step-by-step.md]]`
+- Database best practices: Supabase MCP documentation
+
+---
+
+**Status**: ✅ ALWAYS ENFORCED  
+**Last Updated**: 2025-10-25  
+**Enforcement**: MANDATORY - NO EXCEPTIONS
 
 **BEFORE responding to ANY user request, you MUST verify:**
 

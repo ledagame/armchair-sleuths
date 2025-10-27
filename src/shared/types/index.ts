@@ -69,25 +69,45 @@ export interface IntroNarration {
 }
 
 // ============================================================================
-// Cinematic Intro Types
+// NEW: 3-Slide Intro Types
 // ============================================================================
 
 /**
- * 시네마틱 씬 타입 (최적화: 3개 핵심 씬만)
+ * Export new 3-slide intro types
+ * Replaces old IntroNarration {atmosphere, incident, stakes}
  */
-export type CinematicSceneType = 'establishing' | 'confrontation' | 'action';
+export type {
+  IntroSlides,
+  Slide1Discovery,
+  Slide2Suspects,
+  Slide3Challenge,
+  SuspectCard,
+  IntroSlidesValidationResult
+} from './IntroSlides';
+
+// ============================================================================
+// Cinematic Intro Types (UPDATED for 3-slide system)
+// ============================================================================
 
 /**
- * 시네마틱 인트로 이미지 맵 (최적화: 3개 핵심 씬)
+ * 시네마틱 씬 타입 (3-slide 매핑)
+ * - discovery: Slide 1 배경 이미지
+ * - suspects: Slide 2 배경 이미지
+ * - challenge: Slide 3 배경 이미지
+ */
+export type CinematicSceneType = 'discovery' | 'suspects' | 'challenge';
+
+/**
+ * 시네마틱 인트로 이미지 맵 (3-slide system)
  * Gemini API로 생성된 시네마틱 이미지 URL
  */
 export interface CinematicImages {
-  /** Establishing (Discovery) 씬 이미지 - 범죄 현장 발견 */
-  establishing?: string;
-  /** Confrontation (Evidence) 씬 이미지 - 증거 대면 */
-  confrontation?: string;
-  /** Action (Beginning) 씬 이미지 - 수사 시작 */
-  action?: string;
+  /** Discovery (Slide 1) 이미지 - 범죄 현장 발견 */
+  discovery?: string;
+  /** Suspects (Slide 2) 이미지 - 용의자들 */
+  suspects?: string;
+  /** Challenge (Slide 3) 이미지 - 수사 시작 도전 */
+  challenge?: string;
 }
 
 // ============================================================================
@@ -122,11 +142,11 @@ export interface ImageGenerationMeta {
   failureReason?: string;
   /** 재시도 횟수 */
   retryCount?: number;
-  /** 개별 이미지 생성 상태 */
+  /** 개별 이미지 생성 상태 (3-slide system) */
   progress?: {
-    establishing?: 'pending' | 'generating' | 'completed' | 'failed';
-    confrontation?: 'pending' | 'generating' | 'completed' | 'failed';
-    action?: 'pending' | 'generating' | 'completed' | 'failed';
+    discovery?: 'pending' | 'generating' | 'completed' | 'failed';
+    suspects?: 'pending' | 'generating' | 'completed' | 'failed';
+    challenge?: 'pending' | 'generating' | 'completed' | 'failed';
   };
 }
 
@@ -143,3 +163,23 @@ export type {
   LocationImageStatusResponse,
   ImageGenerationOptions
 } from './Image';
+
+// ============================================================================
+// API Types (from api.ts)
+// ============================================================================
+
+/**
+ * Re-export API types including the new unified image status endpoint
+ */
+export type {
+  InitResponse,
+  IncrementResponse,
+  DecrementResponse,
+  APAcquisitionBreakdown,
+  PlayerAPState,
+  InterrogationResponse,
+  SearchLocationResponse,
+  APStatusResponse,
+  ImageTypeStatus,
+  ImageGenerationStatusResponse
+} from './api';

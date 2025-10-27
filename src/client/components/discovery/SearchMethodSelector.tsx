@@ -3,6 +3,8 @@
  *
  * Allows player to choose search method (Quick/Thorough/Exhaustive)
  * Displays action point costs and success rates
+ *
+ * REFACTORED: Noir detective design system integration
  */
 
 import { motion } from 'framer-motion';
@@ -36,7 +38,7 @@ const SEARCH_METHODS: Array<{
     descriptionKo: '빠르지만 덜 철저함',
     actionCost: 1,
     icon: '⚡',
-    color: 'from-yellow-500 to-orange-500',
+    color: 'from-detective-gold to-detective-amber',
   },
   {
     type: 'thorough',
@@ -46,7 +48,7 @@ const SEARCH_METHODS: Array<{
     descriptionKo: '균형잡힌 접근',
     actionCost: 2,
     icon: '🔍',
-    color: 'from-blue-500 to-cyan-500',
+    color: 'from-evidence-clue to-detective-gold',
   },
   {
     type: 'exhaustive',
@@ -56,7 +58,7 @@ const SEARCH_METHODS: Array<{
     descriptionKo: '거의 모든 것을 발견',
     actionCost: 3,
     icon: '🔬',
-    color: 'from-purple-500 to-pink-500',
+    color: 'from-evidence-poison to-evidence-blood',
   },
 ];
 
@@ -68,6 +70,7 @@ const SEARCH_METHODS: Array<{
  * - Action point cost display
  * - Disabled state when insufficient action points
  * - Smooth animations
+ * - Mobile-first responsive design
  */
 export function SearchMethodSelector({
   selectedMethod,
@@ -76,10 +79,10 @@ export function SearchMethodSelector({
   actionPoints,
 }: SearchMethodSelectorProps) {
   return (
-    <div className="space-y-2">
-      <p className="text-sm font-medium text-gray-300">탐색 방법 선택:</p>
+    <div className="space-y-3">
+      <p className="text-sm sm:text-base font-medium text-text-secondary">탐색 방법 선택:</p>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {SEARCH_METHODS.map((method) => {
           const isSelected = selectedMethod === method.type;
           const canAfford = actionPoints === undefined || actionPoints >= method.actionCost;
@@ -91,33 +94,36 @@ export function SearchMethodSelector({
               onClick={() => !isDisabled && onSelect(method.type)}
               disabled={isDisabled}
               className={`
-                relative p-3 rounded-lg border-2 transition-all
+                relative p-3 sm:p-4 min-h-[120px] rounded-lg border-2 transition-all duration-base
                 ${isSelected
-                  ? 'border-detective-gold bg-detective-gold bg-opacity-20'
-                  : 'border-gray-600 bg-gray-800'
+                  ? 'border-detective-gold bg-detective-gold/20 shadow-glow'
+                  : 'border-noir-fog bg-noir-charcoal'
                 }
                 ${isDisabled
                   ? 'opacity-50 cursor-not-allowed'
-                  : 'hover:border-detective-gold hover:bg-opacity-10 cursor-pointer'
+                  : 'hover:border-detective-brass hover:bg-noir-gunmetal cursor-pointer'
                 }
               `}
-              whileHover={!isDisabled ? { scale: 1.05 } : {}}
-              whileTap={!isDisabled ? { scale: 0.95 } : {}}
+              whileHover={!isDisabled ? { scale: 1.03 } : {}}
+              whileTap={!isDisabled ? { scale: 0.97 } : {}}
+              aria-pressed={isSelected}
+              aria-disabled={isDisabled}
+              aria-label={`${method.nameKo} - ${method.actionCost} AP ${!canAfford ? '(AP 부족)' : ''}`}
             >
               {/* Icon */}
-              <div className="text-2xl mb-1">{method.icon}</div>
+              <div className="text-3xl sm:text-4xl mb-2" aria-hidden="true">{method.icon}</div>
 
               {/* Name */}
-              <div className="text-sm font-bold text-white mb-1">
+              <div className="text-sm sm:text-base font-bold text-text-primary mb-2">
                 {method.nameKo}
               </div>
 
               {/* Action Cost */}
-              <div className="flex items-center justify-center gap-1 mb-1">
-                <span className="text-xs text-gray-400">AP:</span>
+              <div className="flex items-center justify-center gap-1 mb-2">
+                <span className="text-xs text-text-muted">AP:</span>
                 <span
-                  className={`text-sm font-bold ${
-                    canAfford ? 'text-detective-gold' : 'text-red-400'
+                  className={`text-base sm:text-lg font-bold ${
+                    canAfford ? 'text-detective-gold' : 'text-evidence-blood'
                   }`}
                 >
                   {method.actionCost}
@@ -125,26 +131,26 @@ export function SearchMethodSelector({
               </div>
 
               {/* Description */}
-              <div className="text-xs text-gray-400">
+              <div className="text-xs sm:text-sm text-text-secondary">
                 {method.descriptionKo}
               </div>
 
               {/* Selected indicator */}
               {isSelected && (
                 <motion.div
-                  className="absolute top-1 right-1"
+                  className="absolute top-2 right-2"
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ type: 'spring', stiffness: 500, damping: 25 }}
                 >
-                  <span className="text-detective-gold text-lg">✓</span>
+                  <span className="text-detective-gold text-xl sm:text-2xl" aria-hidden="true">✓</span>
                 </motion.div>
               )}
 
               {/* Insufficient funds indicator */}
               {!canAfford && actionPoints !== undefined && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg">
-                  <span className="text-red-400 text-xs font-bold">
+                <div className="absolute inset-0 flex items-center justify-center bg-noir-deepBlack/80 rounded-lg">
+                  <span className="text-evidence-blood text-xs sm:text-sm font-bold">
                     AP 부족
                   </span>
                 </div>
@@ -156,9 +162,9 @@ export function SearchMethodSelector({
 
       {/* Action Points Display */}
       {actionPoints !== undefined && (
-        <div className="flex items-center justify-between text-sm mt-2 p-2 bg-gray-800 rounded">
-          <span className="text-gray-400">보유 액션 포인트:</span>
-          <span className="text-detective-gold font-bold">{actionPoints} AP</span>
+        <div className="flex items-center justify-between text-sm sm:text-base mt-3 p-3 sm:p-4 bg-noir-gunmetal border border-noir-fog rounded-lg">
+          <span className="text-text-secondary">보유 액션 포인트:</span>
+          <span className="text-detective-gold font-bold text-base sm:text-lg">{actionPoints} AP</span>
         </div>
       )}
     </div>

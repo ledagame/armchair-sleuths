@@ -1,340 +1,351 @@
+import { EventEmitter } from 'events';
 import type { Skill } from './types.js';
-import type { DependencyGraph, CircularDependency } from './DependencyGraph.js';
 import type { SkillRegistry } from './SkillRegistry.js';
+import type {
+  DependencyGraph,
+  CircularDependency,
+} from './DependencyGraph.js';
 
 /**
  * DependencyResolver - Resolves skill dependencies recursively
  * 
  * This class provides:
  * - Recursive dependency resolution
+ * - Circular dependency detection and handling
  * - Missing dependency detection
  * - Package and API dependency checking
- * - Circular dependency detection
- * - Execution order calculation
  */
-export class DependencyResolver {
-  private graph: DependencyGraph;
+export class DependencyResolver extends EventEmitter {
   private registry: SkillRegistry;
+  private dependencyGraph: DependencyGraph;
 
-  constructor(graph: DependencyGraph, registry: SkillRegistry) {
-    this.graph = graph;
+  constructor(registry: SkillRegistry, dependencyGraph: DependencyGraph) {
+    super();
     this.registry = registry;
+    this.dependencyGraph = dependencyGraph;
   }
 
   /**
    * Resolve all dependencies for a skill
-   * @param skillName Name of the skill
-   * @returns Resolution result with all dependencies
+   * @param skill Skill to resolve dependencies for
+   * @returns Resolution result with all dependencies and errors
    */
-  resolve(skillName: string): ResolutionResult {
-    const skill = this.registry.getSkill(skillName);
+  resolveDependencies(skill: Skill): DependencyResolutionResult {
+    const result: DependencyResolutionResult = {
+      skill: skill.metadata.name,
+      skills: [],
+      packages: [],
+      apis: [],
+      errors: [],
+      warnings: [],
+      circularDependencies: [],
+    };
 
-    if (!skill) {
-      return {
-        success: false,
-        skill: null,
-        dependencies: {
-          skills: [],
-          packages: [],
-          apis: [],
-        },
-        missing: {
-          skills: [skillName],
-          packages: [],
-          apis: [],
-        },
-        errors: [
-          {
-            type: 'skill_not_found',
-            message: `Skill '${skillName}' not found in registry`,
-            skillName,
-          },
-        ],
-        executionOrder: null,
-      };
+    // Check for circular dependencies first
+    const circularDeps = this.detectCircularDependencies(skill);
+    if (circularDeps.length > 0) {
+      result.circularDependencies = circularDeps;
+      result.warnings.push({
+        type: 'circular_dependency',
+        message: `Circular dependencies detected: ${circularDeps.map((cd) => cd.cycle.join(' -> ')).join('; ')}`,
+        severity: 'warning',
+        suggestion:
+          'Remove one dependency from the cycle to break the circular dependency',
+      });
+
+      this.emit('resolver:circular-dependencies', {
+        skill: skill.metadata.name,
+        cycles: circularDeps,
+        timestamp: new Date(),
+      });
     }
 
-    // Check for circular dependencies
-    const circularDeps = this.graph.detectCircularDependencies();
-    const circularError = circularDeps.find((cycle) =>
-      cycle.cycle.includes(skillName)
-    );
-
-    if (circularError) {
-      return {
-        success: false,
-        skill,
-        dependencies: {
-          skills: [],
-          packages: [],
-          apis: [],
-        },
-        missing: {
-          skills: [],
-          packages: [],
-          apis: [],
-        },
-        errors: [
-          {
-            type: 'circular_dependency',
-            message: circularError.message,
-            skillName,
-            cycle: circularError.cycle,
-          },
-        ],
-        executionOrder: null,
-      };
-    }
-
-    // Resolve skill dependencies
-    const skillDeps = this.resolveSkillDependencies(skillName);
+    // Resolve skill dependencies (with cycle prevention)
+    const visited = new Set<string>();
+    this.resolveSkillDependencies(skill, result, visited);
 
     // Resolve package dependencies
-    const packageDeps = this.resolvePackageDependencies(skill);
+    this.resolvePackageDependencies(skill, result);
 
     // Resolve API dependencies
-    const apiDeps = this.resolveAPIDependencies(skill);
+    this.resolveAPIDependencies(skill, result);
 
-    // Calculate execution order
-    const executionOrder = this.calculateExecutionOrder(skillName, skillDeps);
-
-    // Check if resolution was successful
-    const success =
-      skillDeps.missing.length === 0 &&
-      packageDeps.missing.length === 0 &&
-      apiDeps.missing.length === 0 &&
-      executionOrder !== null;
-
-    // Collect all errors
-    const errors: ResolutionError[] = [];
-
-    if (skillDeps.missing.length > 0) {
-      errors.push({
-        type: 'missing_skill_dependency',
-        message: `Missing skill dependencies: ${skillDeps.missing.join(', ')}`,
-        skillName,
-        missing: skillDeps.missing,
-      });
-    }
-
-    if (packageDeps.missing.length > 0) {
-      errors.push({
-        type: 'missing_package_dependency',
-        message: `Missing package dependencies: ${packageDeps.missing.join(', ')}`,
-        skillName,
-        missing: packageDeps.missing,
-      });
-    }
-
-    if (apiDeps.missing.length > 0) {
-      errors.push({
-        type: 'missing_api_dependency',
-        message: `Missing API dependencies: ${apiDeps.missing.join(', ')}`,
-        skillName,
-        missing: apiDeps.missing,
-      });
-    }
-
-    return {
+    // Emit resolution event
+    const success = result.errors.length === 0;
+    this.emit('resolver:resolved', {
+      skill: skill.metadata.name,
       success,
-      skill,
-      dependencies: {
-        skills: skillDeps.resolved,
-        packages: packageDeps.resolved,
-        apis: apiDeps.resolved,
-      },
-      missing: {
-        skills: skillDeps.missing,
-        packages: packageDeps.missing,
-        apis: apiDeps.missing,
-      },
-      errors,
-      executionOrder,
-    };
+      skillCount: result.skills.length,
+      packageCount: result.packages.length,
+      apiCount: result.apis.length,
+      errorCount: result.errors.length,
+      warningCount: result.warnings.length,
+      timestamp: new Date(),
+    });
+
+    return result;
   }
 
   /**
    * Resolve dependencies for multiple skills
-   * @param skillNames Array of skill names
-   * @returns Array of resolution results
+   * @param skills Array of skills
+   * @returns Combined resolution result
    */
-  resolveMultiple(skillNames: string[]): ResolutionResult[] {
-    return skillNames.map((name) => this.resolve(name));
+  resolveMultipleDependencies(
+    skills: Skill[]
+  ): DependencyResolutionResult {
+    const combinedResult: DependencyResolutionResult = {
+      skill: skills.map((s) => s.metadata.name).join(', '),
+      skills: [],
+      packages: [],
+      apis: [],
+      errors: [],
+      warnings: [],
+      circularDependencies: [],
+    };
+
+    const allSkillNames = new Set<string>();
+    const allPackages = new Set<string>();
+    const allAPIs = new Set<string>();
+
+    for (const skill of skills) {
+      const result = this.resolveDependencies(skill);
+
+      // Merge skills
+      for (const depSkill of result.skills) {
+        if (!allSkillNames.has(depSkill.metadata.name)) {
+          allSkillNames.add(depSkill.metadata.name);
+          combinedResult.skills.push(depSkill);
+        }
+      }
+
+      // Merge packages
+      for (const pkg of result.packages) {
+        if (!allPackages.has(pkg.name)) {
+          allPackages.add(pkg.name);
+          combinedResult.packages.push(pkg);
+        }
+      }
+
+      // Merge APIs
+      for (const api of result.apis) {
+        if (!allAPIs.has(api.name)) {
+          allAPIs.add(api.name);
+          combinedResult.apis.push(api);
+        }
+      }
+
+      // Merge errors and warnings
+      combinedResult.errors.push(...result.errors);
+      combinedResult.warnings.push(...result.warnings);
+      combinedResult.circularDependencies.push(
+        ...result.circularDependencies
+      );
+    }
+
+    return combinedResult;
   }
 
   /**
-   * Check if a skill's dependencies can be resolved
-   * @param skillName Name of the skill
-   * @returns True if all dependencies can be resolved
+   * Check if all dependencies are available
+   * @param skill Skill to check
+   * @returns True if all dependencies are available
    */
-  canResolve(skillName: string): boolean {
-    const result = this.resolve(skillName);
-    return result.success;
+  areDependenciesAvailable(skill: Skill): boolean {
+    const result = this.resolveDependencies(skill);
+    return result.errors.length === 0;
   }
 
   /**
    * Get missing dependencies for a skill
-   * @param skillName Name of the skill
-   * @returns Missing dependencies
+   * @param skill Skill to check
+   * @returns Array of missing dependency names
    */
-  getMissingDependencies(skillName: string): MissingDependencies {
-    const result = this.resolve(skillName);
-    return result.missing;
+  getMissingDependencies(skill: Skill): string[] {
+    const result = this.resolveDependencies(skill);
+    return result.errors
+      .filter((err) => err.type === 'missing_skill')
+      .map((err) => err.dependency);
   }
 
   /**
-   * Get execution order for a skill and its dependencies
-   * @param skillName Name of the skill
-   * @returns Execution order or null if cannot be resolved
+   * Detect circular dependencies for a skill
+   * @param skill Skill to check
+   * @returns Array of circular dependency chains
    */
-  getExecutionOrder(skillName: string): string[] | null {
-    const result = this.resolve(skillName);
-    return result.executionOrder;
+  private detectCircularDependencies(skill: Skill): CircularDependency[] {
+    // Use DependencyGraph to detect cycles
+    const cycles = this.dependencyGraph.detectCircularDependencies();
+
+    // Filter cycles that involve this skill
+    return cycles.filter((cycle) =>
+      cycle.cycle.includes(skill.metadata.name)
+    );
   }
 
   /**
    * Resolve skill dependencies recursively
-   * @param skillName Name of the skill
-   * @returns Resolved and missing skill dependencies
+   * @param skill Current skill
+   * @param result Result object to populate
+   * @param visited Set of visited skill names (to prevent infinite loops)
    */
-  private resolveSkillDependencies(skillName: string): {
-    resolved: Skill[];
-    missing: string[];
-  } {
-    const skill = this.registry.getSkill(skillName);
+  private resolveSkillDependencies(
+    skill: Skill,
+    result: DependencyResolutionResult,
+    visited: Set<string>
+  ): void {
+    const skillName = skill.metadata.name;
 
-    if (!skill) {
-      return { resolved: [], missing: [skillName] };
+    // Skip if already visited (prevents infinite loops in circular dependencies)
+    if (visited.has(skillName)) {
+      return;
     }
+
+    visited.add(skillName);
 
     const skillDeps = skill.metadata.dependencies.skills || [];
-    const resolved: Skill[] = [];
-    const missing: string[] = [];
 
-    // Get all transitive dependencies
-    const allDepNames = this.graph.getAllDependencies(skillName);
-
-    // Resolve each dependency
-    for (const depName of allDepNames) {
+    for (const depName of skillDeps) {
+      // Check if dependency exists
       const depSkill = this.registry.getSkill(depName);
 
-      if (depSkill) {
-        resolved.push(depSkill);
-      } else {
-        missing.push(depName);
-      }
-    }
+      if (!depSkill) {
+        // Missing dependency
+        result.errors.push({
+          type: 'missing_skill',
+          dependency: depName,
+          message: `Required skill '${depName}' not found in registry`,
+          severity: 'error',
+          suggestion: `Install or create the '${depName}' skill`,
+        });
 
-    return { resolved, missing };
+        this.emit('resolver:missing-dependency', {
+          skill: skillName,
+          dependency: depName,
+          type: 'skill',
+          timestamp: new Date(),
+        });
+
+        continue;
+      }
+
+      // Check if dependency is in error state
+      if (depSkill.status === 'error') {
+        result.warnings.push({
+          type: 'dependency_error',
+          message: `Dependency '${depName}' is in error state`,
+          severity: 'warning',
+          suggestion: `Fix errors in '${depName}' skill before using`,
+        });
+      }
+
+      // Add to result if not already added
+      if (!result.skills.find((s) => s.metadata.name === depName)) {
+        result.skills.push(depSkill);
+      }
+
+      // Recursively resolve dependencies of this dependency
+      this.resolveSkillDependencies(depSkill, result, visited);
+    }
   }
 
   /**
    * Resolve package dependencies
-   * @param skill Skill to check
-   * @returns Resolved and missing package dependencies
+   * @param skill Skill to resolve packages for
+   * @param result Result object to populate
    */
-  private resolvePackageDependencies(skill: Skill): {
-    resolved: PackageDependency[];
-    missing: string[];
-  } {
+  private resolvePackageDependencies(
+    skill: Skill,
+    result: DependencyResolutionResult
+  ): void {
     const packages = skill.metadata.dependencies.packages || [];
-    const resolved: PackageDependency[] = [];
-    const missing: string[] = [];
 
-    for (const pkg of packages) {
-      // Parse package name and version
-      const [name, version] = this.parsePackageString(pkg);
+    for (const pkgSpec of packages) {
+      // Parse package specification (name@version or just name)
+      const [name, version] = this.parsePackageSpec(pkgSpec);
 
-      // Check if package is available (simplified check)
-      // In a real implementation, this would check node_modules or package.json
-      const isAvailable = this.isPackageAvailable(name);
+      // Check if package is installed (simplified check)
+      const isInstalled = this.isPackageInstalled(name);
 
-      if (isAvailable) {
-        resolved.push({
-          name,
-          version: version || 'latest',
-          required: true,
+      if (!isInstalled) {
+        result.errors.push({
+          type: 'missing_package',
+          dependency: name,
+          message: `Required package '${name}' is not installed`,
+          severity: 'error',
+          suggestion: `Run: npm install ${pkgSpec}`,
+        });
+
+        this.emit('resolver:missing-dependency', {
+          skill: skill.metadata.name,
+          dependency: name,
+          type: 'package',
+          timestamp: new Date(),
         });
       } else {
-        missing.push(pkg);
+        result.packages.push({
+          name,
+          version: version || 'latest',
+          installed: true,
+        });
       }
     }
-
-    return { resolved, missing };
   }
 
   /**
    * Resolve API dependencies
-   * @param skill Skill to check
-   * @returns Resolved and missing API dependencies
+   * @param skill Skill to resolve APIs for
+   * @param result Result object to populate
    */
-  private resolveAPIDependencies(skill: Skill): {
-    resolved: APIDependency[];
-    missing: string[];
-  } {
+  private resolveAPIDependencies(
+    skill: Skill,
+    result: DependencyResolutionResult
+  ): void {
     const apis = skill.metadata.dependencies.apis || [];
-    const resolved: APIDependency[] = [];
-    const missing: string[] = [];
 
-    for (const api of apis) {
+    for (const apiName of apis) {
       // Check if API is available (simplified check)
-      // In a real implementation, this would check API configuration
-      const isAvailable = this.isAPIAvailable(api);
+      const isAvailable = this.isAPIAvailable(apiName);
 
-      if (isAvailable) {
-        resolved.push({
-          name: api,
-          available: true,
+      if (!isAvailable) {
+        result.warnings.push({
+          type: 'missing_api',
+          message: `Required API '${apiName}' may not be available`,
+          severity: 'warning',
+          suggestion: `Ensure '${apiName}' API is configured and accessible`,
         });
-      } else {
-        missing.push(api);
+
+        this.emit('resolver:missing-dependency', {
+          skill: skill.metadata.name,
+          dependency: apiName,
+          type: 'api',
+          timestamp: new Date(),
+        });
       }
-    }
 
-    return { resolved, missing };
+      result.apis.push({
+        name: apiName,
+        available: isAvailable,
+      });
+    }
   }
 
   /**
-   * Calculate execution order for a skill and its dependencies
-   * @param skillName Name of the skill
-   * @param dependencies Resolved skill dependencies
-   * @returns Execution order or null if cannot be calculated
+   * Parse package specification
+   * @param spec Package spec (e.g., "package@1.0.0" or "package")
+   * @returns [name, version]
    */
-  private calculateExecutionOrder(
-    skillName: string,
-    dependencies: { resolved: Skill[]; missing: string[] }
-  ): string[] | null {
-    // Cannot calculate order if there are missing dependencies
-    if (dependencies.missing.length > 0) {
-      return null;
-    }
-
-    // Get all skill names to execute
-    const skillNames = [
-      ...dependencies.resolved.map((s) => s.metadata.name),
-      skillName,
-    ];
-
-    // Use dependency graph to calculate topological order
-    return this.graph.topologicalSort(skillNames);
-  }
-
-  /**
-   * Parse package string into name and version
-   * @param pkg Package string (e.g., "lodash@4.17.21" or "lodash")
-   * @returns Tuple of [name, version]
-   */
-  private parsePackageString(pkg: string): [string, string | null] {
-    const parts = pkg.split('@');
+  private parsePackageSpec(spec: string): [string, string | undefined] {
+    const parts = spec.split('@');
 
     if (parts.length === 1) {
-      return [parts[0], null];
+      return [parts[0], undefined];
     }
 
-    // Handle scoped packages (e.g., "@types/node@18.0.0")
-    if (pkg.startsWith('@')) {
+    // Handle scoped packages (@scope/package@version)
+    if (spec.startsWith('@')) {
       if (parts.length === 2) {
-        return [pkg, null];
+        return [spec, undefined];
       }
       return [`@${parts[1]}`, parts[2]];
     }
@@ -343,119 +354,97 @@ export class DependencyResolver {
   }
 
   /**
-   * Check if a package is available
-   * @param name Package name
-   * @returns True if available
+   * Check if a package is installed
+   * @param packageName Package name
+   * @returns True if installed
    */
-  private isPackageAvailable(name: string): boolean {
-    // Simplified check - in real implementation, check node_modules or package.json
-    // For now, assume all packages are available
-    return true;
+  private isPackageInstalled(packageName: string): boolean {
+    try {
+      // Try to resolve the package
+      require.resolve(packageName);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   /**
    * Check if an API is available
-   * @param name API name
+   * @param apiName API name
    * @returns True if available
    */
-  private isAPIAvailable(name: string): boolean {
-    // Simplified check - in real implementation, check API configuration
-    // For now, assume all APIs are available
-    return true;
-  }
+  private isAPIAvailable(apiName: string): boolean {
+    // Simplified check - in real implementation, this would check:
+    // - Environment variables
+    // - API configuration
+    // - Network connectivity
+    // - API key validity
 
-  /**
-   * Get resolver statistics
-   * @returns Resolver statistics
-   */
-  getStats(): ResolverStats {
-    const graphStats = this.graph.getStats();
-    const registryStats = this.registry.getStats();
-
-    return {
-      totalSkills: registryStats.total,
-      skillsWithDependencies: graphStats.skillsWithDependencies,
-      averageDependencies: graphStats.averageDependencies,
-      maxDependencies: graphStats.maxDependencies,
-    };
+    // For now, just check if there's an env var for this API
+    const envVarName = `${apiName.toUpperCase().replace(/-/g, '_')}_API_KEY`;
+    return process.env[envVarName] !== undefined;
   }
 }
 
 /**
- * Resolution result
+ * Dependency resolution result
  */
-export interface ResolutionResult {
-  /** Whether resolution was successful */
-  success: boolean;
-
-  /** The skill being resolved */
-  skill: Skill | null;
-
-  /** Resolved dependencies */
-  dependencies: {
-    skills: Skill[];
-    packages: PackageDependency[];
-    apis: APIDependency[];
-  };
-
-  /** Missing dependencies */
-  missing: MissingDependencies;
-
-  /** Resolution errors */
-  errors: ResolutionError[];
-
-  /** Execution order (null if cannot be calculated) */
-  executionOrder: string[] | null;
+export interface DependencyResolutionResult {
+  skill: string;
+  skills: Skill[];
+  packages: PackageInfo[];
+  apis: APIInfo[];
+  errors: DependencyError[];
+  warnings: DependencyWarning[];
+  circularDependencies: CircularDependency[];
 }
 
 /**
- * Missing dependencies
+ * Package information
  */
-export interface MissingDependencies {
-  skills: string[];
-  packages: string[];
-  apis: string[];
-}
-
-/**
- * Package dependency
- */
-export interface PackageDependency {
+export interface PackageInfo {
   name: string;
   version: string;
-  required: boolean;
+  installed: boolean;
 }
 
 /**
- * API dependency
+ * API information
  */
-export interface APIDependency {
+export interface APIInfo {
   name: string;
   available: boolean;
 }
 
 /**
- * Resolution error
+ * Dependency error
  */
-export interface ResolutionError {
-  type:
-    | 'skill_not_found'
-    | 'circular_dependency'
-    | 'missing_skill_dependency'
-    | 'missing_package_dependency'
-    | 'missing_api_dependency';
+export interface DependencyError {
+  type: 'missing_skill' | 'missing_package' | 'missing_api';
+  dependency: string;
   message: string;
-  skillName: string;
-  missing?: string[];
-  cycle?: string[];
+  severity: 'error' | 'warning';
+  suggestion: string;
 }
 
 /**
- * Resolver statistics
+ * Dependency warning
  */
-export interface ResolverStats {
-  totalSkills: number;
-  skillsWithDependencies: number;
-  averageDependencies: number;
-  maxDependencies: number;
+export interface DependencyWarning {
+  type:
+    | 'circular_dependency'
+    | 'dependency_error'
+    | 'missing_api'
+    | 'version_mismatch';
+  message: string;
+  severity: 'warning' | 'info';
+  suggestion: string;
 }
+
+/**
+ * Events emitted by DependencyResolver:
+ * 
+ * - 'resolver:resolved' - Dependencies resolved successfully
+ * - 'resolver:circular-dependencies' - Circular dependencies detected
+ * - 'resolver:missing-dependency' - Missing dependency found
+ */

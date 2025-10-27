@@ -1,0 +1,19 @@
+# Example Asset File
+
+This placeholder represents where asset files would be stored.
+Replace with actual asset files or delete if not needed.
+
+Potential assets for UI reconstruction:
+- component-template.tsx - Boilerplate Devvit component structure
+- design-system/ - Color palette, typography, spacing constants
+- mobile-mockups/ - Wireframes or design references
+- icon-set/ - Custom game icons (evidence, suspects, locations)
+- animation-presets/ - Reusable animation configurations
+
+Example asset types:
+- Templates: .tsx boilerplate files
+- Design tokens: .css or .ts files with design constants
+- Images: .png, .svg icons and illustrations
+- Documentation: Design specs, style guides
+
+Note: This is a text placeholder. Actual assets can be any file type.

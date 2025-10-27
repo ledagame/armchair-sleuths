@@ -52,6 +52,7 @@ export interface LocationExplorerSectionProps {
   locations: Location[];
   initialAP?: number;
   maxAP?: number;
+  onSwitchToEvidenceTab?: (evidenceId?: string) => void;
 }
 
 /**
@@ -69,6 +70,7 @@ export function LocationExplorerSection({
   locations = [],
   initialAP = 10,
   maxAP = 10,
+  onSwitchToEvidenceTab,
 }: LocationExplorerSectionProps) {
   // Fallback: Use default locations if none provided (legacy case support)
   const effectiveLocations = useMemo(() => {
@@ -204,21 +206,21 @@ export function LocationExplorerSection({
     : 0;
 
   return (
-    <div className="p-6">
+    <div className="px-4 py-6 sm:px-6 sm:py-8 md:px-8 md:py-10">
       {/* Section Header */}
       <motion.div
-        className="mb-6"
+        className="mb-6 sm:mb-8"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <p className="text-gray-400">
+        <p className="text-text-secondary text-base sm:text-lg">
           각 장소를 탐색하여 사건의 단서를 찾아보세요
         </p>
       </motion.div>
 
       {/* Action Points & Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5 md:gap-6 mb-6 sm:mb-8">
         {/* Action Points Display */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
@@ -230,36 +232,36 @@ export function LocationExplorerSection({
 
         {/* Total Evidence Found */}
         <motion.div
-          className="bg-gray-800 rounded-lg border-2 border-gray-700 p-4 shadow-lg"
+          className="bg-noir-charcoal rounded-lg sm:rounded-xl border-2 border-noir-fog hover:border-detective-brass p-4 sm:p-5 shadow-base transition-all duration-base"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
           <div className="flex items-center gap-2 mb-2">
             <span className="text-2xl">🔍</span>
-            <span className="text-sm font-medium text-gray-400">발견한 증거</span>
+            <span className="text-sm font-medium text-text-secondary">발견한 증거</span>
           </div>
-          <div className="text-2xl font-bold text-detective-gold">
+          <div className="text-2xl sm:text-3xl font-bold text-detective-gold">
             {discoveredEvidence.length}
           </div>
-          <div className="text-xs text-gray-500 mt-1">총 증거 수집</div>
+          <div className="text-xs sm:text-sm text-text-muted mt-1">총 증거 수집</div>
         </motion.div>
 
         {/* Exploration Progress */}
         <motion.div
-          className="bg-gray-800 rounded-lg border-2 border-gray-700 p-4 shadow-lg"
+          className="bg-noir-charcoal rounded-lg sm:rounded-xl border-2 border-noir-fog hover:border-detective-brass p-4 sm:p-5 shadow-base transition-all duration-base sm:col-span-2 md:col-span-1"
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.3 }}
         >
           <div className="flex items-center gap-2 mb-2">
             <span className="text-2xl">📍</span>
-            <span className="text-sm font-medium text-gray-400">탐색 진행도</span>
+            <span className="text-sm font-medium text-text-secondary">탐색 진행도</span>
           </div>
-          <div className="text-2xl font-bold text-detective-gold">
+          <div className="text-2xl sm:text-3xl font-bold text-detective-gold">
             {searchedCount} / {totalLocations}
           </div>
-          <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden mt-2">
+          <div className="w-full bg-noir-gunmetal rounded-full h-2 overflow-hidden mt-2">
             <motion.div
               className="h-2 bg-detective-gold rounded-full"
               initial={{ width: 0 }}
@@ -273,15 +275,15 @@ export function LocationExplorerSection({
       {/* Legacy Case Warning */}
       {isUsingFallback && (
         <motion.div
-          className="mb-4 bg-yellow-900/30 border-2 border-yellow-600 rounded-lg p-4"
+          className="mb-4 sm:mb-6 bg-detective-brass/10 border-2 border-detective-brass rounded-lg sm:rounded-xl px-4 py-3 sm:p-4"
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <div className="flex items-center gap-2 text-yellow-400">
-            <span className="text-xl">⚠️</span>
+          <div className="flex items-start gap-3 text-detective-brass">
+            <span className="text-xl sm:text-2xl flex-shrink-0">⚠️</span>
             <div>
-              <p className="font-bold">레거시 케이스 모드</p>
-              <p className="text-sm">
+              <p className="font-bold text-sm sm:text-base">레거시 케이스 모드</p>
+              <p className="text-xs sm:text-sm text-text-secondary mt-1">
                 이 케이스는 구버전 스키마로 생성되었습니다. 기본 장소로 탐색을 진행합니다.
               </p>
             </div>
@@ -290,9 +292,9 @@ export function LocationExplorerSection({
       )}
 
       {/* Location Grid */}
-      <div className="mb-6">
+      <div className="mb-6 sm:mb-8">
         {effectiveLocations.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
             {effectiveLocations.map((location, index) => {
               const locationState = searchedLocations.get(location.id);
               const isSearched = locationState !== undefined;
@@ -332,13 +334,13 @@ export function LocationExplorerSection({
           </div>
         ) : (
           <motion.div
-            className="text-center py-12 text-gray-400"
+            className="text-center py-12 sm:py-16 text-text-secondary"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            <p className="text-lg mb-2">🤔</p>
-            <p>탐색할 수 있는 장소가 없습니다.</p>
-            <p className="text-sm mt-2">용의자 심문 탭으로 이동하여 수사를 계속하세요.</p>
+            <p className="text-5xl sm:text-6xl mb-4">🤔</p>
+            <p className="text-lg sm:text-xl font-semibold mb-2">탐색할 수 있는 장소가 없습니다.</p>
+            <p className="text-sm sm:text-base text-text-muted mt-2">용의자 심문 탭으로 이동하여 수사를 계속하세요.</p>
           </motion.div>
         )}
       </div>
@@ -353,6 +355,10 @@ export function LocationExplorerSection({
             locationName={currentDiscovery.locationName}
             completionRate={currentDiscovery.completionRate}
             onClose={handleCloseModal}
+            onEvidenceClick={(evidenceId) => {
+              handleCloseModal();
+              onSwitchToEvidenceTab?.(evidenceId);
+            }}
           />
         )}
       </AnimatePresence>

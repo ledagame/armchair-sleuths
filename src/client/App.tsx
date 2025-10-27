@@ -6,10 +6,12 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { CaseOverview } from './components/case/CaseOverview';
 import { SubmissionForm } from './components/submission/SubmissionForm';
 import { ResultView } from './components/results/ResultView';
 import { CinematicIntro } from './components/intro/cinematic/CinematicIntro';
+import { ThreeSlideIntro } from './components/intro/ThreeSlideIntro';
 import { InvestigationScreen } from './components/InvestigationScreen';
 import { useCase } from './hooks/useCase';
 import { useSuspect } from './hooks/useSuspect';
@@ -49,9 +51,11 @@ export const App = () => {
     } else if (caseError) {
       setCurrentScreen('loading'); // Show error in loading screen
     } else if (caseData && currentScreen === 'loading') {
-      // 나레이션이 있으면 intro로, 없으면 case-overview로
-      if (caseData.introNarration) {
-        setCurrentScreen('intro');
+      // NEW: Check for introSlides first (3-slide system), then fall back to introNarration (5-scene cinematic)
+      if (caseData.introSlides) {
+        setCurrentScreen('intro'); // NEW: Use ThreeSlideIntro
+      } else if (caseData.introNarration) {
+        setCurrentScreen('intro'); // LEGACY: Use CinematicIntro
       } else {
         setCurrentScreen('case-overview');
       }
@@ -102,34 +106,126 @@ export const App = () => {
     [submitAnswer]
   );
 
+  /**
+   * Screen transition variants for AnimatePresence
+   * Smooth fade + subtle slide animation
+   */
+  const screenVariants = {
+    initial: {
+      opacity: 0,
+      y: 20,
+    },
+    animate: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.3,
+        ease: [0.65, 0, 0.35, 1], // Custom easing curve
+      },
+    },
+    exit: {
+      opacity: 0,
+      y: -20,
+      transition: {
+        duration: 0.2,
+        ease: [0.65, 0, 0.35, 1],
+      },
+    },
+  };
+
   // Render different screens
   const renderScreen = () => {
-    // Loading screen
+    // Loading screen - Mobile-First Noir Detective Design
     if (currentScreen === 'loading') {
       return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-950 text-white">
+        <div className="
+          flex flex-col items-center justify-center
+          min-h-screen
+          px-4 sm:px-6
+          bg-noir-deepBlack text-text-primary
+        ">
           {caseLoading && (
             <>
-              <div className="animate-spin h-16 w-16 border-4 border-blue-500 border-t-transparent rounded-full mb-4" />
+              {/* Spinner - Using design system spinner class */}
+              <div className="
+                spinner
+                w-16 h-16 sm:w-20 sm:h-20
+                mb-6
+              " />
+
               {generating ? (
                 <>
-                  <p className="text-xl font-bold">🎲 새로운 사건을 생성하는 중...</p>
-                  <p className="text-sm text-gray-400 mt-2">AI가 오늘의 미스터리를 만들고 있습니다 (30-60초 소요)</p>
+                  <p className="
+                    text-xl sm:text-2xl lg:text-3xl
+                    font-display font-bold
+                    text-detective-gold
+                    text-center
+                    mb-2
+                  ">
+                    🎲 새로운 사건을 생성하는 중...
+                  </p>
+                  <p className="
+                    text-sm sm:text-base
+                    text-text-secondary
+                    text-center
+                    max-w-md
+                  ">
+                    AI가 오늘의 미스터리를 만들고 있습니다 (30-60초 소요)
+                  </p>
                 </>
               ) : (
                 <>
-                  <p className="text-xl font-bold">사건 파일을 불러오는 중...</p>
-                  <p className="text-sm text-gray-400 mt-2">오늘의 미스터리를 준비하고 있습니다</p>
+                  <p className="
+                    text-xl sm:text-2xl lg:text-3xl
+                    font-display font-bold
+                    text-detective-gold
+                    text-center
+                    mb-2
+                  ">
+                    사건 파일을 불러오는 중...
+                  </p>
+                  <p className="
+                    text-sm sm:text-base
+                    text-text-secondary
+                    text-center
+                  ">
+                    오늘의 미스터리를 준비하고 있습니다
+                  </p>
                 </>
               )}
             </>
           )}
+
           {caseError && (
             <>
-              <div className="text-6xl mb-4">❌</div>
-              <p className="text-xl font-bold text-red-400">사건 파일을 불러올 수 없습니다</p>
-              <p className="text-sm text-gray-400 mt-2">{caseError}</p>
-              <div className="mt-6 flex gap-4">
+              <div className="text-6xl sm:text-7xl mb-6" aria-hidden="true">❌</div>
+              <p className="
+                text-xl sm:text-2xl lg:text-3xl
+                font-display font-bold
+                text-evidence-blood
+                text-center
+                mb-3
+              ">
+                사건 파일을 불러올 수 없습니다
+              </p>
+              <p className="
+                text-sm sm:text-base
+                text-text-secondary
+                text-center
+                mb-8
+                max-w-md
+              ">
+                {caseError}
+              </p>
+
+              {/* Action Buttons - Touch-Friendly */}
+              <div className="
+                mt-6
+                flex flex-col sm:flex-row
+                gap-4
+                w-full sm:w-auto
+                px-4 sm:px-0
+              ">
                 <button
                   onClick={async () => {
                     try {
@@ -141,13 +237,31 @@ export const App = () => {
                       console.error('Generation failed:', e);
                     }
                   }}
-                  className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-bold"
+                  className="
+                    btn-primary
+                    px-6 py-3
+                    min-h-[48px]
+                    text-base sm:text-lg
+                    font-bold
+                    rounded-lg
+                    w-full sm:w-auto
+                  "
+                  aria-label="새 케이스 생성하기"
                 >
                   🎲 새 케이스 생성
                 </button>
                 <button
                   onClick={() => window.location.reload()}
-                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-bold"
+                  className="
+                    btn-secondary
+                    px-6 py-3
+                    min-h-[48px]
+                    text-base sm:text-lg
+                    font-bold
+                    rounded-lg
+                    w-full sm:w-auto
+                  "
+                  aria-label="페이지 새로고침"
                 >
                   다시 시도
                 </button>
@@ -158,21 +272,45 @@ export const App = () => {
       );
     }
 
-    // Intro narration screen
-    if (currentScreen === 'intro' && caseData && caseData.introNarration) {
-      return (
-        <CinematicIntro
-          narration={caseData.introNarration}
-          cinematicImages={caseData.cinematicImages}
-          onComplete={handleIntroComplete}
-        />
-      );
+    // Intro screen - support both new 3-slide system and legacy cinematic
+    if (currentScreen === 'intro' && caseData) {
+      // NEW: 3-slide system (preferred)
+      // Add defensive null checks to ensure all required fields exist
+      if (caseData.introSlides?.discovery && caseData.introSlides?.suspects && caseData.introSlides?.challenge) {
+        return (
+          <ThreeSlideIntro
+            slides={caseData.introSlides}
+            cinematicImages={caseData.cinematicImages}
+            onComplete={handleIntroComplete}
+            showSkipButton={true}
+          />
+        );
+      }
+
+      // LEGACY: 5-scene cinematic (backward compatibility)
+      if (caseData.introNarration) {
+        return (
+          <CinematicIntro
+            narration={caseData.introNarration}
+            cinematicImages={caseData.cinematicImages}
+            onComplete={handleIntroComplete}
+          />
+        );
+      }
+
+      // FALLBACK: If no intro data is available, skip to case overview
+      console.warn('No intro data available, skipping to case overview');
+      setCurrentScreen('case-overview');
     }
 
-    // Case overview screen
+    // Case overview screen - Mobile-First Noir Design
     if (currentScreen === 'case-overview' && caseData) {
       return (
-        <div className="min-h-screen bg-gray-950 text-white p-6">
+        <div className="
+          min-h-screen
+          bg-noir-deepBlack
+          text-text-primary
+        ">
           <CaseOverview caseData={caseData} onStartInvestigation={handleStartInvestigation} />
         </div>
       );
@@ -191,22 +329,49 @@ export const App = () => {
       );
     }
 
-    // Submission screen
+    // Submission screen - Mobile-First Noir Design
     if (currentScreen === 'submission' && caseData) {
       return (
-        <div className="min-h-screen bg-gray-950 text-white p-6">
+        <div className="
+          min-h-screen
+          bg-noir-deepBlack
+          text-text-primary
+          px-4 py-6
+          sm:px-6 sm:py-8
+        ">
           {/* Header with back button */}
-          <div className="mb-6 flex items-center justify-between">
+          <div className="
+            mb-6 sm:mb-8
+            flex flex-col sm:flex-row
+            items-start sm:items-center
+            justify-between
+            gap-4
+          ">
             <div>
-              <h1 className="text-3xl font-bold">📝 최종 답안 제출</h1>
-              <p className="text-gray-400">{caseData.date} 사건</p>
+              <h1 className="
+                text-2xl sm:text-3xl lg:text-4xl
+                font-display font-bold
+                text-detective-gold
+              ">
+                📝 최종 답안 제출
+              </h1>
+              <p className="text-sm sm:text-base text-text-secondary mt-1">
+                {caseData.date} 사건
+              </p>
             </div>
             <button
               onClick={handleBackToInvestigation}
               className="
-                px-6 py-3 bg-gray-700 hover:bg-gray-600
-                rounded-lg font-bold transition-all
+                btn-ghost
+                px-4 py-2
+                sm:px-6 sm:py-3
+                min-h-[44px]
+                rounded-lg
+                font-semibold
+                transition-all
+                w-full sm:w-auto
               "
+              aria-label="수사 화면으로 돌아가기"
             >
               ← 수사로 돌아가기
             </button>
@@ -221,26 +386,55 @@ export const App = () => {
       );
     }
 
-    // Results screen
+    // Results screen - Mobile-First Noir Design
     if (currentScreen === 'results' && scoringResult && caseData) {
       return (
-        <div className="min-h-screen bg-gray-950 text-white p-6">
+        <div className="
+          min-h-screen
+          bg-noir-deepBlack
+          text-text-primary
+          px-4 py-6
+          sm:px-6 sm:py-8
+        ">
           {/* Header */}
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold">🎯 채점 결과</h1>
-            <p className="text-gray-400">{caseData.date} 사건</p>
+          <div className="mb-6 sm:mb-8 text-center">
+            <h1 className="
+              text-2xl sm:text-3xl lg:text-4xl
+              font-display font-bold
+              text-detective-gold
+              mb-2
+            ">
+              🎯 채점 결과
+            </h1>
+            <p className="text-sm sm:text-base text-text-secondary">
+              {caseData.date} 사건
+            </p>
           </div>
 
           <ResultView result={scoringResult} caseId={caseData.id} />
 
           {/* Actions */}
-          <div className="mt-6 flex gap-4 justify-center">
+          <div className="
+            mt-6 sm:mt-8
+            flex flex-col sm:flex-row
+            gap-4
+            justify-center
+            px-4 sm:px-0
+          ">
             <button
               onClick={() => window.location.reload()}
               className="
-                px-6 py-3 bg-blue-600 hover:bg-blue-700
-                rounded-lg font-bold transition-all
+                btn-primary
+                px-6 py-3
+                sm:px-8 sm:py-4
+                min-h-[48px]
+                text-base sm:text-lg
+                font-bold
+                rounded-lg
+                transition-all
+                w-full sm:w-auto
               "
+              aria-label="새 게임 시작하기"
             >
               🔄 새 게임 시작
             </button>
@@ -249,17 +443,35 @@ export const App = () => {
       );
     }
 
-    // Fallback
+    // Fallback - Mobile-First Noir Design
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-950 text-white">
-        <p>알 수 없는 화면 상태입니다.</p>
+      <div className="
+        flex items-center justify-center
+        min-h-screen
+        px-4
+        bg-noir-deepBlack
+        text-text-primary
+      ">
+        <p className="text-lg sm:text-xl font-display text-detective-gold">
+          알 수 없는 화면 상태입니다.
+        </p>
       </div>
     );
   };
 
   return (
-    <div className="app min-h-screen bg-gray-950 text-white">
-      {renderScreen()}
+    <div className="app min-h-screen bg-noir-deepBlack">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentScreen}
+          variants={screenVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+        >
+          {renderScreen()}
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 };

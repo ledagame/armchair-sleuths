@@ -55,12 +55,12 @@ export function ResultView({ result, caseId }: ResultViewProps) {
     void fetchData();
   }, [caseId]);
 
-  // Get color based on score
+  // Get color based on score (Using Detective Theme)
   const getScoreColor = (score: number): string => {
-    if (score >= 80) return 'text-green-400';
-    if (score >= 60) return 'text-yellow-400';
-    if (score >= 40) return 'text-orange-400';
-    return 'text-red-400';
+    if (score >= 80) return 'text-detective-gold';   // Excellent - Detective gold
+    if (score >= 60) return 'text-evidence-clue';    // Good - Discovery blue
+    if (score >= 40) return 'text-detective-amber';  // Fair - Amber warning
+    return 'text-evidence-blood';                     // Poor - Blood red
   };
 
   // Get emoji based on correctness
@@ -68,52 +68,114 @@ export function ResultView({ result, caseId }: ResultViewProps) {
     return isCorrect ? '✅' : '❌';
   };
 
-  // Render individual W4H item
+  // Render individual W4H item - Mobile-First
   const renderW4HItem = (
     label: string,
     detail: W4HValidationDetail,
     emoji: string
   ) => (
-    <div className="bg-gray-800 p-4 rounded-lg">
-      <div className="flex items-center justify-between mb-2">
-        <h4 className="text-lg font-semibold">
+    <div className="
+      bg-noir-gunmetal
+      p-4 sm:p-5
+      rounded-lg
+      border-2 border-noir-fog
+      hover:border-detective-brass
+      transition-all duration-base
+    ">
+      <div className="
+        flex flex-col sm:flex-row
+        items-start sm:items-center
+        justify-between
+        gap-2 sm:gap-4
+        mb-3
+      ">
+        <h4 className="
+          text-base sm:text-lg
+          font-semibold
+          text-detective-gold
+        ">
           {emoji} {label}
         </h4>
         <div className="flex items-center gap-2">
-          <span className={`text-xl font-bold ${getScoreColor(detail.score)}`}>
+          <span className={`text-lg sm:text-xl font-bold ${getScoreColor(detail.score)}`}>
             {detail.score}점
           </span>
-          <span className="text-2xl">{getResultEmoji(detail.isCorrect)}</span>
+          <span className="text-xl sm:text-2xl" aria-hidden="true">
+            {getResultEmoji(detail.isCorrect)}
+          </span>
         </div>
       </div>
-      <p className="text-sm text-gray-400">{detail.feedback}</p>
+      <p className="text-sm sm:text-base text-text-secondary leading-relaxed">
+        {detail.feedback}
+      </p>
     </div>
   );
 
   return (
-    <div className="result-view space-y-6">
-      {/* Overall Score */}
-      <div className="bg-gradient-to-br from-blue-900 to-purple-900 p-8 rounded-lg text-center">
-        <h2 className="text-4xl font-bold mb-4">
+    <div className="
+      result-view
+      space-y-6 sm:space-y-8
+    ">
+      {/* Overall Score - Celebration Card */}
+      <div className={`
+        ${result.isCorrect ? 'detective-gradient' : 'bg-noir-charcoal'}
+        p-6 sm:p-8 lg:p-10
+        rounded-lg sm:rounded-xl
+        text-center
+        border-2
+        ${result.isCorrect ? 'border-detective-gold shadow-glow-strong' : 'border-evidence-blood'}
+      `}>
+        <h2 className="
+          text-3xl sm:text-4xl lg:text-5xl
+          font-display font-bold
+          mb-4 sm:mb-6
+          ${result.isCorrect ? 'text-noir-deepBlack' : 'text-detective-gold'}
+        ">
           {result.isCorrect ? '🎉 정답입니다!' : '😢 아쉽네요...'}
         </h2>
-        <div className="text-6xl font-bold mb-2">
-          <span className={getScoreColor(result.totalScore)}>{result.totalScore}점</span>
+        <div className="
+          text-5xl sm:text-6xl lg:text-7xl
+          font-display font-bold
+          mb-3 sm:mb-4
+        ">
+          <span className={result.isCorrect ? 'text-noir-deepBlack' : getScoreColor(result.totalScore)}>
+            {result.totalScore}점
+          </span>
         </div>
-        <p className="text-xl text-gray-300">
+        <p className="
+          text-lg sm:text-xl
+          ${result.isCorrect ? 'text-noir-deepBlack opacity-80' : 'text-text-primary'}
+        ">
           {result.rank && `전체 순위: ${result.rank}위`}
         </p>
         {result.isCorrect && (
-          <p className="text-green-400 mt-4 text-lg">
+          <p className="
+            mt-4 sm:mt-6
+            text-base sm:text-lg
+            text-noir-deepBlack
+            font-semibold
+          ">
             범인을 정확히 찾아냈습니다! 훌륭한 추리력이네요.
           </p>
         )}
       </div>
 
-      {/* Detailed Breakdown */}
-      <div className="bg-gray-900 p-6 rounded-lg">
-        <h3 className="text-2xl font-bold mb-4">📊 상세 채점 결과</h3>
-        <div className="space-y-3">
+      {/* Detailed Breakdown - Mobile-First */}
+      <div className="
+        bg-noir-charcoal
+        p-4 sm:p-6 lg:p-8
+        rounded-lg sm:rounded-xl
+        border-2 border-noir-fog
+      ">
+        <h3 className="
+          text-xl sm:text-2xl lg:text-3xl
+          font-display font-bold
+          text-detective-gold
+          mb-4 sm:mb-6
+        ">
+          📊 상세 채점 결과
+        </h3>
+        <div className="space-y-3 sm:space-y-4">
           {renderW4HItem('WHO (누가)', result.breakdown.who, '❓')}
           {renderW4HItem('WHAT (무엇을)', result.breakdown.what, '❓')}
           {renderW4HItem('WHERE (어디서)', result.breakdown.where, '❓')}
@@ -123,34 +185,118 @@ export function ResultView({ result, caseId }: ResultViewProps) {
         </div>
       </div>
 
-      {/* Statistics */}
+      {/* Statistics - Mobile-First Grid */}
       {stats && (
-        <div className="bg-gray-900 p-6 rounded-lg">
-          <h3 className="text-2xl font-bold mb-4">📈 전체 통계</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <div className="bg-gray-800 p-4 rounded-lg text-center">
-              <p className="text-sm text-gray-400 mb-1">총 제출</p>
-              <p className="text-3xl font-bold">{stats.totalSubmissions}</p>
+        <div className="
+          bg-noir-charcoal
+          p-4 sm:p-6 lg:p-8
+          rounded-lg sm:rounded-xl
+          border-2 border-noir-fog
+        ">
+          <h3 className="
+            text-xl sm:text-2xl lg:text-3xl
+            font-display font-bold
+            text-detective-gold
+            mb-4 sm:mb-6
+          ">
+            📈 전체 통계
+          </h3>
+          <div className="
+            grid grid-cols-2 md:grid-cols-3
+            gap-3 sm:gap-4
+          ">
+            {/* Total Submissions */}
+            <div className="
+              bg-noir-gunmetal
+              p-3 sm:p-4
+              rounded-lg
+              text-center
+              border border-noir-fog
+              hover:border-detective-brass
+              transition-all duration-base
+            ">
+              <p className="text-xs sm:text-sm text-text-muted mb-1">총 제출</p>
+              <p className="text-2xl sm:text-3xl font-bold text-text-primary">
+                {stats.totalSubmissions}
+              </p>
             </div>
-            <div className="bg-gray-800 p-4 rounded-lg text-center">
-              <p className="text-sm text-gray-400 mb-1">정답자</p>
-              <p className="text-3xl font-bold text-green-400">{stats.correctSubmissions}</p>
+
+            {/* Correct Submissions */}
+            <div className="
+              bg-noir-gunmetal
+              p-3 sm:p-4
+              rounded-lg
+              text-center
+              border border-noir-fog
+              hover:border-detective-brass
+              transition-all duration-base
+            ">
+              <p className="text-xs sm:text-sm text-text-muted mb-1">정답자</p>
+              <p className="text-2xl sm:text-3xl font-bold text-detective-gold">
+                {stats.correctSubmissions}
+              </p>
             </div>
-            <div className="bg-gray-800 p-4 rounded-lg text-center">
-              <p className="text-sm text-gray-400 mb-1">평균 점수</p>
-              <p className="text-3xl font-bold text-yellow-400">{stats.averageScore}</p>
+
+            {/* Average Score */}
+            <div className="
+              bg-noir-gunmetal
+              p-3 sm:p-4
+              rounded-lg
+              text-center
+              border border-noir-fog
+              hover:border-detective-brass
+              transition-all duration-base
+            ">
+              <p className="text-xs sm:text-sm text-text-muted mb-1">평균 점수</p>
+              <p className="text-2xl sm:text-3xl font-bold text-evidence-clue">
+                {stats.averageScore}
+              </p>
             </div>
-            <div className="bg-gray-800 p-4 rounded-lg text-center">
-              <p className="text-sm text-gray-400 mb-1">최고 점수</p>
-              <p className="text-3xl font-bold text-blue-400">{stats.highestScore}</p>
+
+            {/* Highest Score */}
+            <div className="
+              bg-noir-gunmetal
+              p-3 sm:p-4
+              rounded-lg
+              text-center
+              border border-noir-fog
+              hover:border-detective-brass
+              transition-all duration-base
+            ">
+              <p className="text-xs sm:text-sm text-text-muted mb-1">최고 점수</p>
+              <p className="text-2xl sm:text-3xl font-bold text-detective-amber">
+                {stats.highestScore}
+              </p>
             </div>
-            <div className="bg-gray-800 p-4 rounded-lg text-center">
-              <p className="text-sm text-gray-400 mb-1">최저 점수</p>
-              <p className="text-3xl font-bold text-red-400">{stats.lowestScore}</p>
+
+            {/* Lowest Score */}
+            <div className="
+              bg-noir-gunmetal
+              p-3 sm:p-4
+              rounded-lg
+              text-center
+              border border-noir-fog
+              hover:border-detective-brass
+              transition-all duration-base
+            ">
+              <p className="text-xs sm:text-sm text-text-muted mb-1">최저 점수</p>
+              <p className="text-2xl sm:text-3xl font-bold text-evidence-blood">
+                {stats.lowestScore}
+              </p>
             </div>
-            <div className="bg-gray-800 p-4 rounded-lg text-center">
-              <p className="text-sm text-gray-400 mb-1">정답률</p>
-              <p className="text-3xl font-bold text-purple-400">
+
+            {/* Success Rate */}
+            <div className="
+              bg-noir-gunmetal
+              p-3 sm:p-4
+              rounded-lg
+              text-center
+              border border-noir-fog
+              hover:border-detective-brass
+              transition-all duration-base
+            ">
+              <p className="text-xs sm:text-sm text-text-muted mb-1">정답률</p>
+              <p className="text-2xl sm:text-3xl font-bold text-evidence-poison">
                 {stats.totalSubmissions > 0
                   ? Math.round((stats.correctSubmissions / stats.totalSubmissions) * 100)
                   : 0}
@@ -161,44 +307,74 @@ export function ResultView({ result, caseId }: ResultViewProps) {
         </div>
       )}
 
-      {/* Leaderboard */}
+      {/* Leaderboard - Mobile-First */}
       {!loading && leaderboard.length > 0 && (
-        <div className="bg-gray-900 p-6 rounded-lg">
-          <h3 className="text-2xl font-bold mb-4">🏆 리더보드 (Top 10)</h3>
-          <div className="space-y-2">
+        <div className="
+          bg-noir-charcoal
+          p-4 sm:p-6 lg:p-8
+          rounded-lg sm:rounded-xl
+          border-2 border-noir-fog
+        ">
+          <h3 className="
+            text-xl sm:text-2xl lg:text-3xl
+            font-display font-bold
+            text-detective-gold
+            mb-4 sm:mb-6
+          ">
+            🏆 리더보드 (Top 10)
+          </h3>
+          <div className="space-y-2 sm:space-y-3">
             {leaderboard.map((entry, index) => (
               <div
                 key={entry.userId}
                 className={`
-                  flex items-center justify-between p-4 rounded-lg
+                  flex flex-col sm:flex-row
+                  items-start sm:items-center
+                  justify-between
+                  p-3 sm:p-4
+                  rounded-lg
+                  gap-3
+                  transition-all duration-base
                   ${
                     entry.userId === result.userId
-                      ? 'bg-blue-900 border-2 border-blue-500'
-                      : 'bg-gray-800'
+                      ? 'bg-detective-gold/10 border-2 border-detective-gold shadow-glow'
+                      : 'bg-noir-gunmetal border border-noir-fog hover:border-detective-brass'
                   }
                 `}
               >
-                <div className="flex items-center gap-4">
-                  <span className="text-2xl font-bold w-8 text-center">
+                <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
+                  <span className="
+                    text-xl sm:text-2xl
+                    font-bold
+                    w-8 sm:w-10
+                    text-center
+                    flex-shrink-0
+                  ">
                     {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${entry.rank}`}
                   </span>
-                  <div>
-                    <p className="font-semibold">
+                  <div className="flex-1">
+                    <p className="
+                      font-semibold
+                      text-sm sm:text-base
+                      text-text-primary
+                    ">
                       {entry.userId}
                       {entry.userId === result.userId && (
-                        <span className="ml-2 text-xs text-blue-400">(나)</span>
+                        <span className="ml-2 text-xs text-detective-gold">(나)</span>
                       )}
                     </p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-text-muted">
                       {new Date(entry.submittedAt).toLocaleString('ko-KR')}
                     </p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className={`text-2xl font-bold ${getScoreColor(entry.score)}`}>
+                <div className="text-left sm:text-right ml-12 sm:ml-0">
+                  <p className={`text-xl sm:text-2xl font-bold ${getScoreColor(entry.score)}`}>
                     {entry.score}점
                   </p>
-                  {entry.isCorrect && <p className="text-xs text-green-400">정답</p>}
+                  {entry.isCorrect && (
+                    <p className="text-xs text-detective-gold font-semibold">✅ 정답</p>
+                  )}
                 </div>
               </div>
             ))}
@@ -206,9 +382,19 @@ export function ResultView({ result, caseId }: ResultViewProps) {
         </div>
       )}
 
+      {/* Loading State */}
       {loading && (
-        <div className="text-center py-8">
-          <p className="text-gray-400">리더보드 로딩 중...</p>
+        <div className="
+          text-center
+          py-8 sm:py-12
+          bg-noir-charcoal
+          rounded-lg
+          border-2 border-noir-fog
+        ">
+          <div className="spinner w-12 h-12 mx-auto mb-4" />
+          <p className="text-sm sm:text-base text-text-secondary">
+            리더보드 로딩 중...
+          </p>
         </div>
       )}
     </div>

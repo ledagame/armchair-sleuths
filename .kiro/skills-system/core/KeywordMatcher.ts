@@ -1,145 +1,82 @@
+import { EventEmitter } from 'events';
 import type { Skill } from './types.js';
-import type { KeywordIndexer, SearchResult } from './KeywordIndexer.js';
 import type { SkillRegistry } from './SkillRegistry.js';
+import type { KeywordIndexer, SearchResult } from './KeywordIndexer.js';
 
 /**
  * KeywordMatcher - Matches user input against skill triggers
  * 
  * This class provides:
- * - Intelligent keyword extraction from user input
+ * - Natural language keyword extraction
  * - Fuzzy matching against skill triggers
- * - Ranked results based on relevance
- * - Context-aware matching
+ * - Ranked results with confidence scores
+ * - Multi-keyword matching
  */
-export class KeywordMatcher {
-  private indexer: KeywordIndexer;
+export class KeywordMatcher extends EventEmitter {
   private registry: SkillRegistry;
+  private indexer: KeywordIndexer;
+  private fuzzyMatchThreshold: number;
 
-  // Common stop words to filter out
-  private stopWords = new Set([
-    'a',
-    'an',
-    'the',
-    'and',
-    'or',
-    'but',
-    'in',
-    'on',
-    'at',
-    'to',
-    'for',
-    'of',
-    'with',
-    'by',
-    'from',
-    'as',
-    'is',
-    'was',
-    'are',
-    'were',
-    'been',
-    'be',
-    'have',
-    'has',
-    'had',
-    'do',
-    'does',
-    'did',
-    'will',
-    'would',
-    'should',
-    'could',
-    'can',
-    'may',
-    'might',
-    'must',
-    'i',
-    'you',
-    'he',
-    'she',
-    'it',
-    'we',
-    'they',
-    'me',
-    'him',
-    'her',
-    'us',
-    'them',
-    'my',
-    'your',
-    'his',
-    'her',
-    'its',
-    'our',
-    'their',
-    'this',
-    'that',
-    'these',
-    'those',
-  ]);
-
-  constructor(indexer: KeywordIndexer, registry: SkillRegistry) {
-    this.indexer = indexer;
+  constructor(
+    registry: SkillRegistry,
+    indexer: KeywordIndexer,
+    fuzzyMatchThreshold: number = 0.6
+  ) {
+    super();
     this.registry = registry;
+    this.indexer = indexer;
+    this.fuzzyMatchThreshold = fuzzyMatchThreshold;
   }
 
   /**
    * Match user input against skill triggers
    * @param userInput User's message or query
-   * @param options Matching options
-   * @returns Array of matching skills with scores
+   * @param fuzzy Enable fuzzy matching
+   * @returns Array of matched skills with scores
    */
-  match(userInput: string, options: MatchOptions = {}): MatchResult[] {
-    const {
-      fuzzy = true,
-      minScore = 0.6,
-      maxResults = 10,
-      includeInactive = false,
-    } = options;
-
+  matchSkills(userInput: string, fuzzy: boolean = true): MatchResult[] {
     // Extract keywords from user input
     const keywords = this.extractKeywords(userInput);
 
     if (keywords.length === 0) {
+      this.emit('matcher:no-keywords', {
+        userInput,
+        timestamp: new Date(),
+      });
       return [];
     }
 
-    // Search using the indexer
+    // Search using indexer
     const searchResults = this.indexer.searchMultiple(keywords, fuzzy);
 
-    // Convert to match results with full skill data
+    // Filter by threshold
+    const filteredResults = searchResults.filter(
+      (result) => result.score >= this.fuzzyMatchThreshold
+    );
+
+    // Convert to MatchResult with Skill objects
     const matchResults: MatchResult[] = [];
 
-    for (const result of searchResults) {
+    for (const result of filteredResults) {
       const skill = this.registry.getSkill(result.skillName);
 
-      if (!skill) {
-        continue;
+      if (skill) {
+        matchResults.push({
+          skill,
+          score: result.score,
+          matchedKeywords: keywords.filter((kw) =>
+            this.indexer
+              .getKeywordsForSkill(result.skillName)
+              .some((skillKw) => this.isKeywordMatch(kw, skillKw, fuzzy))
+          ),
+          matchCount: result.matchCount || 1,
+        });
       }
-
-      // Filter by status if needed
-      if (!includeInactive && skill.status !== 'active') {
-        continue;
-      }
-
-      // Filter by minimum score
-      if (result.score < minScore) {
-        continue;
-      }
-
-      matchResults.push({
-        skill,
-        score: result.score,
-        matchedKeywords: keywords.filter((kw) =>
-          this.skillMatchesKeyword(skill, kw, fuzzy)
-        ),
-        matchCount: result.matchCount || 0,
-      });
     }
 
-    // Sort by score and match count
+    // Sort by score (highest first)
     matchResults.sort((a, b) => {
-      // Prioritize match count
+      // First by match count
       if (a.matchCount !== b.matchCount) {
         return b.matchCount - a.matchCount;
       }
@@ -147,51 +84,62 @@ export class KeywordMatcher {
       return b.score - a.score;
     });
 
-    // Limit results
-    return matchResults.slice(0, maxResults);
+    this.emit('matcher:matched', {
+      userInput,
+      keywords,
+      matchCount: matchResults.length,
+      topMatch: matchResults[0]?.skill.metadata.name,
+      timestamp: new Date(),
+    });
+
+    return matchResults;
   }
 
   /**
-   * Find exact matches for a keyword
-   * @param keyword Keyword to match
-   * @returns Array of skills that exactly match the keyword
+   * Match a single keyword against skills
+   * @param keyword Single keyword to match
+   * @param fuzzy Enable fuzzy matching
+   * @returns Array of matched skills with scores
    */
-  findExactMatches(keyword: string): Skill[] {
-    const normalized = this.normalizeKeyword(keyword);
-    const skillNames = this.indexer.getSkillsForKeyword(normalized);
+  matchKeyword(keyword: string, fuzzy: boolean = true): MatchResult[] {
+    const searchResults = this.indexer.search(keyword, fuzzy);
+
+    const filteredResults = searchResults.filter(
+      (result) => result.score >= this.fuzzyMatchThreshold
+    );
+
+    const matchResults: MatchResult[] = [];
+
+    for (const result of filteredResults) {
+      const skill = this.registry.getSkill(result.skillName);
+
+      if (skill) {
+        matchResults.push({
+          skill,
+          score: result.score,
+          matchedKeywords: [keyword],
+          matchCount: 1,
+        });
+      }
+    }
+
+    matchResults.sort((a, b) => b.score - a.score);
+
+    return matchResults;
+  }
+
+  /**
+   * Get exact matches for a keyword
+   * @param keyword Keyword to match exactly
+   * @returns Array of skills that match exactly
+   */
+  getExactMatches(keyword: string): Skill[] {
+    const normalizedKeyword = this.normalizeKeyword(keyword);
+    const skillNames = this.indexer.getSkillsForKeyword(normalizedKeyword);
 
     return skillNames
       .map((name) => this.registry.getSkill(name))
       .filter((skill): skill is Skill => skill !== undefined);
-  }
-
-  /**
-   * Find skills by trigger phrase
-   * @param phrase Trigger phrase
-   * @param fuzzy Enable fuzzy matching
-   * @returns Array of matching skills
-   */
-  findByTrigger(phrase: string, fuzzy: boolean = true): MatchResult[] {
-    const normalized = this.normalizeKeyword(phrase);
-
-    // Try exact match first
-    const exactMatches = this.findExactMatches(normalized);
-
-    if (exactMatches.length > 0) {
-      return exactMatches.map((skill) => ({
-        skill,
-        score: 1.0,
-        matchedKeywords: [phrase],
-        matchCount: 1,
-      }));
-    }
-
-    // Fall back to fuzzy matching
-    if (fuzzy) {
-      return this.match(phrase, { fuzzy: true, minScore: 0.7 });
-    }
-
-    return [];
   }
 
   /**
@@ -201,150 +149,130 @@ export class KeywordMatcher {
    */
   containsTriggers(userInput: string): boolean {
     const keywords = this.extractKeywords(userInput);
-    return keywords.some((keyword) => {
-      const results = this.indexer.search(keyword, false);
-      return results.length > 0;
-    });
+    return keywords.length > 0;
   }
 
   /**
-   * Get all possible triggers from user input
+   * Get all possible skill suggestions for user input
    * @param userInput User's message
-   * @returns Array of detected trigger phrases
+   * @param maxSuggestions Maximum number of suggestions
+   * @returns Array of suggested skills
    */
-  detectTriggers(userInput: string): string[] {
-    const keywords = this.extractKeywords(userInput);
-    const triggers = new Set<string>();
-
-    for (const keyword of keywords) {
-      const results = this.indexer.search(keyword, true);
-
-      for (const result of results) {
-        if (result.score > 0.7) {
-          const skill = this.registry.getSkill(result.skillName);
-          if (skill && skill.metadata.triggers) {
-            for (const trigger of skill.metadata.triggers) {
-              if (
-                this.normalizeKeyword(trigger).includes(
-                  this.normalizeKeyword(keyword)
-                )
-              ) {
-                triggers.add(trigger);
-              }
-            }
-          }
-        }
-      }
-    }
-
-    return Array.from(triggers);
+  getSuggestions(
+    userInput: string,
+    maxSuggestions: number = 5
+  ): MatchResult[] {
+    const matches = this.matchSkills(userInput, true);
+    return matches.slice(0, maxSuggestions);
   }
 
   /**
-   * Extract meaningful keywords from user input
-   * @param input User input text
+   * Extract keywords from user input
+   * @param input User input string
    * @returns Array of extracted keywords
    */
   private extractKeywords(input: string): string[] {
     // Normalize input
-    const normalized = input
-      .toLowerCase()
-      .trim()
-      .replace(/[^\w\s-]/g, ' ') // Replace special chars with space
-      .replace(/\s+/g, ' '); // Normalize whitespace
+    const normalized = input.toLowerCase().trim();
 
     // Split into words
-    const words = normalized.split(' ');
+    const words = normalized.split(/\s+/);
 
-    // Filter out stop words and short words
+    // Remove stop words
+    const stopWords = new Set([
+      'a',
+      'an',
+      'the',
+      'and',
+      'or',
+      'but',
+      'in',
+      'on',
+      'at',
+      'to',
+      'for',
+      'of',
+      'with',
+      'by',
+      'from',
+      'as',
+      'is',
+      'was',
+      'are',
+      'were',
+      'been',
+      'be',
+      'have',
+      'has',
+      'had',
+      'do',
+      'does',
+      'did',
+      'will',
+      'would',
+      'should',
+      'could',
+      'may',
+      'might',
+      'can',
+      'i',
+      'you',
+      'he',
+      'she',
+      'it',
+      'we',
+      'they',
+      'me',
+      'him',
+      'her',
+      'us',
+      'them',
+      'my',
+      'your',
+      'his',
+      'her',
+      'its',
+      'our',
+      'their',
+      'this',
+      'that',
+      'these',
+      'those',
+      'please',
+      'help',
+      'want',
+      'need',
+    ]);
+
     const keywords = words.filter(
-      (word) => word.length > 2 && !this.stopWords.has(word)
+      (word) => word.length > 2 && !stopWords.has(word)
     );
 
     // Also extract multi-word phrases (bigrams and trigrams)
     const phrases: string[] = [];
 
-    // Bigrams (2-word phrases)
+    // Bigrams
     for (let i = 0; i < words.length - 1; i++) {
-      const phrase = `${words[i]} ${words[i + 1]}`;
-      if (this.isValidPhrase(phrase)) {
-        phrases.push(phrase);
-      }
-    }
-
-    // Trigrams (3-word phrases)
-    for (let i = 0; i < words.length - 2; i++) {
-      const phrase = `${words[i]} ${words[i + 1]} ${words[i + 2]}`;
-      if (this.isValidPhrase(phrase)) {
-        phrases.push(phrase);
-      }
-    }
-
-    // Combine keywords and phrases, remove duplicates
-    return Array.from(new Set([...keywords, ...phrases]));
-  }
-
-  /**
-   * Check if a phrase is valid (not all stop words)
-   * @param phrase Phrase to check
-   * @returns True if valid
-   */
-  private isValidPhrase(phrase: string): boolean {
-    const words = phrase.split(' ');
-    // At least one word should not be a stop word
-    return words.some((word) => !this.stopWords.has(word));
-  }
-
-  /**
-   * Check if a skill matches a keyword
-   * @param skill Skill to check
-   * @param keyword Keyword to match
-   * @param fuzzy Enable fuzzy matching
-   * @returns True if matches
-   */
-  private skillMatchesKeyword(
-    skill: Skill,
-    keyword: string,
-    fuzzy: boolean
-  ): boolean {
-    const normalized = this.normalizeKeyword(keyword);
-
-    // Check triggers
-    if (skill.metadata.triggers) {
-      for (const trigger of skill.metadata.triggers) {
-        const normalizedTrigger = this.normalizeKeyword(trigger);
-
-        if (fuzzy) {
-          if (
-            normalizedTrigger.includes(normalized) ||
-            normalized.includes(normalizedTrigger)
-          ) {
-            return true;
-          }
-        } else {
-          if (normalizedTrigger === normalized) {
-            return true;
-          }
-        }
-      }
-    }
-
-    // Check skill name
-    const normalizedName = this.normalizeKeyword(skill.metadata.name);
-    if (fuzzy) {
+      const bigram = `${words[i]} ${words[i + 1]}`;
       if (
-        normalizedName.includes(normalized) ||
-        normalized.includes(normalizedName)
+        !stopWords.has(words[i]) ||
+        !stopWords.has(words[i + 1])
       ) {
-        return true;
-      }
-    } else {
-      if (normalizedName === normalized) {
-        return true;
+        phrases.push(bigram);
       }
     }
 
-    return false;
+    // Trigrams
+    for (let i = 0; i < words.length - 2; i++) {
+      const trigram = `${words[i]} ${words[i + 1]} ${words[i + 2]}`;
+      phrases.push(trigram);
+    }
+
+    // Combine keywords and phrases
+    const allKeywords = [...keywords, ...phrases];
+
+    // Remove duplicates
+    return Array.from(new Set(allKeywords));
   }
 
   /**
@@ -361,53 +289,133 @@ export class KeywordMatcher {
   }
 
   /**
+   * Check if two keywords match
+   * @param keyword1 First keyword
+   * @param keyword2 Second keyword
+   * @param fuzzy Enable fuzzy matching
+   * @returns True if keywords match
+   */
+  private isKeywordMatch(
+    keyword1: string,
+    keyword2: string,
+    fuzzy: boolean
+  ): boolean {
+    const norm1 = this.normalizeKeyword(keyword1);
+    const norm2 = this.normalizeKeyword(keyword2);
+
+    // Exact match
+    if (norm1 === norm2) {
+      return true;
+    }
+
+    // Contains match
+    if (norm1.includes(norm2) || norm2.includes(norm1)) {
+      return true;
+    }
+
+    // Fuzzy match
+    if (fuzzy) {
+      const similarity = this.calculateSimilarity(norm1, norm2);
+      return similarity >= this.fuzzyMatchThreshold;
+    }
+
+    return false;
+  }
+
+  /**
+   * Calculate similarity between two strings
+   * @param str1 First string
+   * @param str2 Second string
+   * @returns Similarity score (0-1)
+   */
+  private calculateSimilarity(str1: string, str2: string): number {
+    if (str1 === str2) return 1.0;
+    if (str1.length === 0 || str2.length === 0) return 0.0;
+
+    // Levenshtein distance
+    const distance = this.levenshteinDistance(str1, str2);
+    const maxLength = Math.max(str1.length, str2.length);
+
+    return 1 - distance / maxLength;
+  }
+
+  /**
+   * Calculate Levenshtein distance
+   * @param str1 First string
+   * @param str2 Second string
+   * @returns Edit distance
+   */
+  private levenshteinDistance(str1: string, str2: string): number {
+    const matrix: number[][] = [];
+
+    for (let i = 0; i <= str1.length; i++) {
+      matrix[i] = [i];
+    }
+    for (let j = 0; j <= str2.length; j++) {
+      matrix[0][j] = j;
+    }
+
+    for (let i = 1; i <= str1.length; i++) {
+      for (let j = 1; j <= str2.length; j++) {
+        if (str1[i - 1] === str2[j - 1]) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1,
+            matrix[i][j - 1] + 1,
+            matrix[i - 1][j] + 1
+          );
+        }
+      }
+    }
+
+    return matrix[str1.length][str2.length];
+  }
+
+  /**
+   * Update fuzzy match threshold
+   * @param threshold New threshold (0-1)
+   */
+  setFuzzyMatchThreshold(threshold: number): void {
+    if (threshold < 0 || threshold > 1) {
+      throw new Error('Threshold must be between 0 and 1');
+    }
+    this.fuzzyMatchThreshold = threshold;
+
+    this.emit('matcher:threshold-updated', {
+      threshold,
+      timestamp: new Date(),
+    });
+  }
+
+  /**
+   * Get current fuzzy match threshold
+   * @returns Current threshold
+   */
+  getFuzzyMatchThreshold(): number {
+    return this.fuzzyMatchThreshold;
+  }
+
+  /**
    * Get matcher statistics
    * @returns Matcher statistics
    */
   getStats(): MatcherStats {
-    const indexStats = this.indexer.getStats();
-    const registryStats = this.registry.getStats();
-
     return {
-      totalSkills: registryStats.total,
-      activeSkills: registryStats.active,
-      totalKeywords: indexStats.totalKeywords,
-      averageKeywordsPerSkill: indexStats.averageKeywordsPerSkill,
+      totalSkills: this.registry.size(),
+      totalKeywords: this.indexer.getAllKeywords().length,
+      fuzzyMatchThreshold: this.fuzzyMatchThreshold,
     };
   }
 }
 
 /**
- * Match options
- */
-export interface MatchOptions {
-  /** Enable fuzzy matching (default: true) */
-  fuzzy?: boolean;
-
-  /** Minimum score threshold (default: 0.6) */
-  minScore?: number;
-
-  /** Maximum number of results (default: 10) */
-  maxResults?: number;
-
-  /** Include inactive skills (default: false) */
-  includeInactive?: boolean;
-}
-
-/**
- * Match result
+ * Match result with skill and score
  */
 export interface MatchResult {
-  /** Matched skill */
   skill: Skill;
-
-  /** Match score (0-1) */
   score: number;
-
-  /** Keywords that matched */
   matchedKeywords: string[];
-
-  /** Number of keyword matches */
   matchCount: number;
 }
 
@@ -416,7 +424,14 @@ export interface MatchResult {
  */
 export interface MatcherStats {
   totalSkills: number;
-  activeSkills: number;
   totalKeywords: number;
-  averageKeywordsPerSkill: number;
+  fuzzyMatchThreshold: number;
 }
+
+/**
+ * Events emitted by KeywordMatcher:
+ * 
+ * - 'matcher:matched' - Skills matched successfully
+ * - 'matcher:no-keywords' - No keywords extracted from input
+ * - 'matcher:threshold-updated' - Fuzzy match threshold updated
+ */

@@ -8,7 +8,9 @@
 import type { IStorageAdapter } from '../repositories/adapters/IStorageAdapter';
 import type {
   EvidenceImageStatusResponse,
-  LocationImageStatusResponse
+  LocationImageStatusResponse,
+  ImageTypeStatus,
+  ImageGenerationStatusResponse
 } from '../../../shared/types';
 
 export class ImageStorageService {
@@ -111,7 +113,7 @@ export class ImageStorageService {
     return urls;
   }
 
-  // ========== Status Management ==========
+  // ========== Status Management (Legacy - Evidence & Location Separately) ==========
 
   /**
    * Store evidence image generation status
@@ -157,6 +159,187 @@ export class ImageStorageService {
     return data ? JSON.parse(data) : null;
   }
 
+  // ========== NEW: Unified Status Management (GAP-002) ==========
+
+  /**
+   * Initialize unified image generation status
+   * Called when case generation starts
+   */
+  async initializeImageGenerationStatus(
+    caseId: string,
+    evidenceCount: number,
+    locationCount: number
+  ): Promise<void> {
+    const now = new Date().toISOString();
+
+    const status: ImageGenerationStatusResponse = {
+      caseId,
+      evidence: {
+        status: 'pending',
+        total: evidenceCount,
+        completed: 0,
+        failed: 0,
+        startedAt: undefined,
+        completedAt: undefined
+      },
+      location: {
+        status: 'pending',
+        total: locationCount,
+        completed: 0,
+        failed: 0,
+        startedAt: undefined,
+        completedAt: undefined
+      },
+      complete: false,
+      lastUpdated: now
+    };
+
+    const key = `case:${caseId}:generation:status`;
+    await this.kvStore.set(key, JSON.stringify(status), { ttl: 86400 }); // 24h TTL
+
+    console.log(`📊 [ImageStatus] Initialized status for ${caseId}: ${evidenceCount} evidence, ${locationCount} locations`);
+  }
+
+  /**
+   * Get unified image generation status
+   * Returns null if status not found
+   */
+  async getImageGenerationStatus(
+    caseId: string
+  ): Promise<ImageGenerationStatusResponse | null> {
+    const key = `case:${caseId}:generation:status`;
+    const data = await this.kvStore.get(key);
+    return data ? JSON.parse(data) : null;
+  }
+
+  /**
+   * Update image generation progress for a specific type
+   * Automatically calculates status based on counts
+   */
+  async updateImageProgress(
+    caseId: string,
+    type: 'evidence' | 'location',
+    completed: number,
+    failed: number
+  ): Promise<void> {
+    const status = await this.getImageGenerationStatus(caseId);
+    if (!status) {
+      console.warn(`⚠️  [ImageStatus] Cannot update progress: status not found for ${caseId}`);
+      return;
+    }
+
+    const typeStatus = status[type];
+    const now = new Date().toISOString();
+
+    // Update counts
+    typeStatus.completed = completed;
+    typeStatus.failed = failed;
+
+    // Update status based on progress
+    const totalProcessed = completed + failed;
+
+    if (totalProcessed === 0) {
+      typeStatus.status = 'pending';
+    } else if (totalProcessed < typeStatus.total) {
+      typeStatus.status = 'in_progress';
+      if (!typeStatus.startedAt) {
+        typeStatus.startedAt = now;
+      }
+    } else if (totalProcessed === typeStatus.total) {
+      if (failed === 0) {
+        typeStatus.status = 'complete';
+      } else if (completed === 0) {
+        typeStatus.status = 'failed';
+      } else {
+        typeStatus.status = 'complete'; // Partial success still counts as complete
+      }
+      typeStatus.completedAt = now;
+    }
+
+    // Update overall completion
+    const evidenceComplete = status.evidence.status === 'complete' || status.evidence.status === 'failed';
+    const locationComplete = status.location.status === 'complete' || status.location.status === 'failed';
+    status.complete = evidenceComplete && locationComplete;
+    status.lastUpdated = now;
+
+    // Save updated status
+    const key = `case:${caseId}:generation:status`;
+    await this.kvStore.set(key, JSON.stringify(status), { ttl: 86400 });
+
+    console.log(
+      `📊 [ImageStatus] Updated ${type} progress for ${caseId}: ` +
+      `${completed}/${typeStatus.total} completed, ${failed} failed ` +
+      `(status: ${typeStatus.status})`
+    );
+  }
+
+  /**
+   * Mark image type as started
+   * Sets startedAt timestamp and updates status to in_progress
+   */
+  async markImageTypeStarted(
+    caseId: string,
+    type: 'evidence' | 'location'
+  ): Promise<void> {
+    const status = await this.getImageGenerationStatus(caseId);
+    if (!status) {
+      console.warn(`⚠️  [ImageStatus] Cannot mark started: status not found for ${caseId}`);
+      return;
+    }
+
+    const typeStatus = status[type];
+    const now = new Date().toISOString();
+
+    typeStatus.status = 'in_progress';
+    typeStatus.startedAt = now;
+    status.lastUpdated = now;
+
+    const key = `case:${caseId}:generation:status`;
+    await this.kvStore.set(key, JSON.stringify(status), { ttl: 86400 });
+
+    console.log(`📊 [ImageStatus] Marked ${type} as started for ${caseId}`);
+  }
+
+  /**
+   * Increment completed count for a specific image type
+   * Helper method for generators to call after each successful image
+   */
+  async incrementCompleted(
+    caseId: string,
+    type: 'evidence' | 'location'
+  ): Promise<void> {
+    const status = await this.getImageGenerationStatus(caseId);
+    if (!status) return;
+
+    const typeStatus = status[type];
+    await this.updateImageProgress(
+      caseId,
+      type,
+      typeStatus.completed + 1,
+      typeStatus.failed
+    );
+  }
+
+  /**
+   * Increment failed count for a specific image type
+   * Helper method for generators to call after each failed image
+   */
+  async incrementFailed(
+    caseId: string,
+    type: 'evidence' | 'location'
+  ): Promise<void> {
+    const status = await this.getImageGenerationStatus(caseId);
+    if (!status) return;
+
+    const typeStatus = status[type];
+    await this.updateImageProgress(
+      caseId,
+      type,
+      typeStatus.completed,
+      typeStatus.failed + 1
+    );
+  }
+
   // ========== Utilities ==========
 
   /**
@@ -172,5 +355,6 @@ export class ImageStorageService {
   async cleanupStatusKeys(caseId: string): Promise<void> {
     await this.kvStore.del(`case:${caseId}:imageStatus:evidence`);
     await this.kvStore.del(`case:${caseId}:imageStatus:location`);
+    await this.kvStore.del(`case:${caseId}:generation:status`);
   }
 }

@@ -18,6 +18,8 @@ import {
   type ArchetypeName,
   type EmotionalStateName
 } from '../prompts/ArchetypePrompts';
+import { QualityValidator, qualityLogger, type QualityScores } from '../validation/quality';
+import { multilingualPromptManager } from '../prompts/MultilingualPromptManager';
 
 export interface ChatMessage {
   role: 'user' | 'suspect';
@@ -34,6 +36,8 @@ export interface ChatResponse {
     tone: EmotionalTone;
   };
   conversationCount: number;
+  qualityScore?: QualityScores;
+  qualityPassed?: boolean;
 }
 
 /**
@@ -41,18 +45,22 @@ export interface ChatResponse {
  */
 export class SuspectAIService {
   private geminiClient: GeminiClient;
+  private qualityValidator: QualityValidator;
 
   constructor(geminiClient: GeminiClient) {
     this.geminiClient = geminiClient;
+    this.qualityValidator = new QualityValidator();
   }
 
   /**
    * 사용자 질문에 AI 용의자 응답 생성
+   * Requirements: 5.2, 5.8
    */
   async generateResponse(
     suspectId: string,
     userId: string,
-    userQuestion: string
+    userQuestion: string,
+    language: string = 'en'
   ): Promise<ChatResponse> {
     console.log(`🗣️ Generating response for suspect ${suspectId}...`);
 
@@ -82,8 +90,76 @@ export class SuspectAIService {
       suspect,
       userQuestion,
       conversationHistory,
-      newEmotionalState.tone
+      newEmotionalState.tone,
+      language
     );
+
+    // 4.5. 품질 검증 (환경 변수로 활성화)
+    let qualityScore: QualityScores | undefined;
+    let qualityPassed: boolean | undefined;
+
+    if (process.env.ENABLE_QUALITY_VALIDATION === 'true') {
+      const normalizedArchetype = normalizeArchetypeName(suspect.archetype);
+      
+      if (normalizedArchetype) {
+        const archetypeData = getArchetypeData(normalizedArchetype);
+        
+        if (archetypeData) {
+          // 감정 상태 매핑
+          const emotionalStateMap: Record<EmotionalTone, 'COOPERATIVE' | 'NERVOUS' | 'DEFENSIVE' | 'AGGRESSIVE'> = {
+            cooperative: 'COOPERATIVE',
+            nervous: 'NERVOUS',
+            defensive: 'DEFENSIVE',
+            aggressive: 'AGGRESSIVE'
+          };
+          
+          const emotionalState = emotionalStateMap[newEmotionalState.tone];
+          
+          // 품질 검증 실행
+          const validation = this.qualityValidator.validate(
+            aiResponse,
+            normalizedArchetype,
+            emotionalState,
+            suspect.isGuilty,
+            newEmotionalState.suspicionLevel,
+            archetypeData.vocabulary.primary
+          );
+          
+          qualityScore = validation.scores;
+          qualityPassed = validation.passed;
+          
+          // 품질 메트릭 로깅
+          qualityLogger.log({
+            timestamp: new Date(),
+            archetype: normalizedArchetype,
+            emotionalState,
+            isGuilty: suspect.isGuilty,
+            suspicionLevel: newEmotionalState.suspicionLevel,
+            response: aiResponse,
+            scores: validation.scores,
+            passed: validation.passed,
+            feedback: validation.feedback
+          });
+          
+          // 검증 실패 시 로깅
+          if (!validation.passed) {
+            if (process.env.NODE_ENV === 'development') {
+              console.warn('⚠️ Quality validation failed:', {
+                suspect: suspect.name,
+                archetype: normalizedArchetype,
+                emotionalState,
+                scores: validation.scores,
+                feedback: validation.feedback
+              });
+            } else {
+              console.log('Quality validation failed (logged)');
+            }
+          } else {
+            console.log(`✅ Quality validation passed (${validation.scores.overall}/100)`);
+          }
+        }
+      }
+    }
 
     // 5. 대화 저장
     await KVStoreManager.addMessage(
@@ -112,24 +188,29 @@ export class SuspectAIService {
         suspicionLevel: newEmotionalState.suspicionLevel,
         tone: newEmotionalState.tone
       },
-      conversationCount: conversationHistory.length + 2 // +2 for new user/suspect messages
+      conversationCount: conversationHistory.length + 2, // +2 for new user/suspect messages
+      qualityScore,
+      qualityPassed
     };
   }
 
   /**
    * AI 응답 생성 (Gemini)
+   * Requirements: 5.2, 5.8
    */
   private async generateAIResponse(
     suspect: SuspectData,
     userQuestion: string,
     conversationHistory: ChatMessage[],
-    currentTone: EmotionalTone
+    currentTone: EmotionalTone,
+    language: string = 'en'
   ): Promise<string> {
     const prompt = this.buildSuspectPrompt(
       suspect,
       userQuestion,
       conversationHistory,
-      currentTone
+      currentTone,
+      language
     );
 
     const options: GeminiTextOptions = {
@@ -164,12 +245,14 @@ export class SuspectAIService {
   /**
    * 용의자 AI 프롬프트 생성 (Enhanced with Claude Skills pattern)
    * Uses template from skills/suspect-personality-core/PROMPT.md (bundled at build time)
+   * Requirements: 5.2, 5.8
    */
   private buildSuspectPrompt(
     suspect: SuspectData,
     userQuestion: string,
     conversationHistory: ChatMessage[],
-    currentTone: EmotionalTone
+    currentTone: EmotionalTone,
+    language: string = 'en'
   ): string {
     // Get emotional state from suspicion level
     const suspicionLevel =
@@ -183,9 +266,9 @@ export class SuspectAIService {
 
     const emotionalState = getEmotionalStateFromSuspicion(suspicionLevel);
 
-    // Detect language and get instruction
-    const detectedLanguage = this.detectLanguage(userQuestion);
-    const languageInstruction = this.getResponseLanguageInstruction(detectedLanguage);
+    // Use provided language or detect from question
+    const effectiveLanguage = language || this.detectLanguage(userQuestion);
+    const languageInstruction = this.getResponseLanguageInstruction(effectiveLanguage as 'ko' | 'en');
 
     // Phase 1: Normalize archetype name (handles Korean → English conversion)
     const normalizedArchetype = normalizeArchetypeName(suspect.archetype);
@@ -239,8 +322,14 @@ export class SuspectAIService {
 - Don't have knowledge of incriminating details only the killer would know
 - Your emotional responses reflect genuine innocence`;
 
+    // Load language-specific prompt template
+    // Requirements: 5.2, 5.8
+    const promptTemplate = effectiveLanguage === 'ko' 
+      ? multilingualPromptManager.loadPromptTemplate('ko')
+      : suspectPromptTemplate;
+
     // Replace template variables (template is bundled at build time via ?raw import)
-    return suspectPromptTemplate
+    return promptTemplate
       .replace('{{SUSPECT_NAME}}', suspect.name)
       .replace(/{{ARCHETYPE}}/g, normalizedArchetype)
       .replace('{{BACKGROUND}}', suspect.background)
@@ -253,6 +342,11 @@ export class SuspectAIService {
       .replace('{{GUILTY_OR_INNOCENT_BLOCK}}', guiltyOrInnocentBlock)
       .replace('{{SPEECH_PATTERNS}}', speechPatterns.slice(0, 3).map(p => `- ${p}`).join('\n'))
       .replace('{{VOCABULARY}}', archetypeData.vocabulary.primary.join(', '))
+      .replace('{{CHARACTERISTIC_PHRASES}}', 
+        archetypeData.characteristicPhrases
+          ? archetypeData.characteristicPhrases.map(p => `- ${p}`).join('\n')
+          : '(No characteristic phrases defined)'
+      )
       .replace('{{RESPONSE_LANGUAGE_INSTRUCTION}}', languageInstruction)
       .replace('{{CONVERSATION_HISTORY}}', historyText || '(Beginning of conversation)')
       .replace('{{USER_QUESTION}}', userQuestion);

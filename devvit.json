@@ -1,6 +1,10 @@
 {
   "$schema": "https://developers.reddit.com/schema/config-file.v1.json",
   "name": "armchair-sleuths",
+  "server": {
+    "dir": "dist/server",
+    "entry": "index.cjs"
+  },
   "post": {
     "dir": "dist/client",
     "entrypoints": {
@@ -8,10 +12,6 @@
         "entry": "index.html"
       }
     }
-  },
-  "server": {
-    "dir": "dist/server",
-    "entry": "index.cjs"
   },
   "media": {
     "dir": "assets"

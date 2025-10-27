@@ -4,6 +4,8 @@
  * Individual location card component for evidence discovery
  * Displays location with interactive search functionality and visual state transitions
  * Supports 3-tier search system with search method selection
+ *
+ * REFACTORED: Noir detective design system integration
  */
 
 import { useState } from 'react';
@@ -58,18 +60,18 @@ export function LocationCard({
     onSearch(location.id, selectedSearchType);
   };
 
-  // Visual state based on search status
+  // Visual state based on search status - using design tokens
   const borderColor = isSearched
-    ? 'border-green-600'
+    ? 'border-evidence-clue'
     : isSearching
-      ? 'border-yellow-500'
-      : 'border-gray-700';
+      ? 'border-detective-amber'
+      : 'border-noir-fog';
 
   const bgColor = isSearched
-    ? 'bg-green-900/20'
+    ? 'bg-evidence-clue/10'
     : isSearching
-      ? 'bg-yellow-900/20'
-      : 'bg-gray-800';
+      ? 'bg-detective-gold/10'
+      : 'bg-noir-charcoal';
 
   const cursorStyle = isSearched || isSearching ? 'cursor-not-allowed' : 'cursor-pointer';
 
@@ -79,13 +81,22 @@ export function LocationCard({
         onClick={handleCardClick}
         disabled={isSearched || isSearching}
         className={`
-          relative w-full p-6 rounded-lg text-left transition-all
+          relative w-full p-4 sm:p-6 rounded-lg text-left transition-all duration-base
           border-2 ${borderColor} ${bgColor} ${cursorStyle}
+          ${!isSearched && !isSearching ? 'hover:shadow-glow-strong' : ''}
+          focus:outline-none focus:ring-2 focus:ring-detective-gold focus:ring-offset-2 focus:ring-offset-noir-deepBlack
         `}
         // Hover animation (only when not searched/searching)
-        whileHover={!isSearched && !isSearching ? { scale: 1.03 } : {}}
+        whileHover={!isSearched && !isSearching ? {
+          scale: 1.02,
+          y: -4,
+          transition: { duration: 0.2, ease: [0.65, 0, 0.35, 1] }
+        } : {}}
         // Click animation
-        whileTap={!isSearched && !isSearching ? { scale: 0.98 } : {}}
+        whileTap={!isSearched && !isSearching ? {
+          scale: 0.98,
+          transition: { duration: 0.1 }
+        } : {}}
         // Initial animation on mount
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -96,11 +107,11 @@ export function LocationCard({
       {/* Location Image/Icon */}
       <div className="mb-3 flex justify-center">
         {imageStatus === 'loading' ? (
-          <div className="w-full h-48 rounded-lg overflow-hidden">
+          <div className="w-full h-40 sm:h-48 rounded-lg overflow-hidden">
             <SkeletonLoader />
           </div>
         ) : imageStatus === 'loaded' && location.imageUrl ? (
-          <div className="w-full h-48 rounded-lg overflow-hidden">
+          <div className="w-full h-40 sm:h-48 rounded-lg overflow-hidden">
             <motion.img
               src={location.imageUrl}
               alt={location.name}
@@ -111,25 +122,25 @@ export function LocationCard({
             />
           </div>
         ) : (
-          <div className="text-5xl">{location.emoji}</div>
+          <div className="text-4xl sm:text-5xl">{location.emoji}</div>
         )}
       </div>
 
       {/* Location Name */}
-      <h3 className="text-xl font-bold mb-2 text-center text-detective-gold">
+      <h3 className="text-lg sm:text-xl font-display font-bold mb-2 text-center text-detective-gold">
         {location.name}
       </h3>
 
       {/* Location Description */}
-      <p className="text-sm text-gray-400 text-center mb-4 line-clamp-2">
+      <p className="text-sm sm:text-base text-text-secondary text-center mb-4 line-clamp-2">
         {location.description}
       </p>
 
       {/* Status Indicator */}
-      <div className="flex justify-center items-center">
+      <div className="flex justify-center items-center min-h-[32px]">
         {isSearching && (
           <motion.div
-            className="flex items-center gap-2 text-yellow-400"
+            className="flex items-center gap-2 text-detective-amber"
             animate={{ opacity: [0.5, 1, 0.5] }}
             transition={{ duration: 1.5, repeat: Infinity }}
           >
@@ -138,6 +149,7 @@ export function LocationCard({
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
+              aria-hidden="true"
             >
               <circle
                 className="opacity-25"
@@ -153,13 +165,13 @@ export function LocationCard({
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               />
             </svg>
-            <span className="text-sm font-medium">탐색 중...</span>
+            <span className="text-sm sm:text-base font-medium">탐색 중...</span>
           </motion.div>
         )}
 
         {isSearched && (
           <motion.div
-            className="flex items-center gap-2 text-green-400"
+            className="flex items-center gap-2 text-evidence-clue"
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: 'spring', stiffness: 200, damping: 15 }}
@@ -169,6 +181,7 @@ export function LocationCard({
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
+              aria-hidden="true"
             >
               <path
                 strokeLinecap="round"
@@ -177,7 +190,7 @@ export function LocationCard({
                 d="M5 13l4 4L19 7"
               />
             </svg>
-            <span className="text-sm font-medium">탐색 완료</span>
+            <span className="text-sm sm:text-base font-medium">탐색 완료</span>
           </motion.div>
         )}
 
@@ -188,6 +201,7 @@ export function LocationCard({
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
+              aria-hidden="true"
             >
               <path
                 strokeLinecap="round"
@@ -196,24 +210,24 @@ export function LocationCard({
                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
               />
             </svg>
-            <span className="text-sm font-medium">탐색하기</span>
+            <span className="text-sm sm:text-base font-medium">탐색하기</span>
           </div>
         )}
       </div>
 
       {/* Completion Rate (for searched locations) */}
       {isSearched && completionRate > 0 && (
-        <div className="mt-3 text-center">
-          <div className="text-xs text-gray-400 mb-1">완료율</div>
-          <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+        <div className="mt-4">
+          <div className="text-xs text-text-muted mb-1 text-center">완료율</div>
+          <div className="w-full bg-noir-gunmetal rounded-full h-2 overflow-hidden border border-noir-fog">
             <motion.div
-              className="h-2 bg-gradient-to-r from-green-400 to-emerald-500"
+              className="h-2 bg-gradient-to-r from-evidence-clue to-detective-gold"
               initial={{ width: 0 }}
               animate={{ width: `${completionRate}%` }}
               transition={{ duration: 0.5, ease: 'easeOut' }}
             />
           </div>
-          <div className="text-xs text-green-400 mt-1 font-bold">
+          <div className="text-xs text-evidence-clue mt-1 font-bold text-center">
             {completionRate}%
           </div>
         </div>
@@ -222,7 +236,7 @@ export function LocationCard({
       {/* Searched overlay */}
       {isSearched && (
         <motion.div
-          className="absolute inset-0 bg-green-600/10 rounded-lg pointer-events-none"
+          className="absolute inset-0 bg-evidence-clue/5 rounded-lg pointer-events-none"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
@@ -234,14 +248,14 @@ export function LocationCard({
       <AnimatePresence>
         {showSearchModal && (
           <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-70"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background-overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setShowSearchModal(false)}
           >
             <motion.div
-              className="bg-gray-900 border-2 border-detective-gold rounded-lg p-6 max-w-md w-full"
+              className="bg-noir-charcoal border-2 border-detective-gold rounded-xl p-6 max-w-md w-full shadow-xl"
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
@@ -249,11 +263,11 @@ export function LocationCard({
             >
               {/* Modal Header */}
               <div className="text-center mb-6">
-                <div className="text-4xl mb-2">{location.emoji}</div>
-                <h3 className="text-2xl font-bold text-detective-gold mb-2">
+                <div className="text-4xl sm:text-5xl mb-2">{location.emoji}</div>
+                <h3 className="text-xl sm:text-2xl font-display font-bold text-detective-gold mb-2">
                   {location.name}
                 </h3>
-                <p className="text-sm text-gray-400">{location.description}</p>
+                <p className="text-sm sm:text-base text-text-secondary">{location.description}</p>
               </div>
 
               {/* Search Method Selector */}
@@ -267,13 +281,13 @@ export function LocationCard({
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={() => setShowSearchModal(false)}
-                  className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                  className="flex-1 min-h-[48px] px-4 py-2 sm:px-5 sm:py-3 bg-noir-gunmetal hover:bg-noir-smoke text-text-primary font-semibold rounded-lg transition-all duration-base focus:outline-none focus:ring-2 focus:ring-detective-brass focus:ring-offset-2 focus:ring-offset-noir-charcoal"
                 >
                   취소
                 </button>
                 <button
                   onClick={handleSearchConfirm}
-                  className="flex-1 px-4 py-2 bg-detective-gold hover:bg-yellow-600 text-gray-900 font-bold rounded-lg transition-colors"
+                  className="flex-1 min-h-[48px] btn-primary"
                 >
                   탐색 시작
                 </button>

@@ -1,46 +1,31 @@
+/**
+ * Unit tests for KeywordMatcher
+ */
+
 import { describe, it, expect, beforeEach } from 'vitest';
-import { KeywordMatcher } from '../KeywordMatcher.js';
-import { KeywordIndexer } from '../KeywordIndexer.js';
-import { SkillRegistry } from '../SkillRegistry.js';
-import type { Skill, SkillMetadata } from '../types.js';
+import { KeywordMatcher, createKeywordMatcher } from '../KeywordMatcher';
+import type { Skill } from '../types';
 
 describe('KeywordMatcher', () => {
   let matcher: KeywordMatcher;
-  let indexer: KeywordIndexer;
-  let registry: SkillRegistry;
+  let testSkills: Skill[];
 
   beforeEach(() => {
-    indexer = new KeywordIndexer();
-    registry = new SkillRegistry();
-    matcher = new KeywordMatcher(indexer, registry);
-
-    // Add test skills
-    const testSkills: Skill[] = [
+    matcher = createKeywordMatcher();
+    
+    // Create test skills
+    testSkills = [
       {
         metadata: {
           name: 'suspect-ai-prompter',
           version: '1.0.0',
           description: 'Optimize AI suspect conversation prompts',
           triggers: ['improve prompt', 'optimize ai', 'test responses'],
-          dependencies: {
-            skills: [],
-            apis: [],
-            packages: [],
-          },
-          capabilities: [
-            {
-              name: 'prompt-improvement',
-              description: 'Improve prompt quality',
-              usage: 'improve prompt',
-              parameters: [],
-              examples: [],
-            },
-          ],
-          author: 'Test Author',
-          license: 'MIT',
+          dependencies: {},
+          capabilities: [],
         },
         promptContent: 'Test prompt content',
-        path: '/test/path',
+        path: '/skills/suspect-ai-prompter',
         lastModified: new Date(),
         status: 'active',
       },
@@ -50,188 +35,299 @@ describe('KeywordMatcher', () => {
           version: '2.0.0',
           description: 'Generate mystery cases',
           triggers: ['generate case', 'create mystery', 'new case'],
-          dependencies: {
-            skills: [],
-            apis: [],
-            packages: [],
-          },
+          dependencies: {},
           capabilities: [],
-          author: 'Test Author',
-          license: 'MIT',
         },
         promptContent: 'Test prompt content',
-        path: '/test/path',
+        path: '/skills/mystery-case-generator',
         lastModified: new Date(),
         status: 'active',
       },
       {
         metadata: {
-          name: 'inactive-skill',
-          version: '1.0.0',
-          description: 'Inactive test skill',
-          triggers: ['inactive test'],
-          dependencies: {
-            skills: [],
-            apis: [],
-            packages: [],
-          },
+          name: 'evidence-system-architect',
+          version: '1.5.0',
+          description: 'Design evidence collection system',
+          triggers: ['evidence system', 'design evidence', 'evidence architecture'],
+          dependencies: {},
           capabilities: [],
-          author: 'Test Author',
-          license: 'MIT',
         },
         promptContent: 'Test prompt content',
-        path: '/test/path',
+        path: '/skills/evidence-system-architect',
         lastModified: new Date(),
-        status: 'inactive',
+        status: 'active',
       },
     ];
-
-    // Add skills to registry and indexer
-    for (const skill of testSkills) {
-      registry.addSkill(skill);
-      indexer.addSkill(skill.metadata);
-    }
   });
 
-  describe('match', () => {
-    it('should find exact matches', () => {
-      const results = matcher.match('improve prompt');
-
-      expect(results.length).toBeGreaterThan(0);
-      expect(results[0].skill.metadata.name).toBe('suspect-ai-prompter');
-      expect(results[0].score).toBe(1.0);
+  describe('exact matching', () => {
+    it('should match exact trigger keyword', () => {
+      const matches = matcher.match('improve prompt', testSkills);
+      
+      expect(matches).toHaveLength(1);
+      expect(matches[0].skill.metadata.name).toBe('suspect-ai-prompter');
+      expect(matches[0].matchType).toBe('exact');
+      expect(matches[0].score).toBeGreaterThan(0.9);
     });
 
-    it('should find fuzzy matches', () => {
-      const results = matcher.match('improve prompts', { fuzzy: true });
-
-      expect(results.length).toBeGreaterThan(0);
-      expect(results[0].skill.metadata.name).toBe('suspect-ai-prompter');
-      expect(results[0].score).toBeGreaterThan(0.6);
+    it('should match trigger keyword within sentence', () => {
+      const matches = matcher.match('I want to generate case for testing', testSkills);
+      
+      expect(matches.length).toBeGreaterThan(0);
+      expect(matches[0].skill.metadata.name).toBe('mystery-case-generator');
+      expect(matches[0].matchedKeywords).toContain('generate case');
     });
 
-    it('should extract keywords from natural language', () => {
-      const results = matcher.match(
-        'I want to improve the prompt for my AI assistant'
-      );
-
-      expect(results.length).toBeGreaterThan(0);
-      expect(results[0].skill.metadata.name).toBe('suspect-ai-prompter');
+    it('should be case insensitive by default', () => {
+      const matches = matcher.match('IMPROVE PROMPT', testSkills);
+      
+      expect(matches).toHaveLength(1);
+      expect(matches[0].skill.metadata.name).toBe('suspect-ai-prompter');
     });
 
-    it('should rank results by relevance', () => {
-      const results = matcher.match('generate new mystery case');
-
-      expect(results.length).toBeGreaterThan(0);
-      expect(results[0].skill.metadata.name).toBe('mystery-case-generator');
-      expect(results[0].matchCount).toBeGreaterThan(0);
-    });
-
-    it('should filter by minimum score', () => {
-      const results = matcher.match('xyz', { minScore: 0.9 });
-
-      expect(results.length).toBe(0);
-    });
-
-    it('should limit results', () => {
-      const results = matcher.match('test', { maxResults: 1 });
-
-      expect(results.length).toBeLessThanOrEqual(1);
-    });
-
-    it('should exclude inactive skills by default', () => {
-      const results = matcher.match('inactive test');
-
-      expect(results.length).toBe(0);
-    });
-
-    it('should include inactive skills when requested', () => {
-      const results = matcher.match('inactive test', {
-        includeInactive: true,
+    it('should respect case sensitive option', () => {
+      const matches = matcher.match('IMPROVE PROMPT', testSkills, {
+        caseSensitive: true,
       });
-
-      expect(results.length).toBeGreaterThan(0);
-      expect(results[0].skill.metadata.name).toBe('inactive-skill');
+      
+      expect(matches).toHaveLength(0);
     });
   });
 
-  describe('findExactMatches', () => {
-    it('should find exact keyword matches', () => {
-      const results = matcher.findExactMatches('improve prompt');
-
-      expect(results.length).toBeGreaterThan(0);
-      expect(results[0].metadata.name).toBe('suspect-ai-prompter');
+  describe('fuzzy matching', () => {
+    it('should match with minor typos', () => {
+      const matches = matcher.match('imrpove promtp', testSkills, {
+        fuzzyMatch: true,
+        minScore: 0.6,
+      });
+      
+      expect(matches.length).toBeGreaterThan(0);
+      expect(matches[0].skill.metadata.name).toBe('suspect-ai-prompter');
+      expect(matches[0].matchType).toBe('fuzzy');
     });
 
-    it('should return empty array for no matches', () => {
-      const results = matcher.findExactMatches('nonexistent keyword');
-
-      expect(results.length).toBe(0);
-    });
-  });
-
-  describe('findByTrigger', () => {
-    it('should find skills by exact trigger', () => {
-      const results = matcher.findByTrigger('generate case');
-
-      expect(results.length).toBeGreaterThan(0);
-      expect(results[0].skill.metadata.name).toBe('mystery-case-generator');
-      expect(results[0].score).toBe(1.0);
+    it('should not match with too many typos', () => {
+      const matches = matcher.match('xyz abc def', testSkills, {
+        fuzzyMatch: true,
+        minScore: 0.7,
+      });
+      
+      expect(matches).toHaveLength(0);
     });
 
-    it('should find skills by fuzzy trigger', () => {
-      const results = matcher.findByTrigger('generate cases', true);
-
-      expect(results.length).toBeGreaterThan(0);
-      expect(results[0].skill.metadata.name).toBe('mystery-case-generator');
-    });
-
-    it('should not find fuzzy matches when disabled', () => {
-      const results = matcher.findByTrigger('generate cases', false);
-
-      expect(results.length).toBe(0);
+    it('should disable fuzzy matching when option is false', () => {
+      const matches = matcher.match('imrpove promtp', testSkills, {
+        fuzzyMatch: false,
+      });
+      
+      expect(matches).toHaveLength(0);
     });
   });
 
-  describe('containsTriggers', () => {
-    it('should detect triggers in user input', () => {
-      const hasTriggers = matcher.containsTriggers('improve prompt');
-
-      expect(hasTriggers).toBe(true);
+  describe('partial matching', () => {
+    it('should match partial words', () => {
+      const matches = matcher.match('evidence', testSkills);
+      
+      expect(matches.length).toBeGreaterThan(0);
+      expect(matches[0].skill.metadata.name).toBe('evidence-system-architect');
     });
 
-    it('should return false for no triggers', () => {
-      const hasTriggers = matcher.containsTriggers('random text');
-
-      expect(hasTriggers).toBe(false);
-    });
-  });
-
-  describe('detectTriggers', () => {
-    it('should extract trigger phrases from input', () => {
-      const triggers = matcher.detectTriggers(
-        'I want to improve prompt and generate case'
+    it('should match multiple partial words', () => {
+      const matches = matcher.match('design system', testSkills);
+      
+      const evidenceSkill = matches.find(
+        m => m.skill.metadata.name === 'evidence-system-architect'
       );
-
-      expect(triggers.length).toBeGreaterThan(0);
-      expect(triggers).toContain('improve prompt');
-    });
-
-    it('should return empty array for no triggers', () => {
-      const triggers = matcher.detectTriggers('random text');
-
-      expect(triggers.length).toBe(0);
+      
+      expect(evidenceSkill).toBeDefined();
     });
   });
 
-  describe('getStats', () => {
-    it('should return matcher statistics', () => {
-      const stats = matcher.getStats();
+  describe('ranking', () => {
+    it('should rank exact matches higher than fuzzy matches', () => {
+      const matches = matcher.match('improve prompt and generate case', testSkills);
+      
+      expect(matches.length).toBeGreaterThan(1);
+      expect(matches[0].matchType).toBe('exact');
+      expect(matches[0].score).toBeGreaterThan(matches[1].score);
+    });
 
-      expect(stats.totalSkills).toBe(3);
-      expect(stats.activeSkills).toBe(2);
-      expect(stats.totalKeywords).toBeGreaterThan(0);
-      expect(stats.averageKeywordsPerSkill).toBeGreaterThan(0);
+    it('should rank by number of matched keywords', () => {
+      const multiTriggerSkill: Skill = {
+        metadata: {
+          name: 'multi-trigger',
+          version: '1.0.0',
+          description: 'Test skill',
+          triggers: ['test', 'example', 'demo'],
+          dependencies: {},
+          capabilities: [],
+        },
+        promptContent: 'Test',
+        path: '/skills/multi-trigger',
+        lastModified: new Date(),
+        status: 'active',
+      };
+
+      const matches = matcher.match('test example demo', [multiTriggerSkill]);
+      
+      expect(matches).toHaveLength(1);
+      expect(matches[0].matchedKeywords).toHaveLength(3);
+      expect(matches[0].score).toBeGreaterThan(0.9);
+    });
+  });
+
+  describe('options', () => {
+    it('should respect minScore threshold', () => {
+      const matches = matcher.match('evidence', testSkills, {
+        minScore: 0.9,
+      });
+      
+      // Partial match should have lower score
+      expect(matches.length).toBeLessThan(testSkills.length);
+    });
+
+    it('should respect maxResults limit', () => {
+      const matches = matcher.match('test', testSkills, {
+        maxResults: 1,
+        minScore: 0.1,
+      });
+      
+      expect(matches.length).toBeLessThanOrEqual(1);
+    });
+  });
+
+  describe('extractKeywords', () => {
+    it('should extract meaningful keywords', () => {
+      const keywords = matcher.extractKeywords('I want to improve the prompt');
+      
+      expect(keywords).toContain('want');
+      expect(keywords).toContain('improve');
+      expect(keywords).toContain('prompt');
+      expect(keywords).not.toContain('i');
+      expect(keywords).not.toContain('to');
+      expect(keywords).not.toContain('the');
+    });
+
+    it('should filter out stop words', () => {
+      const keywords = matcher.extractKeywords('the quick brown fox');
+      
+      expect(keywords).not.toContain('the');
+      expect(keywords).toContain('quick');
+      expect(keywords).toContain('brown');
+    });
+
+    it('should filter out short words', () => {
+      const keywords = matcher.extractKeywords('a b cd efg');
+      
+      expect(keywords).not.toContain('a');
+      expect(keywords).not.toContain('b');
+      expect(keywords).not.toContain('cd');
+      expect(keywords).toContain('efg');
+    });
+  });
+
+  describe('findBestMatch', () => {
+    it('should return single best match', () => {
+      const match = matcher.findBestMatch('improve prompt', testSkills);
+      
+      expect(match).toBeDefined();
+      expect(match?.skill.metadata.name).toBe('suspect-ai-prompter');
+    });
+
+    it('should return null when no match found', () => {
+      const match = matcher.findBestMatch('xyz abc def', testSkills);
+      
+      expect(match).toBeNull();
+    });
+  });
+
+  describe('hasMatch', () => {
+    it('should return true when match exists', () => {
+      const hasMatch = matcher.hasMatch('improve prompt', testSkills);
+      
+      expect(hasMatch).toBe(true);
+    });
+
+    it('should return false when no match exists', () => {
+      const hasMatch = matcher.hasMatch('xyz abc def', testSkills);
+      
+      expect(hasMatch).toBe(false);
+    });
+  });
+
+  describe('edge cases', () => {
+    it('should handle empty input', () => {
+      const matches = matcher.match('', testSkills);
+      
+      expect(matches).toHaveLength(0);
+    });
+
+    it('should handle empty skills array', () => {
+      const matches = matcher.match('improve prompt', []);
+      
+      expect(matches).toHaveLength(0);
+    });
+
+    it('should handle skill with no triggers', () => {
+      const noTriggerSkill: Skill = {
+        metadata: {
+          name: 'no-trigger',
+          version: '1.0.0',
+          description: 'Test',
+          triggers: [],
+          dependencies: {},
+          capabilities: [],
+        },
+        promptContent: 'Test',
+        path: '/skills/no-trigger',
+        lastModified: new Date(),
+        status: 'active',
+      };
+
+      const matches = matcher.match('test', [noTriggerSkill]);
+      
+      expect(matches).toHaveLength(0);
+    });
+
+    it('should handle very long input', () => {
+      const longInput = 'improve prompt '.repeat(100);
+      const matches = matcher.match(longInput, testSkills);
+      
+      expect(matches.length).toBeGreaterThan(0);
+    });
+
+    it('should handle special characters', () => {
+      const matches = matcher.match('improve-prompt!@#$%', testSkills);
+      
+      // Should still match despite special characters
+      expect(matches.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('performance', () => {
+    it('should handle large number of skills efficiently', () => {
+      // Create 100 test skills
+      const manySkills: Skill[] = Array.from({ length: 100 }, (_, i) => ({
+        metadata: {
+          name: `skill-${i}`,
+          version: '1.0.0',
+          description: `Test skill ${i}`,
+          triggers: [`trigger-${i}`, `keyword-${i}`],
+          dependencies: {},
+          capabilities: [],
+        },
+        promptContent: 'Test',
+        path: `/skills/skill-${i}`,
+        lastModified: new Date(),
+        status: 'active' as const,
+      }));
+
+      const startTime = Date.now();
+      const matches = matcher.match('trigger-50', manySkills);
+      const endTime = Date.now();
+
+      expect(matches.length).toBeGreaterThan(0);
+      expect(endTime - startTime).toBeLessThan(100); // Should complete in < 100ms
     });
   });
 });

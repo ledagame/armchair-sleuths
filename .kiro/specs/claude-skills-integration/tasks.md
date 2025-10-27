@@ -157,7 +157,7 @@ This document breaks down the implementation of Claude Skills Integration into m
 
 ## Phase 3: Skill Activation
 
-- [ ] 5.1 Implement keyword matcher
+- [x] 5.1 Implement keyword matcher
   - **File**: `.kiro/skills-system/core/KeywordMatcher.ts` (new)
   - **Layer**: Core Business Logic
   - Match user input against skill triggers
@@ -166,16 +166,19 @@ This document breaks down the implementation of Claude Skills Integration into m
   - _Requirements: 2.1, 2.2_
   - _Effort: Medium_
 
-- [ ] 5.2 Implement dependency resolver
+- [x] 5.2 Implement dependency resolver
   - **File**: `.kiro/skills-system/core/DependencyResolver.ts` (new)
   - **Layer**: Core Business Logic
   - Resolve skill dependencies recursively
   - Check for missing dependencies
-  - Return resolution result
-  - _Requirements: 2.4, 7.2_
+  - **Detect and handle circular dependencies**
+  - Return resolution result with circular dependency warnings
+  - _Requirements: 2.4, 7.2, 11.8, 11.9_
   - _Effort: High_
+  - **Known Issue**: Current skills have circular dependencies (mystery-case-generator ↔ gemini-image-generator)
+  - **Solution**: Implement cycle detection and break cycles by skipping already-visited dependencies
 
-- [ ] 5.3 Implement skill chain builder
+- [x] 5.3 Implement skill chain builder
   - **File**: `.kiro/skills-system/core/SkillChainBuilder.ts` (new)
   - **Layer**: Core Business Logic
   - Build execution chain for complex tasks
@@ -184,7 +187,7 @@ This document breaks down the implementation of Claude Skills Integration into m
   - _Requirements: 7.1, 7.2, 7.3_
   - _Effort: High_
 
-- [ ] 5.4 Integrate skill activator
+- [x] 5.4 Integrate skill activator
   - **File**: `.kiro/skills-system/core/SkillActivator.ts` (new)
   - **Layer**: Core Business Logic
   - Implement `activateByKeywords()` and `activateSkill()`
@@ -197,7 +200,7 @@ This document breaks down the implementation of Claude Skills Integration into m
 
 ## Phase 4: Script Execution & Security
 
-- [ ] 6.1 Implement sandbox creator
+- [x] 6.1 Implement sandbox creator
   - **File**: `.kiro/skills-system/sandbox/SandboxCreator.ts` (new)
   - **Layer**: Core Business Logic
   - Create isolated execution environment
@@ -206,7 +209,7 @@ This document breaks down the implementation of Claude Skills Integration into m
   - _Requirements: 12.1, 12.2, 12.6_
   - _Effort: High_
 
-- [ ] 6.2 Implement permission checker
+- [x] 6.2 Implement permission checker
   - **File**: `.kiro/skills-system/sandbox/PermissionChecker.ts` (new)
   - **Layer**: Core Business Logic
   - Check file system permissions
@@ -215,7 +218,7 @@ This document breaks down the implementation of Claude Skills Integration into m
   - _Requirements: 12.1, 12.2, 12.3, 12.4_
   - _Effort: Medium_
 
-- [ ] 6.3 Implement resource limiter
+- [x] 6.3 Implement resource limiter
   - **File**: `.kiro/skills-system/sandbox/ResourceLimiter.ts` (new)
   - **Layer**: Core Business Logic
   - Limit CPU usage
@@ -224,7 +227,7 @@ This document breaks down the implementation of Claude Skills Integration into m
   - _Requirements: 12.6, 12.7_
   - _Effort: Medium_
 
-- [ ] 7.1 Implement rollback manager
+- [x] 7.1 Implement rollback manager
   - **File**: `.kiro/skills-system/core/RollbackManager.ts` (new)
   - **Layer**: Core Business Logic
   - Create file snapshots (checkpoints)
@@ -233,7 +236,7 @@ This document breaks down the implementation of Claude Skills Integration into m
   - _Requirements: 4.5, 4.7, 11.5_
   - _Effort: High_
 
-- [ ] 7.2 Implement execution tracker
+- [x] 7.2 Implement execution tracker
   - **File**: `.kiro/skills-system/core/ExecutionTracker.ts` (new)
   - **Layer**: Core Business Logic
   - Track execution status
@@ -242,7 +245,7 @@ This document breaks down the implementation of Claude Skills Integration into m
   - _Requirements: 4.4, 7.4_
   - _Effort: Medium_
 
-- [ ] 7.3 Implement script executor
+- [x] 7.3 Implement script executor
   - **File**: `.kiro/skills-system/core/ScriptExecutor.ts` (new)
   - **Layer**: Core Business Logic
   - Execute scripts in sandbox
@@ -251,7 +254,7 @@ This document breaks down the implementation of Claude Skills Integration into m
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7_
   - _Effort: High_
 
-- [ ] 8.1 Implement package manager
+- [x] 8.1 Implement package manager
   - **File**: `.kiro/skills-system/core/PackageManager.ts` (new)
   - **Layer**: Core Business Logic
   - Check installed packages
@@ -260,7 +263,7 @@ This document breaks down the implementation of Claude Skills Integration into m
   - _Requirements: 2.4_
   - _Effort: Medium_
 
-- [ ] 8.2 Implement sandbox package manager
+- [x] 8.2 Implement sandbox package manager
   - **File**: `.kiro/skills-system/sandbox/SandboxPackageManager.ts` (new)
   - **Layer**: Core Business Logic
   - Create isolated node_modules
@@ -269,7 +272,7 @@ This document breaks down the implementation of Claude Skills Integration into m
   - _Requirements: 12.6_
   - _Effort: High_
 
-- [ ] 8.3 Implement dependency manager
+- [x] 8.3 Implement dependency manager
   - **File**: `.kiro/skills-system/core/DependencyManager.ts` (new)
   - **Layer**: Core Business Logic
   - Resolve all dependencies (skills, packages, APIs)
@@ -282,7 +285,7 @@ This document breaks down the implementation of Claude Skills Integration into m
 
 ## Phase 5: User Interface
 
-- [ ] 9.1 Create skill activation notification
+- [x] 9.1 Create skill activation notification
   - **File**: `.kiro/skills-system/ui/SkillActivationNotification.tsx` (new)
   - **Layer**: Client Component
   - Display activated skill name
@@ -290,7 +293,7 @@ This document breaks down the implementation of Claude Skills Integration into m
   - _Requirements: 2.2, 2.6_
   - _Effort: Low_
 
-- [ ] 9.2 Create skill selection dialog
+- [x] 9.2 Create skill selection dialog
   - **File**: `.kiro/skills-system/ui/SkillSelectionDialog.tsx` (new)
   - **Layer**: Client Component
   - Display multiple matching skills
@@ -299,7 +302,7 @@ This document breaks down the implementation of Claude Skills Integration into m
   - _Requirements: 2.4_
   - _Effort: Medium_
 
-- [ ] 9.3 Create action button component
+- [x] 9.3 Create action button component
   - **File**: `.kiro/skills-system/ui/ActionButton.tsx` (new)
   - **Layer**: Client Component
   - Clickable button for script execution
@@ -307,7 +310,7 @@ This document breaks down the implementation of Claude Skills Integration into m
   - _Requirements: 4.2_
   - _Effort: Low_
 
-- [ ] 10.1 Create skill card component
+- [x] 10.1 Create skill card component
   - **File**: `.kiro/skills-system/ui/SkillCard.tsx` (new)
   - **Layer**: Client Component
   - Display skill name, version, description
@@ -316,7 +319,7 @@ This document breaks down the implementation of Claude Skills Integration into m
   - _Requirements: 5.1_
   - _Effort: Medium_
 
-- [ ] 10.2 Create skill panel component
+- [x] 10.2 Create skill panel component
   - **File**: `.kiro/skills-system/ui/SkillPanel.tsx` (new)
   - **Layer**: Client Component
   - Side panel with tabs (Overview, Scripts, Examples)
@@ -325,7 +328,7 @@ This document breaks down the implementation of Claude Skills Integration into m
   - _Requirements: 5.2, 5.3_
   - _Effort: High_
 
-- [ ] 10.3 Create skill list view
+- [x] 10.3 Create skill list view
   - **File**: `.kiro/skills-system/ui/SkillListView.tsx` (new)
   - **Layer**: Client Component
   - Virtual scrolling for performance
@@ -460,30 +463,46 @@ This document breaks down the implementation of Claude Skills Integration into m
   - _Requirements: All_
   - _Effort: Medium_
 
-- [ ] 15.2 Integrate with Kiro chat
-  - **File**: Update Kiro chat component (update)
-  - **Layer**: Client Component
-  - Detect skill keywords in user messages
-  - Display skill notifications
-  - Render action buttons
+- [ ] 15.2 Integrate skill system with Kiro IDE context
+  - **File**: Create `.kiro/steering/skills-integration.md` (new)
+  - **Layer**: Steering Rule
+  - Document available skills and their triggers
+  - Provide skill activation instructions for AI
+  - Enable AI to recognize and suggest skills
+  - **Testing**: Chat with AI and mention skill keywords
+  - **Test Keywords**: "improve prompt", "generate case", "debug error"
   - _Requirements: 2.1, 2.2, 4.2_
-  - _Effort: High_
-
-- [ ] 15.3 Add skill tab to Kiro IDE
-  - **File**: Update Kiro IDE layout (update)
-  - **Layer**: Client Component
-  - Add "Skills" tab
-  - Display skill list view
-  - _Requirements: 5.1_
   - _Effort: Medium_
+  - **Note**: This makes skills available to AI through Kiro's steering system
 
-- [ ] 15.4 Integrate with steering system
-  - **File**: Update Kiro steering loader (update)
-  - **Layer**: Core Business Logic
-  - Load steering rules
-  - Merge with skill contexts
+- [ ] 15.2.1 Create skill activation demo script
+  - **File**: `.kiro/skills-system/demo-skill-activation.ts` (already exists)
+  - **Layer**: Integration Test
+  - Test keyword detection works
+  - Verify skill discovery and activation
+  - Test multiple skill activation scenarios
+  - **Test Command**: `npx tsx .kiro/skills-system/demo-skill-activation.ts`
+  - _Requirements: 2.1, 2.2_
+  - _Effort: Low_
+  - **Status**: Already implemented, just needs testing
+
+- [ ] 15.3 Document skill usage for developers
+  - **File**: `docs/SKILLS_USAGE_GUIDE.md` (new)
+  - **Layer**: Documentation
+  - How to use skills in this project
+  - How to create new skills
+  - How to test skills
+  - _Requirements: 5.1_
+  - _Effort: Low_
+
+- [ ] 15.4 Create skill context loader utility
+  - **File**: `.kiro/skills-system/utils/SkillContextLoader.ts` (new)
+  - **Layer**: Utility
+  - Load skill PROMPT.md files
+  - Merge with project context
+  - Cache loaded skills
   - _Requirements: 3.1, 3.2, 3.3_
-  - _Effort: High_
+  - _Effort: Medium_
 
 - [ ] 16.1 Write unit tests for core components
   - Test SkillDiscoveryService

@@ -1,386 +1,296 @@
-# Serial Development Protocol - COMPREHENSIVE ENFORCEMENT SYSTEM
+---
+inclusion: always
+---
+# 🚨 Serial Development Protocol (MANDATORY)
 
-## Core Principle: Vertical Slice Completion Before Horizontal Expansion
+**Status**: ALWAYS ENFORCED  
+**Full Documentation**: `#[[file:.kiro/docs.md/serial-development-protocol.md]]`
 
-**ABSOLUTE RULE: Complete one full vertical slice before adding any horizontal features**
+---
 
-### Definition of Vertical Slice
-A vertical slice includes:
-1. **Database Schema** (if data is involved)
-2. **API Endpoint** (backend logic)
-3. **Frontend Component** (user interface)
-4. **Integration Test** (end-to-end validation)
+## ⚠️ CRITICAL: Core Rule
 
-### Definition of Horizontal Expansion
-❌ **Prohibited until vertical slice is complete:**
-- Adding more API endpoints
-- Creating additional components
-- Building related features
-- Expanding functionality scope
-
-## Enforcement Mechanism 1: Single-Item Focus Validation
-
-### Pre-Development Decision Tree
+**Vertical Slice First** - Complete one full slice before horizontal expansion
 
 ```
-START: New Development Task
-    ↓
-Is there an existing vertical slice for this domain?
-    ↓ NO                           ↓ YES
-Create minimal vertical slice      Is the existing slice complete?
-    ↓                                  ↓ NO              ↓ YES
-Database → API → Frontend → Test       Complete it first  Add to existing slice
-    ↓                                  ↓                  ↓
-Validate end-to-end                    Validate           Validate integration
-    ↓                                  ↓                  ↓
-COMMIT and DEPLOY                      COMMIT             COMMIT
+❌ WRONG: Build all APIs, then all components, then test
+✅ RIGHT: Build one complete feature (DB → API → UI → Test), then next feature
 ```
 
-### Single-Item Focus Checklist
-Before starting any development:
+---
 
-- [ ] **One Domain**: Am I working on exactly one business domain?
-- [ ] **One Flow**: Am I implementing exactly one user flow?
-- [ ] **One Integration**: Am I connecting exactly one frontend to one backend?
-- [ ] **One Test**: Can I write exactly one integration test for this?
+## 📐 Vertical Slice = 4 Layers (MANDATORY)
 
-### Focus Validation Questions
-1. **What single user action am I enabling?**
-2. **What single piece of data flows through the system?**
-3. **What single integration am I validating?**
-
-If you can't answer these with one clear response each, the scope is too broad.
-
-## Enforcement Mechanism 2: Vertical Slice Completion Validation
-
-### Required Completion Sequence
-
-#### Phase 1: Data Layer (if needed)
-```sql
--- Example: User authentication slice
-CREATE TABLE users (
-  id UUID PRIMARY KEY,
-  email VARCHAR UNIQUE NOT NULL,
-  password_hash VARCHAR NOT NULL
-);
-```
-
-**Validation**: Can I insert and query test data?
-
-#### Phase 2: API Layer
-```typescript
-// Example: Single endpoint for the slice
-POST /auth/login
-{
-  "email": "user@example.com",
-  "password": "password123"
-}
-```
-
-**Validation**: Does the endpoint work with real database?
-
-#### Phase 3: Frontend Layer
-```typescript
-// Example: Single component for the slice
-function LoginForm() {
-  // Connects to the single API endpoint
-  // Handles the single user flow
-}
-```
-
-**Validation**: Does the component successfully call the API?
-
-#### Phase 4: Integration Test
-```typescript
-// Example: End-to-end test for the complete slice
-test('user can log in successfully', async () => {
-  // Test the complete vertical slice
-  // Database → API → Frontend → User feedback
-})
-```
-
-**Validation**: Does the entire flow work end-to-end?
-
-### Completion Validation Checklist
-A vertical slice is complete when:
-
-- [ ] **Database**: Schema exists and accepts test data
-- [ ] **API**: Endpoint works with real database
-- [ ] **Frontend**: Component successfully calls API
-- [ ] **Integration**: End-to-end test passes
-- [ ] **Deployment**: Slice works in target environment
-- [ ] **User Validation**: Single user flow is demonstrable
-
-## Enforcement Mechanism 3: Anti-Parallel Development Validation
-
-### Prohibited Parallel Activities
-
-#### ❌ NEVER Do These Simultaneously
-1. **Multiple API Endpoints**: Don't build GET and POST at the same time
-2. **Multiple Components**: Don't build LoginForm and SignupForm together
-3. **Multiple Domains**: Don't work on auth and user profiles simultaneously
-4. **Frontend + Backend**: Don't build UI while API is incomplete
-5. **Multiple Integrations**: Don't connect to multiple services at once
-
-#### ✅ ALWAYS Do These Serially
-1. **Complete Database Schema** → Then build API
-2. **Complete API Endpoint** → Then build Frontend
-3. **Complete Frontend Component** → Then write Integration Test
-4. **Complete Integration Test** → Then deploy and validate
-5. **Complete One Slice** → Then start next slice
-
-### Serial Development Decision Tree
+### Complete in this exact order:
 
 ```
-New Feature Request
-    ↓
-Does this extend an existing complete vertical slice?
-    ↓ YES                          ↓ NO
-Is the extension atomic?           Create new minimal slice
-    ↓ YES        ↓ NO                  ↓
-Add to slice    Break down         Database → API → Frontend → Test
-    ↓              ↓                   ↓
-Validate       Create new slice    Validate end-to-end
-    ↓              ↓                   ↓
-Deploy         Repeat process      Deploy and validate
+1. Database Layer
+   ├─ Schema definition
+   ├─ Migration file
+   ├─ Apply migration immediately
+   └─ Test data insertion
+
+2. API Layer
+   ├─ Endpoint implementation
+   ├─ Database connection
+   ├─ Request/response types
+   └─ Error handling
+
+3. Frontend Layer
+   ├─ Component implementation
+   ├─ API integration
+   ├─ State management
+   └─ UI rendering
+
+4. Integration Test
+   ├─ End-to-end test
+   ├─ User flow validation
+   ├─ Error case testing
+   └─ Performance check
 ```
 
-## Communication Validation Protocol
+---
 
-### End-to-End Communication Checklist
-For every vertical slice, validate:
+## ✅ Completion Checklist (MANDATORY)
 
-#### Database ↔ API Communication
-- [ ] **Connection**: API can connect to database
-- [ ] **Queries**: API can read/write data correctly
-- [ ] **Error Handling**: API handles database errors gracefully
-- [ ] **Data Validation**: API validates data before database operations
-
-#### API ↔ Frontend Communication
-- [ ] **Network**: Frontend can reach API endpoints
-- [ ] **Data Format**: API returns data in expected format
-- [ ] **Error Handling**: Frontend handles API errors gracefully
-- [ ] **Authentication**: API security works with frontend
-
-#### Frontend ↔ User Communication
-- [ ] **UI Feedback**: User sees loading, success, and error states
-- [ ] **Data Display**: User sees data from API correctly formatted
-- [ ] **Interaction**: User actions trigger correct API calls
-- [ ] **Navigation**: User flow completes successfully
-
-### Communication Failure Recovery
-If any communication layer fails:
-
-1. **STOP** all development on other layers
-2. **IDENTIFY** the specific communication failure
-3. **FIX** the communication issue
-4. **VALIDATE** the fix with tests
-5. **RESUME** development only after communication works
-
-## Examples and Anti-Patterns
-
-### ✅ CORRECT: Serial Vertical Slice Development
-
-#### Example: User Authentication Feature
-```
-Step 1: Database Schema
-- Create users table
-- Test data insertion/retrieval
-- VALIDATE: Can store user data
-
-Step 2: API Endpoint
-- Create POST /auth/login
-- Connect to database
-- Test with real data
-- VALIDATE: Login works via API
-
-Step 3: Frontend Component
-- Create LoginForm component
-- Connect to login API
-- Handle success/error states
-- VALIDATE: User can log in via UI
-
-Step 4: Integration Test
-- Test complete login flow
-- Database → API → Frontend → User
-- VALIDATE: End-to-end login works
-
-Step 5: Deploy and Validate
-- Deploy to staging
-- Test in real environment
-- VALIDATE: Production-ready slice
-
-ONLY THEN: Start next slice (e.g., user registration)
-```
-
-### ❌ INCORRECT: Parallel Development
-
-#### Anti-Pattern: Multiple Features Simultaneously
-```
-❌ Building login AND registration forms together
-❌ Creating user API AND profile API simultaneously
-❌ Working on authentication AND authorization at once
-❌ Building frontend while backend is incomplete
-❌ Adding features before core slice is deployed
-```
-
-### ✅ CORRECT: Minimal Viable Slice
-
-#### Example: E-commerce Product Display
-```
-Minimal Slice:
-- Database: products table with id, name, price
-- API: GET /products (returns list of products)
-- Frontend: ProductList component (displays products)
-- Test: User can see list of products
-
-NOT included in first slice:
-- Product details page
-- Shopping cart
-- User reviews
-- Product search
-- Product categories
-```
-
-### ❌ INCORRECT: Over-Ambitious Slice
-
-#### Anti-Pattern: Complete E-commerce System
-```
-❌ Trying to build entire product catalog at once
-❌ Including cart, checkout, and payment in first slice
-❌ Building admin panel alongside customer interface
-❌ Adding search before basic display works
-```
-
-## Validation Systems Implementation
-
-### Automated Serial Development Checks
-
-#### 1. Slice Completeness Validation
-```typescript
-interface VerticalSliceValidator {
-  validateDatabaseLayer(): boolean
-  validateAPILayer(): boolean
-  validateFrontendLayer(): boolean
-  validateIntegrationTest(): boolean
-  isSliceComplete(): boolean
-}
-```
-
-#### 2. Anti-Parallel Development Detection
-```typescript
-interface ParallelDevelopmentDetector {
-  detectMultipleEndpoints(): string[]
-  detectMultipleComponents(): string[]
-  detectIncompleteIntegrations(): string[]
-  flagParallelViolations(): ValidationError[]
-}
-```
-
-#### 3. Communication Validation
-```typescript
-interface CommunicationValidator {
-  testDatabaseConnection(): boolean
-  testAPIEndpoints(): boolean
-  testFrontendIntegration(): boolean
-  validateEndToEndFlow(): boolean
-}
-```
-
-### Manual Validation Checkpoints
-
-#### Before Starting Development
-- [ ] **Single Focus**: Exactly one user flow identified
-- [ ] **Slice Scope**: Minimal viable implementation defined
-- [ ] **Dependencies**: All required layers identified
-- [ ] **Success Criteria**: Clear completion definition
-
-#### During Development
-- [ ] **Layer Completion**: Current layer fully working before next
-- [ ] **Communication Testing**: Each integration validated
-- [ ] **No Shortcuts**: No skipping layers or parallel work
-- [ ] **Continuous Validation**: Tests pass at each step
-
-#### Before Completion
-- [ ] **End-to-End Test**: Complete user flow works
-- [ ] **Deployment Ready**: Slice works in target environment
-- [ ] **User Demonstrable**: Feature can be shown to users
-- [ ] **Next Slice Planned**: Clear next development target
-
-## Fallback Procedures
-
-### When Serial Development Breaks Down
-
-#### 1. Parallel Work Detection
-**Signal**: Multiple incomplete features in progress
-
-**Recovery**:
-1. **STOP** all parallel work immediately
-2. **IDENTIFY** the most critical slice
-3. **COMPLETE** that slice fully
-4. **VALIDATE** end-to-end functionality
-5. **THEN** return to other work
-
-#### 2. Integration Failure
-**Signal**: Layers don't communicate properly
-
-**Recovery**:
-1. **ISOLATE** the communication failure
-2. **REVERT** to last working integration
-3. **FIX** the specific communication issue
-4. **TEST** the fix thoroughly
-5. **RESUME** development
-
-#### 3. Scope Creep
-**Signal**: Slice becomes too large or complex
-
-**Recovery**:
-1. **PAUSE** current development
-2. **EXTRACT** the minimal viable slice
-3. **COMPLETE** the minimal slice first
-4. **VALIDATE** the core functionality
-5. **PLAN** additional slices for extra features
-
-### Recovery Protocol Decision Tree
+**Before moving to next feature:**
 
 ```
-Development Problem Detected
-    ↓
-Is it a communication failure?
-    ↓ YES                    ↓ NO
-Fix integration first       Is it scope creep?
-    ↓                           ↓ YES              ↓ NO
-Validate fix                Extract minimal slice  Is it parallel work?
-    ↓                           ↓                      ↓ YES
-Resume development          Complete minimal first  Stop parallel work
-                               ↓                      ↓
-                           Plan additional slices  Complete one slice
-                                                      ↓
-                                                  Resume serially
+[ ] Database schema created and applied
+[ ] Database works (verified with test queries)
+[ ] API endpoint implemented
+[ ] API works with database (tested with curl/Postman)
+[ ] Frontend component implemented
+[ ] Frontend works with API (tested in browser)
+[ ] Integration test passes
+[ ] Deployed and validated in dev environment
+[ ] User flow demonstrable (can show working feature)
+[ ] All TypeScript errors resolved
+[ ] No console errors in browser
 ```
 
-## Conflict Resolution Hierarchy
+**If ANY checkbox is unchecked, DO NOT proceed to next feature.**
 
-### When Serial Development Conflicts with Other Priorities
+---
 
-1. **Slice Completion** > Feature Velocity
-   - Better to complete one slice than start many
-   - Working software is more valuable than feature count
+## ❌ NEVER Do Simultaneously
 
-2. **Communication Validation** > Implementation Speed
-   - Always validate integration before adding features
-   - Broken communication compounds problems
+**These are FORBIDDEN:**
 
-3. **End-to-End Testing** > Unit Testing
-   - Integration tests prove the slice works
-   - Unit tests don't validate communication
+```
+❌ Multiple API endpoints at once
+❌ Multiple components at once
+❌ Multiple database tables at once
+❌ Multiple domains/features at once
+❌ Frontend + incomplete backend
+❌ Backend + incomplete database
+❌ Testing + incomplete implementation
+```
 
-4. **Deployment Readiness** > Local Development
-   - Slice must work in target environment
-   - Local-only solutions create deployment debt
+**Why forbidden:**
+- Creates integration hell
+- Hard to debug
+- Wastes time on rework
+- Blocks other work
+- Causes merge conflicts
 
-5. **User Demonstrability** > Technical Completeness
-   - Users must be able to complete the flow
-   - Technical perfection without user value is waste
+---
 
-This serial development protocol ensures reliable, demonstrable progress while preventing the integration debt and coordination failures that plague parallel development approaches.
+## ✅ ALWAYS Do Serially
+
+**Strict order:**
+
+```
+Database → API → Frontend → Test → Deploy → Next Feature
+
+Example:
+1. User Login Feature
+   ├─ users table → auth API → login form → test → deploy
+   └─ ✅ COMPLETE
+
+2. User Profile Feature
+   ├─ profiles table → profile API → profile page → test → deploy
+   └─ ✅ COMPLETE
+
+3. Settings Feature
+   ├─ settings table → settings API → settings page → test → deploy
+   └─ ✅ COMPLETE
+```
+
+---
+
+## 🔍 Self-Verification Protocol
+
+**Before starting work:**
+
+```
+[ ] Am I working on ONE feature only?
+[ ] Have I completed the previous feature's 4 layers?
+[ ] Is the previous feature deployed and working?
+[ ] Am I starting with the database layer?
+```
+
+**During work:**
+
+```
+[ ] Am I still on the same feature?
+[ ] Have I completed the current layer before moving to next?
+[ ] Am I testing each layer as I complete it?
+[ ] Am I documenting as I go?
+```
+
+**Before moving to next feature:**
+
+```
+[ ] Is the current feature 100% complete?
+[ ] Does it pass all 4 layers?
+[ ] Is it deployed and demonstrable?
+[ ] Have I documented what I built?
+```
+
+---
+
+## 🚨 Enforcement Rules
+
+### Rule 1: One Feature at a Time
+```
+IF (working on multiple features):
+  → STOP immediately
+  → Complete current feature first
+  → Then start next feature
+```
+
+### Rule 2: Complete All 4 Layers
+```
+IF (moving to next feature):
+  → VERIFY all 4 layers complete
+  → VERIFY integration test passes
+  → VERIFY deployed and working
+  → THEN proceed
+```
+
+### Rule 3: No Horizontal Expansion
+```
+IF (tempted to build multiple APIs):
+  → STOP
+  → Complete one full vertical slice
+  → THEN build next API
+```
+
+---
+
+## 📊 Progress Tracking
+
+**Use this format:**
+
+```markdown
+## Feature: User Authentication
+
+### Layer 1: Database ✅
+- [x] users table schema
+- [x] Migration applied
+- [x] Test data inserted
+- [x] Verified with SQL query
+
+### Layer 2: API ✅
+- [x] POST /api/auth/login endpoint
+- [x] Database connection working
+- [x] Request/response types defined
+- [x] Error handling implemented
+- [x] Tested with curl
+
+### Layer 3: Frontend ✅
+- [x] LoginForm component
+- [x] API integration
+- [x] State management
+- [x] UI rendering
+- [x] Tested in browser
+
+### Layer 4: Integration Test ✅
+- [x] End-to-end test written
+- [x] User flow validated
+- [x] Error cases tested
+- [x] Performance acceptable
+
+### Deployment ✅
+- [x] Deployed to dev
+- [x] Smoke tested
+- [x] User flow demonstrable
+
+**Status**: ✅ COMPLETE - Ready for next feature
+```
+
+---
+
+## ⚠️ Common Violations & Fixes
+
+### Violation 1: Building Multiple APIs
+```
+❌ BAD:
+- Implement /api/users
+- Implement /api/posts
+- Implement /api/comments
+- Then build frontend
+
+✅ GOOD:
+- Complete /api/users + frontend + test
+- Then complete /api/posts + frontend + test
+- Then complete /api/comments + frontend + test
+```
+
+### Violation 2: Frontend Before Backend
+```
+❌ BAD:
+- Build all UI components
+- Then connect to APIs later
+
+✅ GOOD:
+- Build database + API
+- Then build UI component
+- Test integration immediately
+```
+
+### Violation 3: No Integration Testing
+```
+❌ BAD:
+- Build feature
+- Move to next feature
+- Test later
+
+✅ GOOD:
+- Build feature
+- Test integration immediately
+- Verify working
+- Then move to next feature
+```
+
+---
+
+## 🎯 Benefits of Serial Development
+
+**Proven advantages:**
+
+1. **Early Integration**: Catch issues immediately
+2. **Demonstrable Progress**: Always have working features
+3. **Easier Debugging**: Small, isolated changes
+4. **Better Planning**: See actual progress
+5. **Reduced Risk**: No big-bang integration
+6. **Faster Delivery**: Ship features incrementally
+7. **Better Quality**: Test as you go
+
+---
+
+## 📖 Full Documentation
+
+**Complete guidelines with examples:**
+`#[[file:.kiro/docs.md/serial-development-protocol.md]]`
+
+**Related documentation:**
+- Atomic development: `#[[file:.kiro/docs.md/atomic-development-principles.md]]`
+- Step-by-step process: `#[[file:.kiro/docs.md/step-by-step.md]]`
+
+---
+
+**Status**: ✅ ALWAYS ENFORCED  
+**Last Updated**: 2025-10-25  
+**Enforcement**: MANDATORY - NO EXCEPTIONS

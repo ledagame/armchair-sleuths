@@ -1,0 +1,1222 @@
+# Design Document
+
+## Overview
+
+본 문서는 용의자 프롬프트 시스템 개선을 위한 설계를 정의합니다. 기존 suspect-ai-prompter 스킬(v2.0.0)을 기반으로 Few-Shot 예시 완성, 품질 검증 강화, 다국어 지원을 추가합니다.
+
+### 설계 목표
+
+1. **완성도**: 40개 Few-Shot 예시 작성 및 PROMPT.md 통합
+2. **자동화**: 품질 검증을 SuspectAIService에 실시간 통합
+3. **확장성**: 다국어 지원 및 새 아키타입 추가 용이성
+4. **일관성**: 모든 아키타입이 동일한 품질 기준 충족
+5. **효율성**: 통합 워크플로우로 개발 시간 단축
+
+## Architecture
+
+### 시스템 구성도
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Suspect Prompt System                     │
+├─────────────────────────────────────────────────────────────┤
+│                                                               │
+│  ┌──────────────────┐      ┌──────────────────┐            │
+│  │  PROMPT.md       │      │  Archetype YAML  │            │
+│  │  (Template)      │◄─────│  (Data)          │            │
+│  └──────────────────┘      └──────────────────┘            │
+│           │                         │                        │
+│           ▼                         ▼                        │
+│  ┌──────────────────────────────────────────┐              │
+│  │      SuspectAIService                     │              │
+│  │  - Load Template                          │              │
+│  │  - Load Archetype Data                    │              │
+│  │  - Variable Substitution                  │              │
+│  │  - Generate AI Response                   │              │
+│  │  - Quality Validation (NEW)               │              │
+│  └──────────────────────────────────────────┘              │
+│           │                                                   │
+│           ▼                                                   │
+│  ┌──────────────────────────────────────────┐              │
+│  │      Quality Validation System            │              │
+│  │  - Character Consistency                  │              │
+│  │  - Emotional Alignment                    │              │
+│  │  - Information Content                    │              │
+│  │  - Natural Dialogue                       │              │
+│  └──────────────────────────────────────────┘              │
+│                                                               │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│              Development Tools (suspect-ai-prompter)         │
+├─────────────────────────────────────────────────────────────┤
+│                                                               │
+│  ┌──────────────────┐  ┌──────────────────┐                │
+│  │ generate-        │  │ generate-        │                │
+│  │ archetype.ts     │  │ examples.ts      │                │
+│  └──────────────────┘  └──────────────────┘                │
+│           │                      │                           │
+│           ▼                      ▼                           │
+│  ┌──────────────────┐  ┌──────────────────┐                │
+│  │ improve-         │  │ validate-        │                │
+│  │ prompt.ts        │  │ quality.ts       │                │
+│  └──────────────────┘  └──────────────────┘                │
+│                                                               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+
+## Components and Interfaces
+
+### 1. Few-Shot Example System
+
+#### FewShotExample Interface
+
+```typescript
+interface FewShotExample {
+  id: string;
+  archetype: string;
+  emotionalState: EmotionalState;
+  isGuilty: boolean;
+  question: string;
+  response: string;
+  analysis: {
+    characterConsistency: string;
+    emotionalAlignment: string;
+    informationContent: string;
+    naturalDialogue: string;
+    wordCount: number;
+    targetRange: [number, number];
+  };
+}
+```
+
+#### FewShotExampleGenerator Class
+
+```typescript
+class FewShotExampleGenerator {
+  /**
+   * 특정 아키타입과 감정 상태에 대한 예시 생성
+   */
+  generateExample(
+    archetype: string,
+    emotionalState: EmotionalState,
+    isGuilty: boolean
+  ): FewShotExample;
+
+  /**
+   * 아키타입에 대한 8개 예시 전체 생성
+   */
+  generateAllExamples(archetype: string): FewShotExample[];
+
+  /**
+   * 예시를 마크다운 형식으로 포맷
+   */
+  formatAsMarkdown(example: FewShotExample): string;
+}
+```
+
+### 2. Quality Validation System
+
+#### QualityValidator Interface
+
+```typescript
+interface QualityScores {
+  characterConsistency: number;
+  emotionalAlignment: number;
+  informationContent: number;
+  naturalDialogue: number;
+  overall: number;
+}
+
+interface ValidationResult {
+  passed: boolean;
+  scores: QualityScores;
+  feedback: string[];
+  rating: 'Excellent' | 'Good' | 'Acceptable' | 'Poor' | 'Unacceptable';
+}
+
+class QualityValidator {
+  /**
+   * 응답 품질 검증
+   */
+  validate(
+    response: string,
+    archetype: string,
+    emotionalState: EmotionalState,
+    isGuilty: boolean,
+    suspicionLevel: number,
+    vocabulary: string[]
+  ): ValidationResult;
+
+  /**
+   * Character Consistency 점수 계산
+   */
+  scoreCharacterConsistency(
+    response: string,
+    archetype: string,
+    vocabulary: string[]
+  ): number;
+
+  /**
+   * Emotional Alignment 점수 계산
+   */
+  scoreEmotionalAlignment(
+    response: string,
+    emotionalState: EmotionalState,
+    suspicionLevel: number
+  ): number;
+
+  /**
+   * Information Content 점수 계산
+   */
+  scoreInformationContent(
+    response: string,
+    isGuilty: boolean,
+    emotionalState: EmotionalState
+  ): number;
+
+  /**
+   * Natural Dialogue 점수 계산
+   */
+  scoreNaturalDialogue(response: string): number;
+}
+```
+
+
+### 3. Multilingual Support System
+
+#### LanguageConfig Interface
+
+```typescript
+interface LanguageConfig {
+  code: string; // 'en', 'ko'
+  name: string; // 'English', '한국어'
+  wordCountMultiplier: number; // 1.0 for English, 0.75 for Korean
+  promptFile: string; // 'PROMPT.en.md', 'PROMPT.ko.md'
+  qualityCriteria: {
+    characterConsistency: number;
+    emotionalAlignment: number;
+    informationContent: number;
+    naturalDialogue: number;
+    overall: number;
+  };
+}
+
+class MultilingualPromptManager {
+  /**
+   * 지원 언어 목록 로드
+   */
+  getSupportedLanguages(): LanguageConfig[];
+
+  /**
+   * 특정 언어의 PROMPT.md 로드
+   */
+  loadPromptTemplate(languageCode: string): string;
+
+  /**
+   * 언어별 단어 수 범위 계산
+   */
+  calculateWordCountRange(
+    emotionalState: EmotionalState,
+    languageCode: string
+  ): [number, number];
+
+  /**
+   * 언어별 품질 기준 적용
+   */
+  getQualityCriteria(languageCode: string): LanguageConfig['qualityCriteria'];
+}
+```
+
+### 4. Archetype Management System
+
+#### ArchetypeData Interface
+
+```typescript
+interface ArchetypeData {
+  name: {
+    en: string;
+    ko: string;
+  };
+  aliases: string[];
+  definition: string;
+  personality: string[];
+  background: string[];
+  coreValues: string[];
+  greatestFears: string[];
+  vocabulary: {
+    primary: string[];
+    secondary: string[];
+  };
+  characteristicPhrases: string[]; // NEW
+  speechPatterns: {
+    [key in EmotionalState]: {
+      mindset: string;
+      tone: string;
+      patterns: string[];
+    };
+  };
+  fewShotExamples?: FewShotExample[]; // NEW
+}
+
+class ArchetypeManager {
+  /**
+   * 아키타입 데이터 로드
+   */
+  loadArchetype(name: string): ArchetypeData;
+
+  /**
+   * 모든 아키타입 로드
+   */
+  loadAllArchetypes(): ArchetypeData[];
+
+  /**
+   * 아키타입 간 어휘 충돌 검사
+   */
+  checkVocabularyConflict(
+    archetype1: ArchetypeData,
+    archetype2: ArchetypeData
+  ): {
+    conflictRate: number;
+    conflicts: string[];
+  };
+
+  /**
+   * 새 아키타입 검증
+   */
+  validateNewArchetype(archetype: ArchetypeData): ValidationResult;
+}
+```
+
+
+### 5. Integrated Workflow System
+
+#### WorkflowOrchestrator Class
+
+```typescript
+class WorkflowOrchestrator {
+  /**
+   * 새 아키타입 생성 워크플로우
+   * generate-archetype → generate-examples → validate-quality
+   */
+  async createNewArchetype(
+    name: string,
+    interactive: boolean = true
+  ): Promise<{
+    archetypePath: string;
+    examplesGenerated: number;
+    validationResults: ValidationResult[];
+  }>;
+
+  /**
+   * 배치 품질 검증
+   * 모든 아키타입의 모든 예시 검증
+   */
+  async batchValidate(): Promise<{
+    totalExamples: number;
+    passedExamples: number;
+    failedExamples: number;
+    archetypeStats: Map<string, {
+      averageScore: number;
+      minScore: number;
+      maxScore: number;
+      failureRate: number;
+    }>;
+  }>;
+
+  /**
+   * PROMPT.md 개선 워크플로우
+   * improve-prompt → 수정 → validate-quality
+   */
+  async improvePrompt(
+    promptPath: string
+  ): Promise<{
+    improvements: string[];
+    estimatedImpact: {
+      characterConsistency: string;
+      emotionalAlignment: string;
+      overall: string;
+    };
+  }>;
+}
+```
+
+## Data Models
+
+### 1. Archetype YAML Structure
+
+```yaml
+# Phase 2: Multilingual name support
+name:
+  en: "Archetype Name"
+  ko: "아키타입 이름"
+
+# Aliases for flexible matching
+aliases:
+  - "Archetype Name"
+  - "아키타입 이름"
+  - "Alternative Name"
+
+definition: "One-sentence character definition"
+
+personality:
+  - "Trait 1"
+  - "Trait 2"
+  - "Trait 3"
+
+background:
+  - "Background fact 1"
+  - "Background fact 2"
+
+coreValues:
+  - "Value 1"
+  - "Value 2"
+
+greatestFears:
+  - "Fear 1"
+  - "Fear 2"
+
+vocabulary:
+  primary:
+    - "word1"
+    - "word2"
+    - "word3"
+    - "word4"
+    - "word5"
+    - "word6"
+    - "word7"
+    - "word8"
+  secondary:
+    - "word9"
+    - "word10"
+    - "word11"
+    - "word12"
+    - "word13"
+    - "word14"
+    - "word15"
+    - "word16"
+
+# NEW: Characteristic phrases
+characteristicPhrases:
+  - "Phrase 1"
+  - "Phrase 2"
+  - "Phrase 3"
+  - "Phrase 4"
+  - "Phrase 5"
+
+speechPatterns:
+  COOPERATIVE:
+    mindset: "How they think in this state"
+    tone: "How they sound"
+    patterns:
+      - "Example pattern 1"
+      - "Example pattern 2"
+      - "Example pattern 3"
+  NERVOUS:
+    mindset: "How they think in this state"
+    tone: "How they sound"
+    patterns:
+      - "Example pattern 1"
+      - "Example pattern 2"
+      - "Example pattern 3"
+  DEFENSIVE:
+    mindset: "How they think in this state"
+    tone: "How they sound"
+    patterns:
+      - "Example pattern 1"
+      - "Example pattern 2"
+      - "Example pattern 3"
+  AGGRESSIVE:
+    mindset: "How they think in this state"
+    tone: "How they sound"
+    patterns:
+      - "Example pattern 1"
+      - "Example pattern 2"
+      - "Example pattern 3"
+```
+
+
+### 2. PROMPT.md Structure (Enhanced)
+
+```markdown
+# Suspect Personality Core - AI Conversation Template
+
+## SYSTEM ROLE
+[AI role definition]
+
+## CHARACTER IDENTITY
+{{SUSPECT_NAME}}
+{{ARCHETYPE}}
+{{BACKGROUND}}
+
+## CORE PERSONALITY & VALUES
+{{PERSONALITY_TRAITS}}
+{{CHARACTER_DEFINITION}}
+{{CORE_VALUES}}
+
+## CURRENT EMOTIONAL STATE
+{{SUSPICION_LEVEL}}/100
+{{EMOTIONAL_STATE}}
+{{MINDSET}}
+{{TONE_GUIDANCE}}
+
+## GUILTY/INNOCENT STATUS & RESPONSE STRATEGY
+{{GUILTY_OR_INNOCENT_BLOCK}}
+
+## SPEECH PATTERNS & LINGUISTIC STYLE
+{{SPEECH_PATTERNS}}
+{{VOCABULARY}}
+{{CHARACTERISTIC_PHRASES}}
+
+## CONVERSATION CONTEXT
+{{CONVERSATION_HISTORY}}
+
+## RESPONSE GUIDELINES
+[7 guidelines with examples]
+
+## FEW-SHOT EXAMPLES (NEW)
+
+### Example 1: COOPERATIVE - INNOCENT
+**Detective:** "[question]"
+**{{SUSPECT_NAME}}:** "[response]"
+**[Analysis]**
+- Character consistency: [evaluation]
+- Emotional alignment: [evaluation]
+- Information content: [evaluation]
+- Natural dialogue: [evaluation]
+- Word count: [X words, target Y-Z]
+
+[... 7 more examples ...]
+
+## RESPONSE QUALITY EXAMPLES
+[Good vs Bad examples]
+
+## YOUR TASK
+[Final instruction]
+```
+
+### 3. Quality Validation Data Model
+
+```typescript
+interface QualityMetrics {
+  timestamp: Date;
+  archetype: string;
+  emotionalState: EmotionalState;
+  isGuilty: boolean;
+  suspicionLevel: number;
+  response: string;
+  scores: QualityScores;
+  passed: boolean;
+  feedback: string[];
+}
+
+interface QualityStatistics {
+  totalValidations: number;
+  passRate: number;
+  averageScores: QualityScores;
+  archetypeBreakdown: Map<string, {
+    validations: number;
+    passRate: number;
+    averageScores: QualityScores;
+  }>;
+  emotionalStateBreakdown: Map<EmotionalState, {
+    validations: number;
+    passRate: number;
+    averageScores: QualityScores;
+  }>;
+}
+```
+
+## Error Handling
+
+### 1. Template Loading Errors
+
+```typescript
+class PromptTemplateError extends Error {
+  constructor(
+    public templatePath: string,
+    public reason: string
+  ) {
+    super(`Failed to load prompt template: ${templatePath} - ${reason}`);
+  }
+}
+
+// Fallback strategy
+try {
+  template = await loadPromptTemplate(languageCode);
+} catch (error) {
+  console.error('Failed to load template:', error);
+  // Fallback to English template
+  template = await loadPromptTemplate('en');
+}
+```
+
+### 2. Archetype Data Errors
+
+```typescript
+class ArchetypeDataError extends Error {
+  constructor(
+    public archetypeName: string,
+    public missingFields: string[]
+  ) {
+    super(`Invalid archetype data: ${archetypeName} - Missing: ${missingFields.join(', ')}`);
+  }
+}
+
+// Validation
+function validateArchetypeData(data: ArchetypeData): void {
+  const requiredFields = [
+    'name', 'definition', 'personality', 'vocabulary',
+    'speechPatterns', 'characteristicPhrases'
+  ];
+
+  const missing = requiredFields.filter(field => !data[field]);
+
+  if (missing.length > 0) {
+    throw new ArchetypeDataError(data.name.en, missing);
+  }
+}
+```
+
+### 3. Quality Validation Errors
+
+```typescript
+class QualityValidationError extends Error {
+  constructor(
+    public response: string,
+    public reason: string
+  ) {
+    super(`Quality validation failed: ${reason}`);
+  }
+}
+
+// Graceful degradation
+try {
+  const result = qualityValidator.validate(response, ...params);
+  if (!result.passed) {
+    console.warn('Quality check failed:', result.feedback);
+    // Log but don't block in production
+  }
+} catch (error) {
+  console.error('Quality validation error:', error);
+  // Continue without validation in production
+}
+```
+
+
+## Testing Strategy
+
+### 1. Unit Tests
+
+#### FewShotExampleGenerator Tests
+
+```typescript
+describe('FewShotExampleGenerator', () => {
+  it('should generate example with correct structure', () => {
+    const generator = new FewShotExampleGenerator();
+    const example = generator.generateExample(
+      'Wealthy Heir',
+      'COOPERATIVE',
+      false
+    );
+
+    expect(example).toHaveProperty('question');
+    expect(example).toHaveProperty('response');
+    expect(example).toHaveProperty('analysis');
+    expect(example.analysis).toHaveProperty('wordCount');
+  });
+
+  it('should generate 8 examples for archetype', () => {
+    const generator = new FewShotExampleGenerator();
+    const examples = generator.generateAllExamples('Wealthy Heir');
+
+    expect(examples).toHaveLength(8);
+    // 4 emotional states × 2 guilt states
+  });
+});
+```
+
+#### QualityValidator Tests
+
+```typescript
+describe('QualityValidator', () => {
+  it('should score character consistency correctly', () => {
+    const validator = new QualityValidator();
+    const response = "I'll have my attorney review this matter.";
+    const vocabulary = ['attorney', 'position', 'reputation'];
+
+    const score = validator.scoreCharacterConsistency(
+      response,
+      'Wealthy Heir',
+      vocabulary
+    );
+
+    expect(score).toBeGreaterThanOrEqual(60);
+  });
+
+  it('should detect wrong archetype vocabulary', () => {
+    const validator = new QualityValidator();
+    const response = "Sir, I must maintain discretion."; // Butler vocabulary
+    const vocabulary = ['attorney', 'position']; // Wealthy Heir
+
+    const score = validator.scoreCharacterConsistency(
+      response,
+      'Wealthy Heir',
+      vocabulary
+    );
+
+    expect(score).toBeLessThan(60); // Should fail
+  });
+});
+```
+
+### 2. Integration Tests
+
+#### SuspectAIService Integration
+
+```typescript
+describe('SuspectAIService with Quality Validation', () => {
+  it('should validate response quality automatically', async () => {
+    const service = new SuspectAIService();
+    const response = await service.generateResponse({
+      suspect: mockSuspect,
+      question: "Where were you at 9 PM?",
+      suspicionLevel: 25
+    });
+
+    expect(response).toHaveProperty('text');
+    expect(response).toHaveProperty('qualityScore');
+    expect(response.qualityScore.overall).toBeGreaterThanOrEqual(65);
+  });
+
+  it('should log warning for low quality responses', async () => {
+    const service = new SuspectAIService();
+    const consoleSpy = jest.spyOn(console, 'warn');
+
+    // Force low quality response
+    const response = await service.generateResponse({
+      suspect: mockSuspect,
+      question: "Test",
+      suspicionLevel: 25,
+      forceQuality: 'low' // Test mode
+    });
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Quality check failed')
+    );
+  });
+});
+```
+
+### 3. End-to-End Tests
+
+#### Complete Workflow Test
+
+```typescript
+describe('Complete Archetype Creation Workflow', () => {
+  it('should create, validate, and integrate new archetype', async () => {
+    const orchestrator = new WorkflowOrchestrator();
+
+    // Step 1: Create archetype
+    const result = await orchestrator.createNewArchetype(
+      'Test Archetype',
+      false // non-interactive
+    );
+
+    expect(result.archetypePath).toBeDefined();
+    expect(result.examplesGenerated).toBe(8);
+
+    // Step 2: Validate examples
+    expect(result.validationResults).toHaveLength(8);
+    const passedCount = result.validationResults.filter(r => r.passed).length;
+    expect(passedCount).toBeGreaterThanOrEqual(6); // 75% pass rate
+
+    // Step 3: Load in service
+    const service = new SuspectAIService();
+    const archetype = await service.loadArchetype('Test Archetype');
+    expect(archetype).toBeDefined();
+  });
+});
+```
+
+### 4. Performance Tests
+
+```typescript
+describe('Performance Tests', () => {
+  it('should load archetype data within 100ms', async () => {
+    const start = Date.now();
+    const archetype = await loadArchetype('Wealthy Heir');
+    const duration = Date.now() - start;
+
+    expect(duration).toBeLessThan(100);
+  });
+
+  it('should validate quality within 50ms', () => {
+    const validator = new QualityValidator();
+    const start = Date.now();
+
+    validator.validate(mockResponse, ...mockParams);
+
+    const duration = Date.now() - start;
+    expect(duration).toBeLessThan(50);
+  });
+
+  it('should handle batch validation of 40 examples within 2s', async () => {
+    const orchestrator = new WorkflowOrchestrator();
+    const start = Date.now();
+
+    await orchestrator.batchValidate();
+
+    const duration = Date.now() - start;
+    expect(duration).toBeLessThan(2000);
+  });
+});
+```
+
+
+## Implementation Details
+
+### 1. Few-Shot Example Generation
+
+#### Example Content Guidelines
+
+**COOPERATIVE - INNOCENT Example:**
+```markdown
+### Example 1: COOPERATIVE - INNOCENT - Alibi Question
+
+**Detective:** "Where were you when the victim was killed?"
+
+**Marcus Chen (Wealthy Heir):** "I was at the Metropolitan Club with the board of directors. We had a dinner meeting scheduled for 7:30 PM that ran until 11 PM. The maître d' can confirm my reservation, and I have the receipt. We were discussing quarterly earnings—it's all documented in the meeting minutes."
+
+**[Analysis]**
+- Character consistency: ✓ Uses upper-class vocabulary ("Metropolitan Club", "board of directors", "maître d'")
+- Emotional alignment: ✓ COOPERATIVE tone, detailed explanation (58 words, target 40-80)
+- Information content: ✓ INNOCENT behavior - specific times, verifiable details, offers evidence
+- Natural dialogue: ✓ Contractions ("it's"), natural flow, confident tone
+- Word count: 58 words (target: 40-80) ✓
+```
+
+**AGGRESSIVE - GUILTY Example:**
+```markdown
+### Example 8: AGGRESSIVE - GUILTY - Final Confrontation
+
+**Detective:** "All evidence points to you. Why shouldn't we charge you?"
+
+**Patricia Walsh (Business Partner):** "Charge me? With what evidence? You're grasping at straws. I want my attorney. Now."
+
+**[Analysis]**
+- Character consistency: ✓ Business vocabulary ("evidence", "attorney"), assertive tone
+- Emotional alignment: ✓ AGGRESSIVE tone, minimal cooperation (16 words, target 10-30)
+- Information content: ✓ GUILTY behavior - deflects, demands lawyer, no specifics
+- Natural dialogue: ✓ Short sentences, rhetorical question, commanding tone
+- Word count: 16 words (target: 10-30) ✓
+```
+
+### 2. Quality Validation Integration
+
+#### SuspectAIService Enhancement
+
+```typescript
+class SuspectAIService {
+  private qualityValidator: QualityValidator;
+  private qualityLogger: QualityLogger;
+
+  async generateResponse(params: {
+    suspect: Suspect;
+    question: string;
+    suspicionLevel: number;
+    conversationHistory: Message[];
+  }): Promise<{
+    text: string;
+    qualityScore?: QualityScores;
+    qualityPassed?: boolean;
+  }> {
+    // Existing logic: build prompt, call AI
+    const response = await this.callGeminiAPI(prompt);
+
+    // NEW: Quality validation
+    if (process.env.ENABLE_QUALITY_VALIDATION === 'true') {
+      const archetype = this.getArchetypeData(params.suspect.archetype);
+      const emotionalState = this.getEmotionalState(params.suspicionLevel);
+
+      const validation = this.qualityValidator.validate(
+        response,
+        params.suspect.archetype,
+        emotionalState,
+        params.suspect.isGuilty,
+        params.suspicionLevel,
+        archetype.vocabulary.primary
+      );
+
+      // Log quality metrics
+      this.qualityLogger.log({
+        timestamp: new Date(),
+        archetype: params.suspect.archetype,
+        emotionalState,
+        isGuilty: params.suspect.isGuilty,
+        suspicionLevel: params.suspicionLevel,
+        response,
+        scores: validation.scores,
+        passed: validation.passed,
+        feedback: validation.feedback
+      });
+
+      // Warn in development, log in production
+      if (!validation.passed) {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Quality check failed:', validation.feedback);
+        } else {
+          console.log('Quality check failed (logged)');
+        }
+      }
+
+      return {
+        text: response,
+        qualityScore: validation.scores,
+        qualityPassed: validation.passed
+      };
+    }
+
+    return { text: response };
+  }
+}
+```
+
+### 3. Multilingual Implementation
+
+#### Language-Specific Word Count Ranges
+
+```typescript
+const WORD_COUNT_RANGES = {
+  en: {
+    COOPERATIVE: [40, 80],
+    NERVOUS: [30, 60],
+    DEFENSIVE: [15, 40],
+    AGGRESSIVE: [10, 30]
+  },
+  ko: {
+    COOPERATIVE: [30, 60],  // 75% of English
+    NERVOUS: [22, 45],
+    DEFENSIVE: [11, 30],
+    AGGRESSIVE: [7, 22]
+  }
+};
+
+function calculateWordCountRange(
+  emotionalState: EmotionalState,
+  languageCode: string
+): [number, number] {
+  return WORD_COUNT_RANGES[languageCode][emotionalState];
+}
+```
+
+#### Korean-Specific Quality Criteria
+
+```typescript
+function scoreNaturalDialogueKorean(response: string): number {
+  let score = 70;
+
+  // Check for appropriate honorifics
+  const hasHonorific = /습니다|세요|시|요$/.test(response);
+  if (hasHonorific) {
+    score += 10;
+  }
+
+  // Check for natural sentence endings
+  const naturalEndings = ['요', '죠', '네요', '군요', '는데요'];
+  const endingCount = naturalEndings.filter(ending =>
+    response.includes(ending)
+  ).length;
+  score += Math.min(10, endingCount * 3);
+
+  // Penalty for overly formal endings
+  const formalEndings = ['하옵니다', '하오', '하게'];
+  const formalCount = formalEndings.filter(ending =>
+    response.includes(ending)
+  ).length;
+  score -= formalCount * 10;
+
+  return Math.max(0, Math.min(100, score));
+}
+```
+
+
+### 4. Workflow Orchestration
+
+#### Batch Validation Implementation
+
+```typescript
+class WorkflowOrchestrator {
+  async batchValidate(): Promise<BatchValidationResult> {
+    const archetypes = await this.archetypeManager.loadAllArchetypes();
+    const results: QualityMetrics[] = [];
+
+    for (const archetype of archetypes) {
+      if (!archetype.fewShotExamples) {
+        console.warn(`No examples found for ${archetype
+el.every levuality at antees qgy guarteesting straive tomprehens while the cutable rolloes stnsuroach et approymend deplThe phaseement
+
+mprovuous itin* for conoring*st monitbu**Roent
+5. elopment devor effici fs**orkflowrated weg**Intl users
+4. ationatern inforort** al suppltilingu **Mutput
+3.ouable for relion** datity valid qualiate**Automior
+2.  AI behav consistents** forexampleFew-Shot **Complete :
+
+1. tem withprompt syst spec suing the enhancework fore framhensivs a compredeoviesign prhis d
+
+Tionnclus
+## Coes
+deliniation guir differentew
+- Cleachetype revilar arnt
+- Reguiremeabulary requnique vocm 50% unimuction
+- Mionflict deteed cutomat
+- Aation**:
+**Mitigvocabulary
+rlapping pes use ovehetylar arc**: Simiisklicts
+
+**Rlary Conf Vocabu Archetype# Risk 4:
+
+##hen Korean)ish first, tglut (Enradual rolloe
+- Ganguagper lholds ality threseparate qu- Sexamples
+ review of  speakerrs
+- Nativeidatoquality valspecific e-ag:
+- LanguMitigation**a
+
+**y criterirent qualitve diffeuages haangfferent lisk**: Di
+**Ry
+omplexitngual C Multili### Risk 3:sets
+
+ample of ex testing 
+- A/Bdatesand upular review mples
+- Reg of exaiew Peer revtion
+- valida qualityassmust pl examples - Alon**:
+igati
+
+**Mitns patterteach AI badamples exly written  Poor**:
+
+**Riskples Qualityamw-Shot Exk 2: FeRis
+### g
+eature flaa fptional vion oke validati- Malgorithms
+ scoring aize
+- Optimsonserespsimilar sults for tion reda valin
+- Cacheiooductusly in prchronosyntion aalida Run v*:
+-ation*itig
+**Mation
+e generponsto resy s latencation addality validsk**: QuRimpact
+
+**mance Iorrfon Petiity Validaal 1: Qu
+
+### Risknitigatios and M
+
+## Riskuagesd new langto adEasy : ibility**xtens **E
+4.pleson and examocumentatilear d**: CtainabilityMaintypes
+3. **chearew dd nEasy to ance**: ie ExpererDevelop
+2. **nsistencycoter ut characent aboe sentim Positivk**: Feedbac. **Playeretrics
+
+1tive M# Qualitaad
+
+##erheon < 50ms ovidatiity val: Qualormance** **Perf average
+5.t**: >= 80Alignmenional ote
+4. **Emagaver >= 80 stency**:nsiaracter Co **Ch3. overall
+e**: >= 75uality Scor **Average Q
+2.niopass validat responses % of >= 90te**:Raality Pass *Qu
+1. *rics
+Mettitative # Quantrics
+
+##ccess Me
+
+## Sused on dataresholds ba quality th- Updateed
+ if needypesetd new arch
+- Adesypl archetview al Rerly:**
+-
+
+**Quarte feedbackbased onROMPT.md ove Pions
+- Imprefinit detypeate archends
+- Updity tre qual- Analyzy:**
+nthl**Mod
+
+es if needeexamplte Few-Shot 
+- Updalidationsailed vanvestigate f- Iboard
+shrics day metview qualit:**
+- ReWeeklysks
+
+**e TatenancMain
+
+### }
+```;
+[]
+  }: Date;estamptimng;
+    ge: stri;
+    messafailure'ion_validatue' | 'pe_iss 'archetyp' |ality_dro: 'qu type
+    {alerts: Alerts
+  ;
+
+  //[];
+  }> strings:Issueommon
+    cr;e: numbeeScoraveragmber;
+    sRate: nu{
+    pas<string, : MapPerformancerchetypewn
+  a breakdo/ Archetype
+
+  /r[];
+  };bealogue: numuralDi];
+    nat: number[entnttionCo   informamber[];
+ ment: nuAlignionalot;
+    emumber[]: nsistencyrConharacte    c: {
+Trends
+  scorer[];Trend: numbesRateass)
+  plast 7 day// Trends (  ;
+
+ores: QualityScverageScoresber;
+  a numentPassRate:cs
+  currme metriReal-tiard {
+  // lityDashborface Quaipt
+inte`typescr
+
+``shboard Daty Metrics# Quali
+
+##nance Maintering andMonitole
+
+##  are visibtrendslity on
+- Qua regressis on quality- CI/CD failcessfully
+sucn runs ioidat- Batch valiteria:**
+ccess Croard
+
+**Suashbng donitorility m
+4. Add quategrationCI/CD inreate  C
+3.iptn scrlidatioch va2. Add batrator
+Orchestorkflowment W
+1. Impleks:**)
+
+**Tasek 5 (WeAutomation Workflow ase 4:
+
+### Phseamlesss hing ie switc- Languag
+orrectlys cdation workliuality vaan qKorees
+- onsspn reKoreal naturaerate s genrompt peanKoreria:**
+- Crit*Success 
+
+*ServiceSuspectAIn to e selectioagngua
+4. Add la criterific qualityguage-specilement lans
+3. Impt exampleean Few-Sho2. Write Korersion)
+md (Korean v.ko.te PROMPT
+1. Crea:**asks*Tek 4)
+
+*port (Weingual Sup Multil# Phase 3:
+
+##s overhead) (< 50monce degradatierforman
+- No pductionogged in proetrics are llity mment
+- Qualoply in deveomatical runs autionvalidatity a:**
+- Qualss Criteri
+
+**Succe (optional)oards dashbty metricdd qualiing
+4. Andln mode ha/productioentpmlot deveenm
+3. Impleming systegguality lod qAd
+2. ceviSerSuspectAIdator into  QualityValitera
+1. Integsks:**
+**Taeek 3)
+tegration (Walidation Inuality V2: Q
+### Phase 
+oneneratiduring gsible to AI are accesamples tion
+- ExShot seces Few-md includT.)
+- PROMPall >= 65ion (Overy validatss qualitamples paAll 40 ex**
+- s Criteria:ucceseld
+
+**StExamples fih fewShowitiles pe YAML f archetyte
+4. Upda.mdROMPTes into Pplxamtegrate eIn.ts
+3. ate-quality with validplesate all exam Validles)
+2.examp × 8 chetypeses (5 ar exampl 40 Few-Shot. Writesks:**
+1
+**Ta 1-2)
+n (Weeks CompletioShot Examplese 1: Few-
+### Pharategy
+ment St
+## Deploy
+``
+}
+` } };
+   
+ tsts: finalStachetypeSta
+      ardExamples,   failemples,
+    passedExa    mples,
+ lExa   tota
+   return {
+    
+  });
+   }ons
+     lidatistats.va / assed)s - stats.pationats.valid(stureRate:         failres),
+x(...scoh.maaxScore: Mat      mscores),
+  n(....mith: Ma    minScore  ,
+  validationstats..overall / sotalScoresre: stats.terageSco       av
+ archetype, {set(ts.nalSta  fi
+    
+all);scores.overap(r => r.sults.mrchetypeRet scores = a cons  
+   type);= archeetype ==archr => r.ilter( = results.fResultsetypenst arch {
+      cohetypeStats) of arcs]tatetype, srchor (const [a   f
+   }>();
+
+  mber; nureRate:    failu  ber;
+re: num      maxScoumber;
+core: nminSr;
+       numbere:verageSco, {
+      aw Map<string= nelStats onst fina  crages
+   ave/ Calculate
+
+    /
+    }verall;.o.scoresresult.overall += .totalScorestats   s   e;
+Dialogunaturalres.sco result.alogue +=.naturalDicoresats.totalS   sttent;
+   formationCont.scores.inresulnt += nContematioinforlScores.ts.totastat;
+      onalAlignmencores.emotit.sresulnment += ligtionalA.emoescorlSotats.t      staency;
+terConsistacores.chart.scresuly += encnsistharacterColScores.cs.tota     statte scores
+ / Accumula;
+
+      /sed++d) stats.pas.passe if (result     s++;
+s.validation      statchetype)!;
+(result.argetypeStats.chetats = arconst st     }
+
+ );
+        }      ll: 0 }
+, overalogue: 0aturalDiantent: 0, nnformationComent: 0, iignnalAlotio: 0, emencystterConsi: { charactotalScores  0,
+        ssed:          pas: 0,
+ tionalida        v, {
+  rchetypeset(result.atypeStats.arche    pe)) {
+    etychult.arats.has(reshetypeSt(!arcf      i
+ results) {result of  (const );
+    fors>(atchetypeStg, ArMap<strinew s = nrchetypeStatonst akdown
+    ce breaetyp  // Arch
+  les;
+ssedExampes - patotalExamples = edExamplt failns  coh;
+  gten).l.passedlter(r => rfi = results.plest passedExam;
+    conssults.lengthamples = reotalExst tt {
+    conResulValidationcs[]): BatchityMetriults: Qualistics(restate generateSprivat
+  }
+
+  s);tics(resultatisenerateSthis.g return t
+     }
+    }
+});
+       ck
+     dbaeeation.fidedback: val         fesed,
+ ason.pd: validati  passe
+        n.scores,s: validatio score       se,
+  le.responponse: examp       rese),
+   tionalStatexample.emoionLevel(spic this.getSupicionLevel:      sus  
+  sGuilty,xample.i e   isGuilty:  tate,
+     tionalSexample.emoState: onal     emotie.en,
+     rchetype.namype: aetarch          ew Date(),
+tamp: ntimes       ({
+   lts.push     resu  ;
+
+ 
+        )rimaryvocabulary.p archetype.,
+         nalState).emotiopleamLevel(exicionSusp   this.gety,
+       iltxample.isGu     e
+     ate,lSttionaemoe.    exampln,
+      .name.e   archetype      esponse,
+ ple.r exam       ate(
+  alididator.valalityVs.quon = thinst validati      co
+   {s)otExamplewShe.fe archetypt example ofcons      for (      }
+
+tinue;
+  con);
+      .name.en}`

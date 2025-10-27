@@ -39,7 +39,8 @@ export interface CreateCaseInput {
   };
   imageUrl?: string;
   cinematicImages?: CinematicImages; // 시네마틱 인트로 이미지 (Gemini API로 생성, 5개 씬)
-  introNarration?: IntroNarration; // 인트로 나레이션 (Gemini API로 생성)
+  introNarration?: IntroNarration; // 인트로 나레이션 (Gemini API로 생성) - DEPRECATED
+  introSlides?: import('../../../shared/types/index').IntroSlides; // NEW: 3-slide intro system
 }
 
 /**
@@ -79,7 +80,17 @@ export class CaseRepository {
       generatedAt: Date.now(),
       imageUrl: input.imageUrl,
       cinematicImages: input.cinematicImages,
-      introNarration: input.introNarration
+      introNarration: input.introNarration,
+      introSlides: input.introSlides,
+      actionPoints: {
+        initial: 3,
+        maximum: 12,
+        costs: {
+          quick: 1,
+          thorough: 2,
+          exhaustive: 3
+        }
+      }
     };
 
     // 케이스 저장

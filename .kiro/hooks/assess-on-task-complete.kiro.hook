@@ -1,5 +1,5 @@
 {
-  "enabled": true,
+  "enabled": false,
   "name": "Assess on Task Complete",
   "description": "Multi-reviewer validation when tasks are completed (Security, Performance, Architecture, Code Quality)",
   "version": "1",

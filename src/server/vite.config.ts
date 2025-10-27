@@ -14,7 +14,7 @@ export default defineConfig({
   build: {
     emptyOutDir: false,
     ssr: 'index.ts',
-    outDir: '../../dist/server',
+    outDir: path.resolve(__dirname, '../../dist/server'),
     target: 'node22',
     sourcemap: true,
     rollupOptions: {

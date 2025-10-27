@@ -114,7 +114,9 @@ export function useCase(): UseCaseReturn {
               evidence: retryData.evidence, // Include evidence items
               evidenceDistribution: retryData.evidenceDistribution, // Include evidence distribution
               imageUrl: retryData.imageUrl,
-              introNarration: retryData.introNarration,
+              cinematicImages: retryData.cinematicImages,
+              introSlides: retryData.introSlides, // NEW: 3-slide intro system
+              introNarration: retryData.introNarration, // LEGACY: backward compatibility
               generatedAt: retryData.generatedAt,
             };
 
@@ -158,7 +160,9 @@ export function useCase(): UseCaseReturn {
         evidence: data.evidence, // Include evidence items
         evidenceDistribution: data.evidenceDistribution, // Include evidence distribution
         imageUrl: data.imageUrl,
-        introNarration: data.introNarration,
+        cinematicImages: data.cinematicImages,
+        introSlides: data.introSlides, // NEW: 3-slide intro system
+        introNarration: data.introNarration, // LEGACY: backward compatibility
         generatedAt: data.generatedAt,
       };
 
